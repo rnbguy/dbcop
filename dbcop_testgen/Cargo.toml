@@ -1,0 +1,23 @@
+[package]
+name = "dbcop_testgen"
+version.workspace = true
+description.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+readme = "README.md"
+
+[dependencies]
+dbcop_core = { workspace = true }
+
+serde = { workspace = true, features = ["derive"] }
+typed-builder = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+rand = { workspace = true }
+rayon = { workspace = true }
+
+[lints]
+workspace = true

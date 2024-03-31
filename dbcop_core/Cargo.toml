@@ -1,0 +1,25 @@
+[package]
+name = "dbcop_core"
+version.workspace = true
+description.workspace = true
+license.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+readme = "README.md"
+
+[dependencies]
+hashbrown = { workspace = true }
+serde = { workspace = true, optional = true, features = ["derive"] }
+ascent = { workspace = true }
+tracing = { workspace = true }
+derive_more = { workspace = true }
+
+[lints]
+workspace = true
+
+[features]
+default = []
+serde = ["dep:serde"]
