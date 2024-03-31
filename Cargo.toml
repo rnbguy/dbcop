@@ -1,8 +1,54 @@
-[package]
-name = "dbcop"
-version = "0.1.0"
+[workspace]
+resolver = "2"
+members = [
+  "dbcop_core",
+  "dbcop_testgen",
+]
+
+[workspace.package]
+version = "0.2.0"
+description = "Runtime monitoring for transactional consistency"
+license = "Apache-2.0"
+repository = "https://github.com/rnbguy/dbcop"
+keywords = ["database", "consistency", "monitoring", "runtime"]
+categories = [
+  "development-tools",
+  "development-tools::profiling",
+  "development-tools::testing",
+  "development-tools::debugging",
+]
 edition = "2021"
+rust-version = "1.73.0"
+readme = "README.md"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace.dependencies]
+dbcop_core = { version = "0.2.0", path = "dbcop_core" }
 
-[dependencies]
+clap = { version = "4.5.3" }
+petgraph = { version = "0.6.4" }
+tracing = { version = "0.1.40" }
+serde = { version = "1.0.197" }
+hashbrown = { version = "0.14.3" }
+wasm-bindgen = { version = "=0.2.91" }
+typed-builder = { version = "0.18.1" }
+ascent = { version = "0.5.0" }
+chrono = { version = "0.4.35" }
+rand = { version = "0.8.5" }
+rayon = { version = "1.9.0" }
+derive_more = { version = "0.99.17" }
+
+[workspace.lints.rust]
+unused_qualifications = "warn"
+
+[workspace.lints.clippy]
+all = "warn"
+nursery = "warn"
+cargo = "warn"
+pedantic = "warn"
+module_name_repetitions = "allow"
+mod_module_files = "allow"
+exhaustive_structs = "allow"
+exhaustive_enums = "allow"
+missing_inline_in_public_items = "allow"
+implicit_return = "allow"
+missing_trait_method = "allow"
