@@ -31,7 +31,7 @@ serde = { version = "1.0.197" }
 hashbrown = { version = "0.14.3" }
 wasm-bindgen = { version = "=0.2.91" }
 typed-builder = { version = "0.18.1" }
-ascent = { version = "0.5.0" }
+ascent = { version = "0.6.0" }
 chrono = { version = "0.4.35" }
 rand = { version = "0.8.5" }
 rayon = { version = "1.9.0" }
