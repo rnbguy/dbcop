@@ -11,7 +11,7 @@ rust-version.workspace = true
 readme = "README.md"
 
 [dependencies]
-dbcop_core = { workspace = true }
+dbcop_core = { workspace = true, features = ["serde"] }
 
 serde = { workspace = true, features = ["derive"] }
 typed-builder = { workspace = true }
