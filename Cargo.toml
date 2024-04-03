@@ -29,7 +29,7 @@ petgraph = { version = "0.6" }
 tracing = { version = "0.1" }
 serde = { version = "1.0" }
 hashbrown = { version = "0.14" }
-wasm-bindgen = { version = "=0.2.91" }
+wasm-bindgen = { version = "=0.2.92" }
 typed-builder = { version = "0.18" }
 ascent = { version = "0.6.0" }
 chrono = { version = "0.4" }
