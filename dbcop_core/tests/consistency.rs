@@ -1,6 +1,3 @@
-use dbcop_core::history::atomic::types::AtomicTransactionHistory;
-use dbcop_core::history::atomic::AtomicTransactionPO;
-use dbcop_core::history::raw::types::{Event, Session, Transaction};
 use dbcop_core::consistency::atomic_read::check_atomic_read;
 use dbcop_core::consistency::causal::check_causal_read;
 use dbcop_core::consistency::committed_read::check_committed_read;
@@ -10,6 +7,9 @@ use dbcop_core::consistency::prefix::PrefixConsistencySolver;
 use dbcop_core::consistency::repeatable_read::check_repeatable_read;
 use dbcop_core::consistency::serializable::SerializabilitySolver;
 use dbcop_core::consistency::snapshot_isolation::SnapshotIsolationSolver;
+use dbcop_core::history::atomic::types::AtomicTransactionHistory;
+use dbcop_core::history::atomic::AtomicTransactionPO;
+use dbcop_core::history::raw::types::{Event, Session, Transaction};
 use dbcop_core::Consistency;
 
 /// A trivially valid history: one writer, one reader.
@@ -28,9 +28,7 @@ fn simple_valid_history() -> Vec<Session<&'static str, u64>> {
 }
 
 /// Helper: build AtomicTransactionPO from sessions that are known to pass repeatable read.
-fn build_atomic_po<V, W>(
-    histories: &[Session<V, W>],
-) -> Result<AtomicTransactionPO<V>, Error<V, W>>
+fn build_atomic_po<V, W>(histories: &[Session<V, W>]) -> Result<AtomicTransactionPO<V>, Error<V, W>>
 where
     V: Eq + std::hash::Hash + Clone,
     W: Eq + std::hash::Hash + Clone,

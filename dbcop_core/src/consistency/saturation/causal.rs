@@ -1,12 +1,12 @@
 //! Checks if a valid history maintains causal consistency.
 
+use ::core::hash::Hash;
+
+use crate::consistency::error::Error;
 use crate::history::atomic::types::AtomicTransactionHistory;
 use crate::history::atomic::AtomicTransactionPO;
 use crate::history::raw::types::Session;
-use crate::consistency::error::Error;
 use crate::Consistency;
-
-use ::core::hash::Hash;
 
 /// # Errors
 ///
@@ -46,12 +46,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        history::raw::types::{Event, Transaction},
-        consistency::atomic_read::check_atomic_read,
-    };
-
     use super::*;
+    use crate::consistency::atomic_read::check_atomic_read;
+    use crate::history::raw::types::{Event, Transaction};
 
     #[test]
     fn test_atomic_read() {

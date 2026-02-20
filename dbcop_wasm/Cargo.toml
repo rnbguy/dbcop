@@ -1,5 +1,5 @@
 [package]
-name                   = "dbcop"
+name                   = "dbcop_wasm"
 version.workspace      = true
 description.workspace  = true
 license.workspace      = true
@@ -10,12 +10,14 @@ edition.workspace      = true
 rust-version.workspace = true
 readme                 = "README.md"
 
-[dependencies]
-dbcop_core    = { workspace = true, features = [ "serde" ] }
-dbcop_testgen = { workspace = true }
+[lib]
+crate-type = [ "cdylib" ]
 
-clap       = { workspace = true }
-serde_json = { workspace = true, features = [ "std" ] }
+[dependencies]
+dbcop_core   = { workspace = true, features = [ "serde" ] }
+wasm-bindgen = { workspace = true }
+serde        = { workspace = true, features = [ "derive" ] }
+serde_json   = { workspace = true, features = [ "alloc" ] }
 
 [lints]
 workspace = true

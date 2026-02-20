@@ -3,12 +3,12 @@
 use ::core::hash::Hash;
 use ::hashbrown::HashMap;
 
+use crate::consistency::error::Error;
 use crate::graph::digraph::DiGraph;
 use crate::history::atomic::types::TransactionId;
 use crate::history::raw::error::Error as NonAtomicError;
 use crate::history::raw::types::{Event, EventId, Session};
 use crate::history::raw::{get_all_writes, get_committed_writes, is_valid_history};
-use crate::consistency::error::Error;
 use crate::Consistency;
 
 /// Checks if a valid history is a committed read history.

@@ -3,12 +3,11 @@
 use ::core::hash::Hash;
 use ::hashbrown::HashMap;
 
+use super::committed_read::check_committed_read;
+use crate::consistency::error::Error;
 use crate::history::raw::error::Error as NonAtomicError;
 use crate::history::raw::types::{Event, EventId, Session};
 use crate::history::raw::{get_all_writes, is_valid_history};
-use crate::consistency::error::Error;
-
-use super::committed_read::check_committed_read;
 
 /// Checks if a valid history maintains repeatable read.
 ///
@@ -73,9 +72,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::history::raw::types::Transaction;
-
     use super::*;
+    use crate::history::raw::types::Transaction;
 
     #[test]
     fn test_non_repeatable_read() {

@@ -1,5 +1,4 @@
-use std::fs;
-use std::process;
+use std::{fs, process};
 
 use clap::Parser;
 use dbcop::{App, Command};
@@ -55,11 +54,7 @@ fn verify(args: &dbcop::VerifyArgs) {
             process::exit(1);
         })
         .filter_map(Result::ok)
-        .filter(|e| {
-            e.path()
-                .extension()
-                .is_some_and(|ext| ext == "json")
-        })
+        .filter(|e| e.path().extension().is_some_and(|ext| ext == "json"))
         .collect();
 
     entries.sort_by_key(fs::DirEntry::path);

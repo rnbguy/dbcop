@@ -206,7 +206,8 @@ where
         rw
     }
 
-    #[must_use] pub fn has_valid_visibility(&self) -> bool {
+    #[must_use]
+    pub fn has_valid_visibility(&self) -> bool {
         self.visibility_relation.is_acyclic()
     }
 }
