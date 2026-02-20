@@ -1,7 +1,7 @@
 //! Checks if a valid history is a committed read history.
 
-use ::core::hash::Hash;
-use ::hashbrown::HashMap;
+use core::hash::Hash;
+use hashbrown::HashMap;
 
 use crate::consistency::error::Error;
 use crate::graph::digraph::DiGraph;
@@ -130,10 +130,9 @@ where
         }
     }
 
-    committed_order = committed_order.closure();
-
     committed_order
-        .is_acyclic()
+        .topological_sort()
+        .is_some()
         .then_some(())
         .ok_or(Error::Invalid(Consistency::CommittedRead))
 }
