@@ -209,6 +209,16 @@ Returns a JSON string with the following schema:
 - `check_committed_read()` returns `Result<DiGraph<TransactionId>, Error>` --
   the committed order graph on success.
 
+- SAT checker functions (`dbcop_sat`): `check_serializable()`, `check_prefix()`,
+  `check_snapshot_isolation()` all return `Result<Witness, Error>`. On
+  satisfiable: the commit order is extracted from the SAT model by counting
+  predecessors (for each vertex `u`, its position is the number of other
+  vertices `w` where `before(w, u)` is true in the satisfying assignment).
+  Serializable returns `Witness::CommitOrder`, Prefix returns
+  `Witness::CommitOrder` (write-phase vertices only), Snapshot Isolation returns
+  `Witness::SplitCommitOrder` (full split-phase ordering). On unsatisfiable:
+  returns `Error::Invalid(Consistency::*)`.
+
 ## Ignored Directories
 
 `.sisyphus/` and `.omc/` are in `.gitignore`. Do NOT commit anything from those
