@@ -5,7 +5,7 @@ use hashbrown::{HashMap, HashSet};
 
 use crate::history::atomic::types::TransactionId;
 use crate::history::atomic::AtomicTransactionPO;
-use crate::solver::constrained_linearization::ConstrainedLinearizationSolver;
+use crate::consistency::constrained_linearization::ConstrainedLinearizationSolver;
 
 #[derive(Debug)]
 pub struct SerializabilitySolver<Variable>

@@ -6,7 +6,7 @@ use ::hashbrown::HashMap;
 use crate::history::raw::error::Error as NonAtomicError;
 use crate::history::raw::types::{Event, EventId, Session};
 use crate::history::raw::{get_all_writes, is_valid_history};
-use crate::solver::error::Error;
+use crate::consistency::error::Error;
 
 use super::committed_read::check_committed_read;
 

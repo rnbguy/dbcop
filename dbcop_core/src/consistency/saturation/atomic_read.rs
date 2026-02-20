@@ -3,7 +3,7 @@
 use crate::history::atomic::types::AtomicTransactionHistory;
 use crate::history::atomic::AtomicTransactionPO;
 use crate::history::raw::types::Session;
-use crate::solver::error::Error;
+use crate::consistency::error::Error;
 use crate::Consistency;
 
 use ::core::hash::Hash;

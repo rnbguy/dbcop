@@ -21,5 +21,7 @@ jobs:
           toolchain: stable
       - name: Build
         run: cargo build --verbose --all-features
+      - name: Clippy
+        run: cargo clippy --workspace --all-features -- -D warnings
       - name: Run tests
         run: cargo test --verbose --all-features

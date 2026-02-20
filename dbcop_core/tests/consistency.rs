@@ -1,15 +1,15 @@
 use dbcop_core::history::atomic::types::AtomicTransactionHistory;
 use dbcop_core::history::atomic::AtomicTransactionPO;
 use dbcop_core::history::raw::types::{Event, Session, Transaction};
-use dbcop_core::solver::atomic_read::check_atomic_read;
-use dbcop_core::solver::causal::check_causal_read;
-use dbcop_core::solver::committed_read::check_committed_read;
-use dbcop_core::solver::constrained_linearization::ConstrainedLinearizationSolver;
-use dbcop_core::solver::error::Error;
-use dbcop_core::solver::prefix::PrefixConsistencySolver;
-use dbcop_core::solver::repeatable_read::check_repeatable_read;
-use dbcop_core::solver::serializable::SerializabilitySolver;
-use dbcop_core::solver::snapshot_isolation::SnapshotIsolationSolver;
+use dbcop_core::consistency::atomic_read::check_atomic_read;
+use dbcop_core::consistency::causal::check_causal_read;
+use dbcop_core::consistency::committed_read::check_committed_read;
+use dbcop_core::consistency::constrained_linearization::ConstrainedLinearizationSolver;
+use dbcop_core::consistency::error::Error;
+use dbcop_core::consistency::prefix::PrefixConsistencySolver;
+use dbcop_core::consistency::repeatable_read::check_repeatable_read;
+use dbcop_core::consistency::serializable::SerializabilitySolver;
+use dbcop_core::consistency::snapshot_isolation::SnapshotIsolationSolver;
 use dbcop_core::Consistency;
 
 /// A trivially valid history: one writer, one reader.
