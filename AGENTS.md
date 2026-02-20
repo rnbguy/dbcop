@@ -1,7 +1,7 @@
 # AGENTS.md
 
-This file documents conventions, tooling requirements, and learnings for AI agents
-and contributors working on this repository.
+This file documents conventions, tooling requirements, and learnings for AI
+agents and contributors working on this repository.
 
 ## Workflow
 
@@ -18,7 +18,8 @@ All changes follow this flow:
 
 ## Branch Naming
 
-- `task/tN-short-description` -- plan tasks (e.g. `task/t23-session-order-chain`)
+- `task/tN-short-description` -- plan tasks (e.g.
+  `task/t23-session-order-chain`)
 - `feat/description` -- new features
 - `fix/description` -- bug fixes
 - `perf/description` -- performance improvements
@@ -35,6 +36,7 @@ Types: feat, fix, perf, refactor, chore, docs, style, test
 Scopes: core, cli, wasm, sat, testgen, history, hooks, ci
 
 Examples:
+
 - `perf(linearization): replace BTreeSet memoization with Zobrist hashing`
 - `perf(history): specialize session-order closure for chain topology`
 - `chore(hooks): use cargo +nightly fmt in pre-commit hook`
@@ -43,13 +45,16 @@ Examples:
 
 ## Toolchain Requirements
 
-- Rust nightly is required for formatting. Always use `cargo +nightly fmt --all`.
-  Never use `cargo fmt` (stable) -- `rustfmt.toml` uses nightly-only options.
+- Rust nightly is required for formatting. Always use
+  `cargo +nightly fmt --all`. Never use `cargo fmt` (stable) -- `rustfmt.toml`
+  uses nightly-only options.
 - Linting: `cargo clippy -p <crate> -- -D warnings`
 - TOML formatting: run `taplo format <file>` before committing any .toml change.
-  Verify with `taplo format --check <file>`. CI enforces this on all .toml files.
+  Verify with `taplo format --check <file>`. CI enforces this on all .toml
+  files.
 - Tests: `cargo test -p <crate>` or `cargo test --workspace`
-- no_std check: `cargo build -p dbcop_core --no-default-features` must always compile.
+- no_std check: `cargo build -p dbcop_core --no-default-features` must always
+  compile.
 
 ## CI Checks
 
@@ -57,16 +62,19 @@ All three must pass before merging:
 
 1. `build` -- cargo build, clippy, test, end-to-end checks
 2. `format` -- uses `actions-rust-lang/rustfmt@v1` (nightly rustfmt, automatic)
-3. `code-quality` -- taplo format --check on all .toml files, deno fmt --check, typos
+3. `code-quality` -- taplo format --check on all .toml files, deno fmt --check,
+   typos
 
 ## Code Constraints
 
-- No unicode or emoji in any `.rs`, `.ts`, or `.js` file.
-  The pre-commit hook enforces this. ASCII only.
+- No unicode or emoji in any `.rs`, `.ts`, or `.js` file. The pre-commit hook
+  enforces this. ASCII only.
 - Preserve no_std compatibility in `dbcop_core`. Never use std-only types
   without a feature gate.
-- Serde derives must be gated: `#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]`
-- Do NOT rename existing public types (e.g. `CommittedRead` stays `CommittedRead`).
+- Serde derives must be gated:
+  `#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]`
+- Do NOT rename existing public types (e.g. `CommittedRead` stays
+  `CommittedRead`).
 - Do NOT add a `Consistency::RepeatableRead` variant.
 - Do NOT change the `ConstrainedLinearizationSolver` trait API.
 
@@ -75,7 +83,8 @@ All three must pass before merging:
 Two checks run on staged files:
 
 1. Rejects any non-ASCII character in staged `.rs`, `.ts`, `.js` files.
-2. Runs `cargo +nightly fmt --check --all` -- fails if any Rust file needs reformatting.
+2. Runs `cargo +nightly fmt --check --all` -- fails if any Rust file needs
+   reformatting.
 
 To install hooks after cloning: `deno task prepare`
 
@@ -105,27 +114,27 @@ dbcop/                          workspace root
 
 ## Key Types
 
-- `TransactionId { session_id: u64, session_height: u64 }`
-  Default value (0, 0) is the root node in session-order and visibility graphs.
-  Ordered lexicographically by (session_id, session_height).
+- `TransactionId { session_id: u64, session_height: u64 }` Default value (0, 0)
+  is the root node in session-order and visibility graphs. Ordered
+  lexicographically by (session_id, session_height).
 
-- `DiGraph<T>` -- directed graph with adjacency map.
-  Key methods: `add_edge(from, to)`, `add_vertex(v)`, `closure()`,
-  `topological_sort()`, `union(other)`, `is_acyclic()`.
+- `DiGraph<T>` -- directed graph with adjacency map. Key methods:
+  `add_edge(from, to)`, `add_vertex(v)`, `closure()`, `topological_sort()`,
+  `union(other)`, `is_acyclic()`.
 
-- `AtomicTransactionPO` -- per-history partial order.
-  Holds: `session_order: DiGraph<TransactionId>`,
-         `write_read_relation: HashMap<Variable, DiGraph<TransactionId>>`,
-         `visibility_relation: DiGraph<TransactionId>`.
+- `AtomicTransactionPO` -- per-history partial order. Holds:
+  `session_order: DiGraph<TransactionId>`,
+  `write_read_relation: HashMap<Variable, DiGraph<TransactionId>>`,
+  `visibility_relation: DiGraph<TransactionId>`.
 
-- `Consistency` enum:
-  `CommittedRead`, `Causal`, `Prefix`, `SnapshotIsolation`,
+- `Consistency` enum: `CommittedRead`, `Causal`, `Prefix`, `SnapshotIsolation`,
   `Serializability`, `StrongSerializability`.
 
 ## Ignored Directories
 
 `.sisyphus/` and `.omc/` are in `.gitignore`. Do NOT commit anything from those
-directories. They contain orchestration state, plans, notepads, and agent memory.
+directories. They contain orchestration state, plans, notepads, and agent
+memory.
 
 ## Performance Decisions
 
@@ -147,6 +156,6 @@ directories. They contain orchestration state, plans, notepads, and agent memory
 - Integration tests: `tests/` directories under each crate.
 - `dbcop_core/tests/paper_polynomial.rs` -- 13 tests verifying polynomial-time
   checker correctness against known histories.
-- `dbcop_core/benches/consistency.rs` -- 18 Criterion benchmarks
-  (6 consistency levels x 3 history sizes).
+- `dbcop_core/benches/consistency.rs` -- 18 Criterion benchmarks (6 consistency
+  levels x 3 history sizes).
 - Always add tests when adding new functionality.
