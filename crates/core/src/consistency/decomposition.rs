@@ -75,11 +75,12 @@ where
 
 #[cfg(test)]
 mod tests {
+    use hashbrown::HashMap;
+
     use super::*;
     use crate::history::atomic::types::{
         AtomicTransactionHistory, AtomicTransactionInfo, TransactionId,
     };
-    use hashbrown::HashMap;
 
     #[test]
     fn test_communication_graph_two_clusters() {

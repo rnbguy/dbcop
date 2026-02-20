@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use chrono::{DateTime, Duration, Local};
 use dbcop_core::history::raw::types::{Event, Session, Transaction};
-use rand::distributions::{Distribution, Uniform};
+use rand::distr::{Distribution, Uniform};
 use rand::Rng;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
@@ -86,6 +86,11 @@ impl History {
 ///    arbitrary (possibly non-existent) versions.
 ///
 /// All generated transactions are committed.
+///
+/// # Panics
+///
+/// Panics if `n_variable` is zero (cannot create a uniform distribution over
+/// an empty range).
 #[must_use]
 pub fn generate_single_history(
     n_node: u64,
@@ -95,8 +100,8 @@ pub fn generate_single_history(
 ) -> Vec<Session<u64, u64>> {
     let mut counters: HashMap<u64, u64> = HashMap::new();
     let mut latest_writes: HashMap<u64, u64> = (0..n_variable).map(|v| (v, 0)).collect();
-    let mut random_generator = rand::thread_rng();
-    let read_variable_range = Uniform::from(0..n_variable);
+    let mut random_generator = rand::rng();
+    let read_variable_range = Uniform::new(0, n_variable).unwrap();
 
     (0..n_node)
         .enumerate()
@@ -116,7 +121,7 @@ pub fn generate_single_history(
                 let events = (0..n_event)
                     .map(|_| {
                         let variable = read_variable_range.sample(&mut random_generator);
-                        let want_read = random_generator.gen::<bool>();
+                        let want_read = random_generator.random::<bool>();
                         if want_read && read_vars.insert(variable) {
                             Event::read(variable, readable[&variable])
                         } else {
