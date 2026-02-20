@@ -1,4 +1,4 @@
-use ::derive_more::From;
+use derive_more::From;
 
 use crate::history::raw::error::Error as NonAtomicError;
 use crate::Consistency;

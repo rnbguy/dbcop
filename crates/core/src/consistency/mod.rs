@@ -13,10 +13,12 @@ use crate::history::raw::types::Session;
 pub mod error;
 pub mod linearization;
 pub mod saturation;
+pub mod witness;
 
 // Re-export submodules at the consistency level for convenience.
 pub use linearization::{constrained_linearization, prefix, serializable, snapshot_isolation};
 pub use saturation::{atomic_read, causal, committed_read, repeatable_read};
+pub use witness::Witness;
 
 /// Consistency levels supported by dbcop, ordered from weakest to strongest.
 #[derive(Debug, Copy, Clone)]

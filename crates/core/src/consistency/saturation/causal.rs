@@ -1,6 +1,6 @@
 //! Checks if a valid history maintains causal consistency.
 
-use ::core::hash::Hash;
+use core::hash::Hash;
 
 use crate::consistency::error::Error;
 use crate::history::atomic::types::AtomicTransactionHistory;

@@ -4,7 +4,8 @@ use core::hash::Hash;
 
 use hashbrown::{HashMap, HashSet};
 
-#[derive(Default, Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct DiGraph<T>
 where
     T: Hash + Eq + Clone + Debug,

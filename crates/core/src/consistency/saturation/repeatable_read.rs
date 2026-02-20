@@ -1,7 +1,8 @@
 //! Checks if a valid history is a atomic read history.
 
-use ::core::hash::Hash;
-use ::hashbrown::HashMap;
+use core::hash::Hash;
+
+use hashbrown::HashMap;
 
 use super::committed_read::check_committed_read;
 use crate::consistency::error::Error;

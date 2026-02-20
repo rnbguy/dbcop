@@ -133,6 +133,11 @@ dbcop/                          workspace root
 - `Consistency` enum: `CommittedRead`, `AtomicRead`, `Causal`, `Prefix`,
   `SnapshotIsolation`, `Serializable`.
 
+- `Witness` enum: returned by `check()` on success. Variants:
+  `CommitOrder(Vec<TransactionId>)` (Prefix, Serializable),
+  `SplitCommitOrder(Vec<(TransactionId, bool)>)` (SnapshotIsolation),
+  `SaturationOrder(DiGraph<TransactionId>)` (CommittedRead, AtomicRead, Causal).
+
 ## Ignored Directories
 
 `.sisyphus/` and `.omc/` are in `.gitignore`. Do NOT commit anything from those
