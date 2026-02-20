@@ -136,6 +136,28 @@ The `dbcop` binary has two subcommands: `generate` and `verify`.
 Default output (no flags): `{filename}: PASS` or `{filename}: FAIL ({error:?})`
 on a single line.
 
+## WASM Usage
+
+The `dbcop_wasm` crate exposes a single function via `wasm_bindgen`:
+
+`check_consistency(history_json: &str, level: &str) -> String`
+
+- `history_json`: JSON-encoded array of sessions (same format as CLI input
+  files).
+- `level`: one of `committed-read`, `atomic-read`, `causal`, `prefix`,
+  `snapshot-isolation`, `serializable`.
+
+Returns a JSON string with the following schema:
+
+- On success: `{"ok": true, "witness": {...}}` -- witness is the serialized
+  `Witness` enum (same structure as CLI `--json` output).
+- On check failure: `{"ok": false, "error": {...}}` -- error is the serialized
+  `Error` enum.
+- On invalid consistency level:
+  `{"ok": false, "error": "unknown consistency level"}`.
+- On malformed JSON input:
+  `{"ok": false, "error": "<parse error description>"}`.
+
 ## Key Types
 
 - `TransactionId { session_id: u64, session_height: u64 }` Default value (0, 0)
