@@ -239,6 +239,11 @@ memory.
   sets in `causal_ww()` and `causal_rw()` hot paths to avoid repeated DiGraph
   clones per iteration.
 
+- Communication graph decomposition (`consistency/decomposition.rs`): builds a
+  `UGraph<u64>` of session interactions based on shared variable access. Used
+  for biconnected component decomposition (Theorem 5.2) to reduce NP-complete
+  checker complexity by solving independent sub-histories separately.
+
 ## Testing
 
 - Unit tests: `#[cfg(test)] mod tests` blocks inside `src/` files.
