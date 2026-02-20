@@ -1,5 +1,5 @@
 [package]
-name                   = "dbcop"
+name                   = "dbcop_sat"
 version.workspace      = true
 description.workspace  = true
 license.workspace      = true
@@ -8,14 +8,9 @@ keywords.workspace     = true
 categories.workspace   = true
 edition.workspace      = true
 rust-version.workspace = true
-readme                 = "README.md"
+readme.workspace       = true
 
 [dependencies]
-dbcop_core    = { workspace = true, features = [ "serde" ] }
-dbcop_testgen = { workspace = true }
-
-clap       = { workspace = true }
-serde_json = { workspace = true, features = [ "std" ] }
 
 [lints]
 workspace = true

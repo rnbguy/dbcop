@@ -12,7 +12,7 @@ version = "0.2.0"
 description = "Runtime monitoring for transactional consistency"
 license = "Apache-2.0"
 repository = "https://github.com/rnbguy/dbcop"
-keywords = ["database", "consistency", "monitoring", "runtime"]
+keywords = [ "database", "consistency", "monitoring", "runtime" ]
 categories = [
   "development-tools",
   "development-tools::profiling",
@@ -24,34 +24,34 @@ rust-version = "1.73.0"
 readme = "README.md"
 
 [workspace.dependencies]
-dbcop_core = { version = "0.2.0", path = "dbcop_core" }
+dbcop_core    = { version = "0.2.0", path = "dbcop_core" }
 dbcop_testgen = { version = "0.2.0", path = "dbcop_testgen" }
 
-clap = { version = "4.5", features = ["derive"] }
-serde_json = { version = "1.0", default-features = false }
-petgraph = { version = "0.6" }
-tracing = { version = "0.1" }
-serde = { version = "1.0" }
-hashbrown = { version = "0.15" }
-wasm-bindgen = { version = "0.2" }
+clap          = { version = "4.5", features = [ "derive" ] }
+serde_json    = { version = "1.0", default-features = false }
+petgraph      = { version = "0.6" }
+tracing       = { version = "0.1" }
+serde         = { version = "1.0" }
+hashbrown     = { version = "0.15" }
+wasm-bindgen  = { version = "0.2" }
 typed-builder = { version = "0.18" }
-chrono = { version = "0.4" }
-rand = { version = "0.8" }
-rayon = { version = "1.10" }
-derive_more = { version = "0.99" }
+chrono        = { version = "0.4" }
+rand          = { version = "0.8" }
+rayon         = { version = "1.10" }
+derive_more   = { version = "0.99" }
 
 [workspace.lints.rust]
 unused_qualifications = "warn"
 
 [workspace.lints.clippy]
-all = { level = "warn", priority = -1 }
-nursery = { level = "warn", priority = -1 }
-cargo = { level = "warn", priority = -1 }
-pedantic = { level = "warn", priority = -1 }
-module_name_repetitions = "allow"
-mod_module_files = "allow"
-exhaustive_structs = "allow"
-exhaustive_enums = "allow"
+all                            = { level = "warn", priority = -1 }
+nursery                        = { level = "warn", priority = -1 }
+cargo                          = { level = "warn", priority = -1 }
+pedantic                       = { level = "warn", priority = -1 }
+module_name_repetitions        = "allow"
+mod_module_files               = "allow"
+exhaustive_structs             = "allow"
+exhaustive_enums               = "allow"
 missing_inline_in_public_items = "allow"
-implicit_return = "allow"
-missing_trait_methods = "allow"
+implicit_return                = "allow"
+missing_trait_methods          = "allow"
