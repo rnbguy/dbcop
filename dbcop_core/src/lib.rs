@@ -8,12 +8,4 @@ pub mod graph;
 pub mod history;
 pub mod solver;
 
-#[derive(Debug, Copy, Clone)]
-pub enum Consistency {
-    CommittedRead,
-    AtomicRead,
-    Causal,
-    Prefix,
-    SnapshotIsolation,
-    Serializable,
-}
+pub use solver::Consistency;
