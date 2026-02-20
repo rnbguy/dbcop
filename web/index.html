@@ -1,36 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>dbcop -- Transactional Consistency Checker</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <header><h1>dbcop</h1><p>Transactional Consistency Checker</p></header>
-  <main>
-    <section id="input-section">
-      <h2>History Input</h2>
-      <textarea id="history-json" rows="10" placeholder="Enter history JSON..."></textarea>
-      <select id="level-select">
-        <option value="committed-read">Read Committed</option>
-        <option value="atomic-read">Atomic Read</option>
-        <option value="causal">Causal Consistency</option>
-        <option value="prefix">Prefix Consistency</option>
-        <option value="snapshot-isolation">Snapshot Isolation</option>
-        <option value="serializable" selected>Serializability</option>
-      </select>
-      <button id="check-btn">Check Consistency</button>
-    </section>
-    <section id="result-section">
-      <h2>Result</h2>
-      <pre id="result-output">Run a check to see results.</pre>
-    </section>
-    <section id="graph-section">
-      <h2>Transaction Graph</h2>
-      <div id="graph-container"></div>
-    </section>
-  </main>
-  <script type="module" src="main.ts"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>dbcop -- Transactional Consistency Checker</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>dbcop</h1>
+      <p>Transactional Consistency Checker</p>
+    </header>
+    <main>
+      <section id="input-section">
+        <h2>History Input</h2>
+        <textarea
+          id="history-json"
+          rows="10"
+          placeholder="Enter history JSON..."
+        ></textarea>
+        <select id="level-select">
+          <option value="committed-read">Read Committed</option>
+          <option value="atomic-read">Atomic Read</option>
+          <option value="causal">Causal Consistency</option>
+          <option value="prefix">Prefix Consistency</option>
+          <option value="snapshot-isolation">Snapshot Isolation</option>
+          <option value="serializable" selected>Serializability</option>
+        </select>
+        <button id="check-btn">Check Consistency</button>
+      </section>
+      <section id="result-section">
+        <h2>Result</h2>
+        <pre id="result-output">Run a check to see results.</pre>
+      </section>
+      <section id="graph-section">
+        <h2>Transaction Graph</h2>
+        <div id="graph-container"></div>
+      </section>
+    </main>
+    <script type="module" src="main.ts"></script>
+  </body>
 </html>
