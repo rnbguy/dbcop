@@ -33,7 +33,7 @@ serde_json    = { version = "1.0", default-features = false }
 petgraph      = { version = "0.6" }
 tracing       = { version = "0.1" }
 serde         = { version = "1.0" }
-hashbrown     = { version = "0.15" }
+hashbrown     = { version = "0.16" }
 wasm-bindgen  = { version = "=0.2.106" }
 typed-builder = { version = "0.18" }
 chrono        = { version = "0.4" }
