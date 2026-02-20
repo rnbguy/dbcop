@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use core::fmt::Debug;
 use core::hash::Hash;
 
@@ -38,11 +39,11 @@ where
             .is_some_and(|neighbor| neighbor.contains(target))
     }
 
+    /// Detects if the graph contains a cycle using Kahn's algorithm.
+    /// Time complexity: O(V+E)
     #[must_use]
     pub fn has_cycle(&self) -> bool {
-        self.adj_map
-            .keys()
-            .any(|source| self.is_reachable_helper(source, source, &mut [].into()))
+        self.topological_sort().is_none()
     }
 
     #[must_use]
@@ -50,7 +51,61 @@ where
         !self.has_cycle()
     }
 
+    /// Returns a valid topological ordering of vertices if the graph is acyclic,
+    /// or None if the graph contains a cycle.
+    /// Uses Kahn's algorithm with time complexity O(V+E).
+    #[must_use]
+    pub fn topological_sort(&self) -> Option<Vec<T>> {
+        let mut in_degree: HashMap<T, usize> = HashMap::new();
+
+        // Initialize in-degrees for all vertices
+        for vertex in self.adj_map.keys() {
+            in_degree.entry(vertex.clone()).or_insert(0);
+        }
+
+        // Calculate in-degrees
+        for neighbors in self.adj_map.values() {
+            for neighbor in neighbors {
+                *in_degree.entry(neighbor.clone()).or_insert(0) += 1;
+            }
+        }
+
+        // Collect all vertices with in-degree 0
+        let mut queue: Vec<T> = in_degree
+            .iter()
+            .filter(|(_, &degree)| degree == 0)
+            .map(|(vertex, _)| vertex.clone())
+            .collect();
+
+        let mut result = Vec::new();
+
+        // Process vertices with in-degree 0
+        while let Some(vertex) = queue.pop() {
+            result.push(vertex.clone());
+
+            // Reduce in-degree of neighbors
+            if let Some(neighbors) = self.adj_map.get(&vertex) {
+                for neighbor in neighbors {
+                    if let Some(degree) = in_degree.get_mut(neighbor) {
+                        *degree -= 1;
+                        if *degree == 0 {
+                            queue.push(neighbor.clone());
+                        }
+                    }
+                }
+            }
+        }
+
+        // If all vertices were processed, graph is acyclic
+        if result.len() == self.adj_map.len() {
+            Some(result)
+        } else {
+            None
+        }
+    }
+
     /// Returns true if there is a path from `source` to `target` in the graph.
+    #[allow(dead_code)]
     fn is_reachable_helper(&self, source: &T, target: &T, reachable: &mut HashSet<T>) -> bool {
         if let Some(neighbors) = self.adj_map.get(source) {
             for neighbor in neighbors {
@@ -168,5 +223,46 @@ mod tests {
         assert!(graph1.union(&graph2));
 
         assert!(graph1.has_cycle());
+    }
+
+    #[test]
+    fn test_topological_sort_acyclic() {
+        let mut graph: DiGraph<u32> = DiGraph::default();
+        graph.add_edge(1, 2);
+        graph.add_edge(2, 3);
+        graph.add_edge(1, 3);
+
+        let topo = graph.topological_sort();
+        assert!(topo.is_some());
+
+        let order = topo.unwrap();
+        assert_eq!(order.len(), 3);
+
+        let pos_1 = order.iter().position(|&x| x == 1).unwrap();
+        let pos_2 = order.iter().position(|&x| x == 2).unwrap();
+        let pos_3 = order.iter().position(|&x| x == 3).unwrap();
+
+        assert!(pos_1 < pos_2);
+        assert!(pos_2 < pos_3);
+        assert!(pos_1 < pos_3);
+    }
+
+    #[test]
+    fn test_topological_sort_cyclic() {
+        let mut graph: DiGraph<u32> = DiGraph::default();
+        graph.add_edge(1, 2);
+        graph.add_edge(2, 3);
+        graph.add_edge(3, 1);
+
+        let topo = graph.topological_sort();
+        assert!(topo.is_none());
+    }
+
+    #[test]
+    fn test_topological_sort_empty() {
+        let graph: DiGraph<u32> = DiGraph::default();
+        let topo = graph.topological_sort();
+        assert!(topo.is_some());
+        assert_eq!(topo.unwrap().len(), 0);
     }
 }
