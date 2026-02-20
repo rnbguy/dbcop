@@ -141,21 +141,26 @@ where
                 // !t3s.contains(t1) - otherwise, it's a cycle in wr_x
                 for (t2, _) in &wr_x.adj_map {
                     // t1 and t2 both writes on x
-                    if t1 != t2
-                        && (self.visibility_relation.has_edge(t2, t1)
-                            || t3s
-                                .iter()
-                                .any(|t3| t3 != t2 && self.visibility_relation.has_edge(t2, t3)))
-                    {
-                        // it is obvious that vis(t2, t1) implies ww(t2, t1),
-                        // in other case, if vis(t2, t3), then t2 overwrites t1's write, read by t3
-                        // ┌──── t2 ─────┐
-                        // │ww_x      vis│
-                        // V             V
-                        // t1───────────>t3
-                        //      wr_x
-                        // t3 != t2 check is skipped, as acyclic vis(t3, t2) implies t3 != t2
-                        ww_x.add_edge(*t2, *t1);
+                    if t1 != t2 {
+                        // Pre-fetch visibility neighbors of t2 to avoid repeated HashMap lookups
+                        let vis_neighbors_t2 = self.visibility_relation.adj_map.get(t2);
+                        if vis_neighbors_t2.is_some_and(|neighbors| neighbors.contains(t1))
+                            || t3s.iter().any(|t3| {
+                                t3 != t2
+                                    && vis_neighbors_t2
+                                        .is_some_and(|neighbors| neighbors.contains(t3))
+                            })
+                        {
+                            // it is obvious that vis(t2, t1) implies ww(t2, t1),
+                            // in other case, if vis(t2, t3), then t2 overwrites t1's write, read by t3
+                            // ┌──── t2 ─────┐
+                            // │ww_x      vis│
+                            // V             V
+                            // t1───────────>t3
+                            //      wr_x
+                            // t3 != t2 check is skipped, as acyclic vis(t3, t2) implies t3 != t2
+                            ww_x.add_edge(*t2, *t1);
+                        }
                     }
                 }
             }
@@ -173,10 +178,12 @@ where
             for (t1, t3s) in &wr_x.adj_map {
                 // t3s reads x from t1
                 // !t3s.contains(t1) - otherwise, it's a cycle in wr_x
+                // Pre-fetch visibility neighbors of t1 to avoid repeated HashMap lookups
+                let vis_neighbors_t1 = self.visibility_relation.adj_map.get(t1);
                 for (t2, _) in &wr_x.adj_map {
                     // t1 and t2 both writes on x
                     if t1 != t2 {
-                        if self.visibility_relation.has_edge(t1, t2) {
+                        if vis_neighbors_t1.is_some_and(|neighbors| neighbors.contains(t2)) {
                             for t3 in t3s {
                                 if t3 != t2 {
                                     // if vis(t1, t2) and t2 != t3, then t2 overwrites the version read by t3
@@ -190,7 +197,10 @@ where
                             }
                         } else {
                             for t3 in t3s {
-                                if self.visibility_relation.has_edge(t3, t2) {
+                                // Pre-fetch visibility neighbors of t3 to avoid repeated HashMap lookups
+                                let vis_neighbors_t3 = self.visibility_relation.adj_map.get(t3);
+                                if vis_neighbors_t3.is_some_and(|neighbors| neighbors.contains(t2))
+                                {
                                     // it is obvious that vis(t3, t2) implies rw(t3, t2)
                                     // t3 != t2 check is skipped, as acyclic vis(t3, t2) implies t3 != t2
                                     rw_x.add_edge(*t3, *t2);
