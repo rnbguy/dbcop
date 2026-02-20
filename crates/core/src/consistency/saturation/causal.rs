@@ -1,5 +1,6 @@
 //! Checks if a valid history maintains causal consistency.
 
+use alloc::vec::Vec;
 use core::hash::Hash;
 
 use crate::consistency::error::Error;
@@ -22,20 +23,29 @@ where
         AtomicTransactionPO::from(AtomicTransactionHistory::try_from(histories)?);
 
     atomic_history.vis_includes(&atomic_history.get_wr());
+    atomic_history.vis_is_trans();
 
     loop {
-        atomic_history.vis_is_trans();
-
         let ww_rel = atomic_history.causal_ww();
-        let mut changed = false;
+        let mut new_edges = Vec::new();
 
         for ww_x in ww_rel.values() {
-            changed |= atomic_history.vis_includes(ww_x);
+            for (src, dsts) in &ww_x.adj_map {
+                for dst in dsts {
+                    if !atomic_history.visibility_relation.has_edge(src, dst) {
+                        new_edges.push((*src, *dst));
+                    }
+                }
+            }
         }
 
-        if !changed {
+        if new_edges.is_empty() {
             break;
         }
+
+        atomic_history
+            .visibility_relation
+            .incremental_closure(new_edges);
     }
 
     if atomic_history.has_valid_visibility() {
