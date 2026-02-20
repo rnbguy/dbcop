@@ -26,38 +26,45 @@ where
     Variable: Clone + Eq + Hash,
 {
     fn from(history: AtomicTransactionHistory<Variable>) -> Self {
+        let root = TransactionId::default();
         let mut session_order: DiGraph<TransactionId> = DiGraph::default();
 
         {
-            let mut transactions: Vec<_> = history.0.keys().copied().collect();
-            transactions.sort_unstable();
+            // Compute the session-order transitive closure specialized for chain
+            // topology. Each session is a chain: root -> t_0 -> t_1 -> ... -> t_k.
+            //
+            //             +---------+  +---------+
+            //       +---->| (1, 0)  |->| (1, 1)  |->...
+            //       |     +---------+  +---------+
+            // +-----+--+  +---------+  +---------+
+            // | (0, 0)  |->| (2, 0)  |->| (2, 1)  |->...
+            // +-----+--+  +---------+  +---------+
+            //       |     +---------+  +---------+
+            //       +---->| (3, 0)  |->| (3, 1)  |->...
+            //             +---------+  +---------+
+            //
+            // The transitive closure of a chain is all pairs (i, j) where i < j,
+            // computed in O(S * T^2) instead of the general O(V * (V + E)) closure.
+            let mut by_session: HashMap<u64, Vec<TransactionId>> = HashMap::default();
+            for &txn_id in history.0.keys() {
+                by_session
+                    .entry(txn_id.session_id)
+                    .or_default()
+                    .push(txn_id);
+            }
 
-            // TODO(rano): this is bit hacky
-            // here we try to create the session order without knowing the number of sessions
-            //             ┌────────┐  ┌────────┐
-            //       ┌────>│ (1, 0) ├─>│ (1, 1) ├─>...
-            //       │     └────────┘  └────────┘
-            // ┌─────┴──┐  ┌────────┐  ┌────────┐
-            // │ (0, 0) ├─>│ (2, 0) ├─>│ (2, 1) ├─>...
-            // └─────┬──┘  └────────┘  └────────┘
-            //       │     ┌────────┐  ┌────────┐
-            //       └────>│ (3, 0) ├─>│ (3, 1) ├─>...
-            //             └────────┘  └────────┘
-            for pair in transactions.windows(2) {
-                let [t1, t2] = pair else {
-                    unreachable!("windows should have at least 2 elements")
-                };
-                if t1.session_id == t2.session_id {
-                    session_order.add_edge(*t1, *t2);
-                } else {
-                    session_order.add_edge(TransactionId::default(), *t2);
+            for txns in by_session.values_mut() {
+                txns.sort_unstable_by_key(|t| t.session_height);
+                for (i, &txn) in txns.iter().enumerate() {
+                    // root connects to every transaction in the session
+                    session_order.add_edge(root, txn);
+                    // every earlier transaction in the session connects to this one
+                    for &earlier in &txns[..i] {
+                        session_order.add_edge(earlier, txn);
+                    }
                 }
             }
         }
-
-        // takes closure of the session order
-        // if SO(A, B) and SO(B, C) then SO*(A, C)
-        session_order = session_order.closure();
 
         // This creates a wr_x relation for each variable x
         // This is also used as a transaction history indexed by variable
@@ -79,7 +86,7 @@ where
         }
 
         Self {
-            root: TransactionId::default(),
+            root,
             history,
             write_read_relation,
             visibility_relation: session_order.clone(),
