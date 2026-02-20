@@ -18,6 +18,9 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
 
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+
       - name: Set up Deno
         uses: denoland/setup-deno@v2
 
@@ -34,4 +37,4 @@ jobs:
         run: deno task deno:check
 
       - name: Run tests
-        run: deno test --allow-read tests/
+        run: deno test -A tests/

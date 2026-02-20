@@ -13,7 +13,7 @@
     "@std/assert": "jsr:@std/assert@^1.0.19"
   },
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"]
+    "lib": ["dom", "dom.iterable", "esnext", "deno.ns"]
   },
   "fmt": {
     "exclude": [".sisyphus", ".omc", ".claude", "node_modules", "wasmlib"]
