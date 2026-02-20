@@ -24,14 +24,13 @@ readme = "README.md"
 [workspace.dependencies]
 dbcop_core = { version = "0.2.0", path = "dbcop_core" }
 
-clap = { version = "4.4" }
+clap = { version = "4.5" }
 petgraph = { version = "0.6" }
 tracing = { version = "0.1" }
 serde = { version = "1.0" }
-hashbrown = { version = "0.14" }
-wasm-bindgen = { version = "=0.2.92" }
+hashbrown = { version = "0.15" }
+wasm-bindgen = { version = "0.2" }
 typed-builder = { version = "0.18" }
-ascent = { version = "0.6.0" }
 chrono = { version = "0.4" }
 rand = { version = "0.8" }
 rayon = { version = "1.10" }
@@ -41,14 +40,14 @@ derive_more = { version = "0.99" }
 unused_qualifications = "warn"
 
 [workspace.lints.clippy]
-all = "warn"
-nursery = "warn"
-cargo = "warn"
-pedantic = "warn"
+all = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
 module_name_repetitions = "allow"
 mod_module_files = "allow"
 exhaustive_structs = "allow"
 exhaustive_enums = "allow"
 missing_inline_in_public_items = "allow"
 implicit_return = "allow"
-missing_trait_method = "allow"
+missing_trait_methods = "allow"
