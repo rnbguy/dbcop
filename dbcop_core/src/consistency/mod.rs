@@ -48,6 +48,12 @@ where
     Variable: Eq + Hash + Clone + Ord,
     Version: Eq + Hash + Clone,
 {
+    // Trivially consistent: no sessions or all sessions empty
+    #[allow(clippy::redundant_closure_for_method_calls)]
+    if sessions.is_empty() || sessions.iter().all(|s| s.is_empty()) {
+        return Ok(());
+    }
+
     match level {
         Consistency::CommittedRead => check_committed_read(sessions),
         Consistency::AtomicRead => check_atomic_read(sessions).map(|_| ()),

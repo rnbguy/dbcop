@@ -349,3 +349,39 @@ fn check_dispatch_causal_violation() {
         "should fail causal via check()",
     );
 }
+
+#[test]
+fn test_empty_history_is_valid() {
+    let empty: Vec<Session<&str, u64>> = vec![];
+    for level in [
+        Consistency::CommittedRead,
+        Consistency::AtomicRead,
+        Consistency::Causal,
+        Consistency::Prefix,
+        Consistency::SnapshotIsolation,
+        Consistency::Serializable,
+    ] {
+        assert!(
+            check(&empty, level).is_ok(),
+            "empty history should pass {level:?}",
+        );
+    }
+}
+
+#[test]
+fn test_all_empty_sessions_is_valid() {
+    let all_empty: Vec<Session<&str, u64>> = vec![vec![], vec![], vec![]];
+    for level in [
+        Consistency::CommittedRead,
+        Consistency::AtomicRead,
+        Consistency::Causal,
+        Consistency::Prefix,
+        Consistency::SnapshotIsolation,
+        Consistency::Serializable,
+    ] {
+        assert!(
+            check(&all_empty, level).is_ok(),
+            "all-empty sessions should pass {level:?}",
+        );
+    }
+}
