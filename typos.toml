@@ -1,0 +1,5 @@
+[default.extend-identifiers]
+# dbcop is the project name, not a typo of "debug" or similar
+dbcop = "dbcop"
+# ba is a SAT literal variable name (b-before-a), not a typo of "by" or "be"
+ba = "ba"

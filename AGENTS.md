@@ -105,12 +105,13 @@ dbcop/                          workspace root
     sat/                         SAT solver backend -- dbcop_sat
     testgen/                     test history generator -- dbcop_testgen
     drivers/                     database drivers -- dbcop_drivers
+  web/                           Deno web app: history input, WASM integration, graph visualization
   .github/workflows/
     rust.yml                     build + format CI
     code-quality.yml             taplo + deno fmt + typos CI
   .husky/pre-commit              ASCII check + cargo +nightly fmt
   taplo.toml                     TOML formatter config
-  deno.json                      deno tasks: prepare (husky), wasmbuild
+  deno.json                      deno tasks: prepare (husky), wasmbuild, serve-web
   rustfmt.toml                   nightly rustfmt config
 ```
 
