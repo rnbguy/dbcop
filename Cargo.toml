@@ -3,6 +3,7 @@ resolver = "2"
 members = [
   "dbcop_core",
   "dbcop_testgen",
+  "dbcop_cli",
 ]
 
 [workspace.package]
@@ -23,8 +24,10 @@ readme = "README.md"
 
 [workspace.dependencies]
 dbcop_core = { version = "0.2.0", path = "dbcop_core" }
+dbcop_testgen = { version = "0.2.0", path = "dbcop_testgen" }
 
-clap = { version = "4.5" }
+clap = { version = "4.5", features = ["derive"] }
+serde_json = { version = "1.0" }
 petgraph = { version = "0.6" }
 tracing = { version = "0.1" }
 serde = { version = "1.0" }
