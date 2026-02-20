@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use chrono::{DateTime, Duration, Local};
-use dbcop_core::history::non_atomic::types::{Event, Session, Transaction};
+use dbcop_core::history::raw::types::{Event, Session, Transaction};
 use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};

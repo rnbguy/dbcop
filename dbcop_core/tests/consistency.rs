@@ -1,6 +1,6 @@
 use dbcop_core::history::atomic::types::AtomicTransactionHistory;
 use dbcop_core::history::atomic::AtomicTransactionPO;
-use dbcop_core::history::non_atomic::types::{Event, Session, Transaction};
+use dbcop_core::history::raw::types::{Event, Session, Transaction};
 use dbcop_core::solver::atomic_read::check_atomic_read;
 use dbcop_core::solver::causal::check_causal_read;
 use dbcop_core::solver::committed_read::check_committed_read;
@@ -53,7 +53,7 @@ where
     Ok(po)
 }
 
-// ── Committed Read ──────────────────────────────────────────────────────
+// -- Committed Read ------------------------------------------------------
 
 #[test]
 fn committed_read_pass() {
@@ -64,7 +64,7 @@ fn committed_read_pass() {
 #[test]
 fn committed_read_violation() {
     // Cycle in committed order: S3 reads x=3 (from S2) then x=2 (from S1),
-    // but S2 reads y=1 (from S1), creating S1→S2 and S2→S1 via S3.
+    // but S2 reads y=1 (from S1), creating S1->S2 and S2->S1 via S3.
     let h: Vec<Session<&str, u64>> = vec![
         vec![Transaction::committed(vec![
             Event::write("x", 2),
@@ -87,7 +87,7 @@ fn committed_read_violation() {
     );
 }
 
-// ── Repeatable Read ─────────────────────────────────────────────────────
+// -- Repeatable Read -----------------------------------------------------
 
 #[test]
 fn repeatable_read_pass() {
@@ -97,7 +97,7 @@ fn repeatable_read_pass() {
 
 #[test]
 fn repeatable_read_violation() {
-    // Within one transaction, reads x=2 then x=3 — two different versions.
+    // Within one transaction, reads x=2 then x=3 -- two different versions.
     let h: Vec<Session<&str, u64>> = vec![
         vec![Transaction::committed(vec![Event::write("x", 2)])],
         vec![Transaction::committed(vec![Event::write("x", 3)])],
@@ -111,7 +111,7 @@ fn repeatable_read_violation() {
     assert!(result.is_err(), "expected repeatable read violation");
 }
 
-// ── Atomic Read ─────────────────────────────────────────────────────────
+// -- Atomic Read ---------------------------------------------------------
 
 #[test]
 fn atomic_read_pass() {
@@ -123,7 +123,7 @@ fn atomic_read_pass() {
 fn atomic_read_violation() {
     // S1 has two transactions: write(x,1), write(x,2).
     // S2 has two transactions: read(x,2), read(x,1).
-    // S2's second txn reads an older version after seeing a newer one — violates atomic visibility.
+    // S2's second txn reads an older version after seeing a newer one -- violates atomic visibility.
     let h: Vec<Session<&str, u64>> = vec![
         vec![
             Transaction::committed(vec![Event::write("x", 1)]),
@@ -142,7 +142,7 @@ fn atomic_read_violation() {
     );
 }
 
-// ── Causal ──────────────────────────────────────────────────────────────
+// -- Causal --------------------------------------------------------------
 
 #[test]
 fn causal_pass() {
@@ -195,7 +195,7 @@ fn causal_violation() {
     );
 }
 
-// ── Serializable (linearization) ────────────────────────────────────────
+// -- Serializable (linearization) ----------------------------------------
 
 #[test]
 fn serializable_pass() {
@@ -211,7 +211,7 @@ fn serializable_pass() {
 #[test]
 fn serializable_violation() {
     // Write skew: T1 writes x,y. T2 reads x from T1, writes y. T3 reads y from T1, writes x.
-    // T2 and T3 are concurrent and both read stale data — not serializable.
+    // T2 and T3 are concurrent and both read stale data -- not serializable.
     let h: Vec<Session<&str, u64>> = vec![
         vec![Transaction::committed(vec![
             Event::write("x", 1),
@@ -235,7 +235,7 @@ fn serializable_violation() {
     );
 }
 
-// ── Snapshot Isolation (linearization) ──────────────────────────────────
+// -- Snapshot Isolation (linearization) -----------------------------------
 
 #[test]
 fn snapshot_isolation_pass() {
@@ -248,7 +248,7 @@ fn snapshot_isolation_pass() {
     );
 }
 
-// ── Prefix (linearization) ─────────────────────────────────────────────
+// -- Prefix (linearization) ----------------------------------------------
 
 #[test]
 fn prefix_pass() {

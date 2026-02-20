@@ -5,8 +5,8 @@ use ::core::hash::Hash;
 use ::hashbrown::HashMap;
 
 use super::atomic::types::TransactionId;
-use crate::history::non_atomic::error::Error;
-use crate::history::non_atomic::types::{Event, EventId, Session};
+use crate::history::raw::error::Error;
+use crate::history::raw::types::{Event, EventId, Session};
 
 // Raw history
 // sanity checks --

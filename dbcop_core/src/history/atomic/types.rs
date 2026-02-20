@@ -9,10 +9,10 @@
 
 use core::hash::Hash;
 
-use crate::history::non_atomic::error::Error as NonAtomicError;
-use crate::history::non_atomic::types::{Event, EventId};
+use crate::history::raw::error::Error as NonAtomicError;
+use crate::history::raw::types::{Event, EventId};
 use crate::{
-    history::non_atomic::{get_all_writes, types::Session},
+    history::raw::{get_all_writes, types::Session},
     solver::{error::Error, repeatable_read::check_repeatable_read},
 };
 use hashbrown::{HashMap, HashSet};

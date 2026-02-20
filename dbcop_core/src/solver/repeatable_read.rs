@@ -3,9 +3,9 @@
 use ::core::hash::Hash;
 use ::hashbrown::HashMap;
 
-use crate::history::non_atomic::error::Error as NonAtomicError;
-use crate::history::non_atomic::types::{Event, EventId, Session};
-use crate::history::non_atomic::{get_all_writes, is_valid_history};
+use crate::history::raw::error::Error as NonAtomicError;
+use crate::history::raw::types::{Event, EventId, Session};
+use crate::history::raw::{get_all_writes, is_valid_history};
 use crate::solver::error::Error;
 
 use super::committed_read::check_committed_read;
@@ -73,7 +73,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::history::non_atomic::types::Transaction;
+    use crate::history::raw::types::Transaction;
 
     use super::*;
 

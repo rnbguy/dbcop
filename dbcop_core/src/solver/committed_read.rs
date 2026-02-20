@@ -5,9 +5,9 @@ use ::hashbrown::HashMap;
 
 use crate::graph::digraph::DiGraph;
 use crate::history::atomic::types::TransactionId;
-use crate::history::non_atomic::error::Error as NonAtomicError;
-use crate::history::non_atomic::types::{Event, EventId, Session};
-use crate::history::non_atomic::{get_all_writes, get_committed_writes, is_valid_history};
+use crate::history::raw::error::Error as NonAtomicError;
+use crate::history::raw::types::{Event, EventId, Session};
+use crate::history::raw::{get_all_writes, get_committed_writes, is_valid_history};
 use crate::solver::error::Error;
 use crate::Consistency;
 
@@ -143,7 +143,7 @@ mod tests {
     use alloc::vec;
 
     use super::*;
-    use crate::history::non_atomic::types::Transaction;
+    use crate::history::raw::types::Transaction;
 
     #[test]
     fn test_invalid_committed_read_history() {
