@@ -11,6 +11,7 @@ use self::saturation::causal::check_causal_read;
 use self::saturation::committed_read::check_committed_read;
 use crate::history::raw::types::Session;
 
+pub(crate) mod decomposition;
 pub mod error;
 pub mod linearization;
 pub mod saturation;
