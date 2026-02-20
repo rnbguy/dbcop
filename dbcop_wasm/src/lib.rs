@@ -7,6 +7,7 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
+
 use dbcop_core::history::raw::types::Session;
 use dbcop_core::Consistency;
 use wasm_bindgen::prelude::*;

@@ -9,13 +9,13 @@
 
 use core::hash::Hash;
 
-use crate::history::raw::error::Error as NonAtomicError;
-use crate::history::raw::types::{Event, EventId};
-use crate::{
-    history::raw::{get_all_writes, types::Session},
-    consistency::{error::Error, repeatable_read::check_repeatable_read},
-};
 use hashbrown::{HashMap, HashSet};
+
+use crate::consistency::error::Error;
+use crate::consistency::repeatable_read::check_repeatable_read;
+use crate::history::raw::error::Error as NonAtomicError;
+use crate::history::raw::get_all_writes;
+use crate::history::raw::types::{Event, EventId, Session};
 
 /// Information about a transaction.
 /// `reads` is the read-set of the current transaction, mapping each variable to the transaction that it read from.

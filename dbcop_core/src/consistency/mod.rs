@@ -1,7 +1,5 @@
 use core::hash::Hash;
 
-use crate::history::raw::types::Session;
-
 use self::error::Error;
 use self::linearization::constrained_linearization::ConstrainedLinearizationSolver;
 use self::linearization::prefix::PrefixConsistencySolver;
@@ -10,6 +8,7 @@ use self::linearization::snapshot_isolation::SnapshotIsolationSolver;
 use self::saturation::atomic_read::check_atomic_read;
 use self::saturation::causal::check_causal_read;
 use self::saturation::committed_read::check_committed_read;
+use crate::history::raw::types::Session;
 
 pub mod error;
 pub mod linearization;

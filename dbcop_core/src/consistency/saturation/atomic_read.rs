@@ -1,12 +1,12 @@
 //! Checks if a valid history maintains atomic read.
 
+use ::core::hash::Hash;
+
+use crate::consistency::error::Error;
 use crate::history::atomic::types::AtomicTransactionHistory;
 use crate::history::atomic::AtomicTransactionPO;
 use crate::history::raw::types::Session;
-use crate::consistency::error::Error;
 use crate::Consistency;
-
-use ::core::hash::Hash;
 
 /// checks if a valid history maintains atomic read
 /// # Errors
@@ -38,9 +38,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::history::raw::types::{Event, Transaction};
-
     use super::*;
+    use crate::history::raw::types::{Event, Transaction};
 
     #[test]
     fn test_atomic_read() {

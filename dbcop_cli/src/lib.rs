@@ -5,7 +5,10 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Parser)]
-#[command(name = "dbcop", about = "Runtime monitoring for transactional consistency")]
+#[command(
+    name = "dbcop",
+    about = "Runtime monitoring for transactional consistency"
+)]
 pub struct App {
     #[command(subcommand)]
     pub command: Command,
