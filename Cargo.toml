@@ -5,6 +5,7 @@ members = [
   "dbcop_testgen",
   "dbcop_cli",
   "dbcop_wasm",
+  "dbcop_sat",
 ]
 
 [workspace.package]
@@ -32,8 +33,8 @@ serde_json    = { version = "1.0", default-features = false }
 petgraph      = { version = "0.6" }
 tracing       = { version = "0.1" }
 serde         = { version = "1.0" }
-hashbrown     = { version = "0.15" }
-wasm-bindgen  = { version = "0.2" }
+hashbrown     = { version = "0.16" }
+wasm-bindgen  = { version = "=0.2.106" }
 typed-builder = { version = "0.18" }
 chrono        = { version = "0.4" }
 rand          = { version = "0.8" }
@@ -55,3 +56,4 @@ exhaustive_enums               = "allow"
 missing_inline_in_public_items = "allow"
 implicit_return                = "allow"
 missing_trait_methods          = "allow"
+multiple_crate_versions        = "allow"

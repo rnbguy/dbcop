@@ -1,0 +1,19 @@
+[package]
+name                   = "dbcop_sat"
+version.workspace      = true
+description.workspace  = true
+license.workspace      = true
+repository.workspace   = true
+keywords.workspace     = true
+categories.workspace   = true
+edition.workspace      = true
+rust-version.workspace = true
+readme.workspace       = true
+
+[dependencies]
+dbcop_core     = { workspace = true }
+rustsat        = "0.7"
+rustsat-batsat = "0.7"
+
+[lints]
+workspace = true
