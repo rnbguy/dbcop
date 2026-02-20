@@ -1,0 +1,18 @@
+[package]
+name                   = "dbcop_drivers"
+version.workspace      = true
+description            = "Database drivers for dbcop consistency testing"
+license.workspace      = true
+repository.workspace   = true
+keywords.workspace     = true
+categories.workspace   = true
+edition.workspace      = true
+rust-version.workspace = true
+readme                 = "README.md"
+
+[dependencies]
+dbcop_core    = { workspace = true, features = [ "serde" ] }
+dbcop_testgen = { workspace = true }
+
+[lints]
+workspace = true
