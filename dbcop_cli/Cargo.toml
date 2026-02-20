@@ -1,5 +1,5 @@
 [package]
-name                   = "dbcop"
+name                   = "dbcop_cli"
 version.workspace      = true
 description.workspace  = true
 license.workspace      = true
@@ -9,6 +9,10 @@ categories.workspace   = true
 edition.workspace      = true
 rust-version.workspace = true
 readme                 = "README.md"
+
+[[bin]]
+name = "dbcop"
+path = "src/main.rs"
 
 [dependencies]
 dbcop_core    = { workspace = true, features = [ "serde" ] }

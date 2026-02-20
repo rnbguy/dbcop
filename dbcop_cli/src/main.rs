@@ -1,7 +1,7 @@
 use std::{fs, process};
 
 use clap::Parser;
-use dbcop::{App, Command};
+use dbcop_cli::{App, Command};
 
 fn main() {
     let app = App::parse();
@@ -11,7 +11,7 @@ fn main() {
     }
 }
 
-fn generate(args: &dbcop::GenerateArgs) {
+fn generate(args: &dbcop_cli::GenerateArgs) {
     fs::create_dir_all(&args.output_dir).unwrap_or_else(|e| {
         eprintln!("Failed to create output directory: {e}");
         process::exit(1);
@@ -44,7 +44,7 @@ fn generate(args: &dbcop::GenerateArgs) {
     );
 }
 
-fn verify(args: &dbcop::VerifyArgs) {
+fn verify(args: &dbcop_cli::VerifyArgs) {
     let level = dbcop_core::Consistency::from(args.consistency.clone());
     let mut any_failed = false;
 
