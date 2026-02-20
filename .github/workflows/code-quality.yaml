@@ -13,7 +13,7 @@ jobs:
         uses: crate-ci/typos@master
 
       - name: Install Taplo
-        uses: taiki-e/cache-cargo-install-action@v2
+        uses: taiki-e/cache-cargo-install-action@v3
         with:
           tool: taplo-cli
           locked: true
