@@ -4,8 +4,8 @@
 #![cfg_attr(not(test), no_main)]
 extern crate alloc;
 
+pub mod consistency;
 pub mod graph;
 pub mod history;
-pub mod solver;
 
-pub use solver::Consistency;
+pub use consistency::Consistency;

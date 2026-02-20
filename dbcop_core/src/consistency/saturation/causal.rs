@@ -3,7 +3,7 @@
 use crate::history::atomic::types::AtomicTransactionHistory;
 use crate::history::atomic::AtomicTransactionPO;
 use crate::history::raw::types::Session;
-use crate::solver::error::Error;
+use crate::consistency::error::Error;
 use crate::Consistency;
 
 use ::core::hash::Hash;
@@ -48,7 +48,7 @@ where
 mod tests {
     use crate::{
         history::raw::types::{Event, Transaction},
-        solver::atomic_read::check_atomic_read,
+        consistency::atomic_read::check_atomic_read,
     };
 
     use super::*;
