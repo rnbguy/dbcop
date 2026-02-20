@@ -13,4 +13,4 @@ if [ -n "$STAGED" ]; then
 fi
 
 # Check Rust formatting
-cargo fmt --check --all
+cargo +nightly fmt --check --all
