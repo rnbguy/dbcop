@@ -31,16 +31,16 @@ dbcop_testgen = { version = "0.2.0", path = "crates/testgen" }
 
 clap          = { version = "4.5", features = [ "derive" ] }
 serde_json    = { version = "1.0", default-features = false }
-petgraph      = { version = "0.6" }
+petgraph      = { version = "0.8" }
 tracing       = { version = "0.1" }
 serde         = { version = "1.0" }
 hashbrown     = { version = "0.16" }
-wasm-bindgen  = { version = "=0.2.106" }
-typed-builder = { version = "0.18" }
+wasm-bindgen  = { version = "=0.2.109" }
+typed-builder = { version = "0.23" }
 chrono        = { version = "0.4" }
-rand          = { version = "0.8" }
+rand          = { version = "0.9" }
 rayon         = { version = "1.10" }
-derive_more   = { version = "0.99" }
+derive_more   = { version = "2.1", default-features = false, features = [ "from" ] }
 
 [workspace.lints.rust]
 unused_qualifications = "warn"
