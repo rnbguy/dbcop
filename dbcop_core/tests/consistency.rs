@@ -10,7 +10,7 @@ use dbcop_core::consistency::snapshot_isolation::SnapshotIsolationSolver;
 use dbcop_core::history::atomic::types::AtomicTransactionHistory;
 use dbcop_core::history::atomic::AtomicTransactionPO;
 use dbcop_core::history::raw::types::{Event, Session, Transaction};
-use dbcop_core::Consistency;
+use dbcop_core::{check, Consistency};
 
 /// A trivially valid history: one writer, one reader.
 /// Should pass all consistency levels.
@@ -256,5 +256,96 @@ fn prefix_pass() {
     assert!(
         solver.get_linearization().is_some(),
         "simple history should satisfy prefix consistency",
+    );
+}
+
+// -- Unified check() API ------------------------------------------------
+
+#[test]
+fn check_dispatch_all_pass() {
+    let h = simple_valid_history();
+    for level in [
+        Consistency::CommittedRead,
+        Consistency::AtomicRead,
+        Consistency::Causal,
+        Consistency::Prefix,
+        Consistency::SnapshotIsolation,
+        Consistency::Serializable,
+    ] {
+        assert!(
+            check(&h, level).is_ok(),
+            "simple history should pass {level:?}",
+        );
+    }
+}
+
+#[test]
+fn check_dispatch_serializable_violation() {
+    // Write skew via check() dispatch
+    let h: Vec<Session<&str, u64>> = vec![
+        vec![Transaction::committed(vec![
+            Event::write("x", 1),
+            Event::write("y", 1),
+        ])],
+        vec![Transaction::committed(vec![
+            Event::read("x", 1),
+            Event::write("y", 2),
+        ])],
+        vec![Transaction::committed(vec![
+            Event::read("y", 1),
+            Event::write("x", 2),
+        ])],
+    ];
+
+    assert!(
+        check(&h, Consistency::Causal).is_ok(),
+        "write skew should pass causal",
+    );
+    assert!(
+        check(&h, Consistency::Serializable).is_err(),
+        "write skew should fail serializable",
+    );
+}
+
+#[test]
+fn check_dispatch_causal_violation() {
+    let h: Vec<Session<&str, u64>> = vec![
+        vec![Transaction::committed(vec![
+            Event::write("x", 1),
+            Event::write("a", 1),
+        ])],
+        vec![Transaction::committed(vec![
+            Event::read("x", 1),
+            Event::write("y", 1),
+        ])],
+        vec![Transaction::committed(vec![
+            Event::read("y", 1),
+            Event::write("z", 1),
+        ])],
+        vec![Transaction::committed(vec![
+            Event::read("z", 1),
+            Event::write("a", 2),
+        ])],
+        vec![Transaction::committed(vec![
+            Event::read("a", 2),
+            Event::write("p", 1),
+        ])],
+        vec![Transaction::committed(vec![
+            Event::read("p", 1),
+            Event::write("q", 1),
+        ])],
+        vec![Transaction::committed(vec![
+            Event::read("q", 1),
+            Event::read("a", 1),
+        ])],
+    ];
+
+    assert!(
+        check(&h, Consistency::AtomicRead).is_ok(),
+        "should pass atomic read via check()",
+    );
+    assert!(
+        check(&h, Consistency::Causal).is_err(),
+        "should fail causal via check()",
     );
 }

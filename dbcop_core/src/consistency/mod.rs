@@ -21,11 +21,17 @@ pub use saturation::{atomic_read, causal, committed_read, repeatable_read};
 /// Consistency levels supported by dbcop, ordered from weakest to strongest.
 #[derive(Debug, Copy, Clone)]
 pub enum Consistency {
+    /// No transaction reads from an aborted or uncommitted write.
     CommittedRead,
+    /// All reads in a transaction observe a consistent snapshot (no fractured reads).
     AtomicRead,
+    /// Visibility is transitively closed and respects the write-write order.
     Causal,
+    /// Causal plus a total order on transactions consistent with visibility.
     Prefix,
+    /// Prefix plus write-write conflict freedom (disjoint write sets for concurrent transactions).
     SnapshotIsolation,
+    /// A total order on all transactions that explains every read.
     Serializable,
 }
 
