@@ -2,8 +2,13 @@ use std::{fs, process};
 
 use clap::Parser;
 use dbcop_cli::{App, Command};
+use tracing_subscriber::EnvFilter;
 
 fn main() {
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
+
     let app = App::parse();
     match &app.command {
         Command::Generate(args) => generate(args),

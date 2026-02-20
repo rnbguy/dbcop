@@ -19,12 +19,18 @@ where
     Variable: Eq + Hash + Clone,
     Version: Eq + Hash + Clone,
 {
+    tracing::debug!(
+        sessions = histories.len(),
+        "causal check: building atomic partial order"
+    );
+
     let mut atomic_history =
         AtomicTransactionPO::from(AtomicTransactionHistory::try_from(histories)?);
 
     atomic_history.vis_includes(&atomic_history.get_wr());
     atomic_history.vis_is_trans();
 
+    let mut iteration = 0u32;
     loop {
         let ww_rel = atomic_history.causal_ww();
         let mut new_edges = Vec::new();
@@ -40,23 +46,38 @@ where
         }
 
         if new_edges.is_empty() {
+            tracing::debug!(
+                iterations = iteration,
+                "causal check: saturation fixpoint reached"
+            );
             break;
         }
+
+        tracing::trace!(
+            iteration,
+            new_edges = new_edges.len(),
+            "causal check: saturation iteration"
+        );
 
         atomic_history
             .visibility_relation
             .incremental_closure(new_edges);
+
+        iteration += 1;
     }
 
     if atomic_history.has_valid_visibility() {
+        tracing::debug!("causal check: passed");
         Ok(atomic_history)
     } else if let Some((a, b)) = atomic_history.visibility_relation.find_cycle_edge() {
+        tracing::debug!(?a, ?b, "causal check: cycle detected");
         Err(Error::Cycle {
             level: Consistency::Causal,
             a,
             b,
         })
     } else {
+        tracing::debug!("causal check: failed (no cycle edge found)");
         Err(Error::Invalid(Consistency::Causal))
     }
 }

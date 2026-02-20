@@ -136,6 +136,20 @@ The `dbcop` binary has two subcommands: `generate` and `verify`.
 Default output (no flags): `{filename}: PASS` or `{filename}: FAIL ({error:?})`
 on a single line.
 
+### Debugging with RUST_LOG
+
+The CLI initializes a `tracing-subscriber` that reads `RUST_LOG`. Use this to
+see detailed consistency checking logs:
+
+```bash
+RUST_LOG=debug dbcop verify --input-dir ./histories --consistency serializable
+RUST_LOG=dbcop_core=trace dbcop verify --input-dir ./histories --consistency causal
+```
+
+Log levels: `debug` shows checker entry/exit and results, `trace` shows
+per-iteration saturation details. The `dbcop_core` crate uses `tracing::debug!`
+and `tracing::trace!` for instrumentation.
+
 ## WASM Usage
 
 The `dbcop_wasm` crate exposes a single function via `wasm_bindgen`:
