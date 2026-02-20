@@ -125,6 +125,7 @@ impl<Variable, Version> Transaction<Variable, Version> {
 pub type Session<Variable, Version> = Vec<Transaction<Variable, Version>>;
 
 /// Uniquely identifies an event within a history by session, transaction, and position.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EventId {
     pub session_id: u64,

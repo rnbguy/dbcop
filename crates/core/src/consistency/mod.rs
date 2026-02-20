@@ -22,6 +22,7 @@ pub use saturation::{atomic_read, causal, committed_read, repeatable_read};
 pub use witness::Witness;
 
 /// Consistency levels supported by dbcop, ordered from weakest to strongest.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Debug, Copy, Clone)]
 pub enum Consistency {
     /// No transaction reads from an aborted or uncommitted write.

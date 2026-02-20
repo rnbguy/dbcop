@@ -30,10 +30,17 @@ where
         atomic_history.vis_includes(ww_x);
     }
 
-    atomic_history
-        .has_valid_visibility()
-        .then_some(atomic_history)
-        .ok_or(Error::Invalid(Consistency::AtomicRead))
+    if atomic_history.has_valid_visibility() {
+        Ok(atomic_history)
+    } else if let Some((a, b)) = atomic_history.visibility_relation.find_cycle_edge() {
+        Err(Error::Cycle {
+            level: Consistency::AtomicRead,
+            a,
+            b,
+        })
+    } else {
+        Err(Error::Invalid(Consistency::AtomicRead))
+    }
 }
 
 #[cfg(test)]
@@ -58,7 +65,10 @@ mod tests {
 
         assert!(matches!(
             result,
-            Err(Error::Invalid(Consistency::AtomicRead))
+            Err(Error::Cycle {
+                level: Consistency::AtomicRead,
+                ..
+            })
         ));
     }
 }

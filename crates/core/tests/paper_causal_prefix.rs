@@ -108,7 +108,13 @@ fn cc_violation_cycle() {
         "should pass Atomic Read"
     );
     assert!(
-        matches!(check_causal(&h), Err(Error::Invalid(Consistency::Causal))),
+        matches!(
+            check_causal(&h),
+            Err(Error::Cycle {
+                level: Consistency::Causal,
+                ..
+            })
+        ),
         "must fail CC due to causal visibility cycle"
     );
 }
@@ -155,7 +161,13 @@ fn cc_violation_ww_conflict() {
     ];
 
     assert!(
-        matches!(check_causal(&h), Err(Error::Invalid(Consistency::Causal))),
+        matches!(
+            check_causal(&h),
+            Err(Error::Cycle {
+                level: Consistency::Causal,
+                ..
+            })
+        ),
         "6-session ww-conflict must fail CC"
     );
 }

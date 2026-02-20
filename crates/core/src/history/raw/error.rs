@@ -2,6 +2,7 @@ use super::types::Event;
 use crate::history::raw::types::EventId;
 
 /// Error converting a raw history to an atomic transactional history
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Debug)]
 pub enum Error<Variable, Version> {
     /// Reads an absent value

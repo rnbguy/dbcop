@@ -83,7 +83,13 @@ fn rc_violation_committed_order_cycle() {
     };
     let result = check_committed_read(&h);
     assert!(
-        matches!(result, Err(Error::Invalid(Consistency::CommittedRead))),
+        matches!(
+            result,
+            Err(Error::Cycle {
+                level: Consistency::CommittedRead,
+                ..
+            })
+        ),
         "expected RC violation, got {result:?}",
     );
 }
@@ -240,7 +246,13 @@ fn ra_violation_stale_read_after_newer() {
     };
     let result = check_atomic_read(&h);
     assert!(
-        matches!(result, Err(Error::Invalid(Consistency::AtomicRead))),
+        matches!(
+            result,
+            Err(Error::Cycle {
+                level: Consistency::AtomicRead,
+                ..
+            })
+        ),
         "expected AtomicRead violation, got {result:?}",
     );
 }

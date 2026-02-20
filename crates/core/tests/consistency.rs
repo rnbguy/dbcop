@@ -80,7 +80,13 @@ fn committed_read_violation() {
 
     let result = check_committed_read(&h);
     assert!(
-        matches!(result, Err(Error::Invalid(Consistency::CommittedRead))),
+        matches!(
+            result,
+            Err(Error::Cycle {
+                level: Consistency::CommittedRead,
+                ..
+            })
+        ),
         "expected committed read violation, got {result:?}",
     );
 }
@@ -135,7 +141,13 @@ fn atomic_read_violation() {
 
     let result = check_atomic_read(&h);
     assert!(
-        matches!(result, Err(Error::Invalid(Consistency::AtomicRead))),
+        matches!(
+            result,
+            Err(Error::Cycle {
+                level: Consistency::AtomicRead,
+                ..
+            })
+        ),
         "expected atomic read violation, got {result:?}",
     );
 }
@@ -187,7 +199,10 @@ fn causal_violation() {
     assert!(
         matches!(
             check_causal_read(&h),
-            Err(Error::Invalid(Consistency::Causal))
+            Err(Error::Cycle {
+                level: Consistency::Causal,
+                ..
+            })
         ),
         "should violate causal",
     );

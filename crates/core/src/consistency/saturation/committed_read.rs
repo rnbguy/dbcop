@@ -133,11 +133,17 @@ where
         }
     }
 
-    committed_order
-        .topological_sort()
-        .is_some()
-        .then_some(committed_order)
-        .ok_or(Error::Invalid(Consistency::CommittedRead))
+    if committed_order.topological_sort().is_some() {
+        Ok(committed_order)
+    } else if let Some((a, b)) = committed_order.find_cycle_edge() {
+        Err(Error::Cycle {
+            level: Consistency::CommittedRead,
+            a,
+            b,
+        })
+    } else {
+        Err(Error::Invalid(Consistency::CommittedRead))
+    }
 }
 
 #[cfg(test)]
@@ -167,7 +173,13 @@ mod tests {
         let result = check_committed_read(&histories);
 
         assert!(
-            matches!(result, Err(Error::Invalid(Consistency::CommittedRead))),
+            matches!(
+                result,
+                Err(Error::Cycle {
+                    level: Consistency::CommittedRead,
+                    ..
+                })
+            ),
             "result: {result:?}",
         );
     }
