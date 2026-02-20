@@ -26,7 +26,7 @@ jobs:
       - name: Run tests
         run: cargo test --verbose --all-features
       - name: Install dbcop
-        run: cargo install -p dbcop_cli --path .
+        run: cargo install -p dbcop_cli
       - name: E2E generate and verify
         run: |
           dbcop generate --n-hist 5 --n-node 3 --n-var 4 --n-txn 3 --n-evt 3 --output-dir /tmp/dbcop-e2e
