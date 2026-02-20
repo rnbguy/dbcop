@@ -28,7 +28,7 @@ pub struct History {
 
 impl History {
     #[must_use]
-    pub fn new(
+    pub const fn new(
         params: HistParams,
         info: String,
         start: DateTime<Local>,
