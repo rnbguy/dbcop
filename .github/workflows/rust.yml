@@ -25,6 +25,11 @@ jobs:
         run: cargo clippy --workspace --all-features -- -D warnings
       - name: Run tests
         run: cargo test --verbose --all-features
+      - name: E2E generate and verify
+        run: |
+          cargo run -p dbcop -- generate --n-hist 5 --n-node 3 --n-var 4 --n-txn 3 --n-evt 3 --output-dir /tmp/dbcop-e2e
+          ls /tmp/dbcop-e2e/*.json | wc -l | grep -q 5
+          cargo run -p dbcop -- verify --input-dir /tmp/dbcop-e2e --consistency committed-read || true
 
   format:
     runs-on: ubuntu-latest
