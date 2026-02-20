@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>dbcop -- Transactional Consistency Checker</title>
     <link rel="stylesheet" href="style.css" />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"
+    ></script>
   </head>
   <body>
     <header>
@@ -14,9 +23,15 @@
     <main>
       <section id="input-section">
         <h2>History Input</h2>
+        <select id="example-select">
+          <option value="write-read">Write-Read (PASS)</option>
+          <option value="lost-update">Lost Update (SI FAIL)</option>
+          <option value="serializable">Serializable History (PASS)</option>
+          <option value="causal-violation">Causal Violation</option>
+        </select>
         <textarea
           id="history-json"
-          rows="10"
+          rows="12"
           placeholder="Enter history JSON..."
         ></textarea>
         <select id="level-select">
@@ -31,11 +46,12 @@
       </section>
       <section id="result-section">
         <h2>Result</h2>
-        <pre id="result-output">Run a check to see results.</pre>
+        <div id="result-output">Run a check to see results.</div>
       </section>
       <section id="graph-section">
         <h2>Transaction Graph</h2>
         <div id="graph-container"></div>
+        <div id="legend"></div>
       </section>
     </main>
     <script type="module" src="main.ts"></script>

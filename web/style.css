@@ -71,6 +71,10 @@ select {
   border: 1px solid var(--border);
   border-radius: 4px;
 }
+#example-select {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
 button {
   margin-top: 1rem;
   padding: 0.75rem 2rem;
@@ -93,12 +97,48 @@ pre {
   word-break: break-word;
   color: var(--text);
 }
+#result-output {
+  color: var(--muted);
+}
+.result-pass {
+  color: var(--success);
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+.result-fail {
+  color: var(--error);
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+.result-detail {
+  font-family: monospace;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text);
+}
 #graph-container {
-  min-height: 300px;
+  min-height: 500px;
   background: var(--bg);
   border-radius: 4px;
+}
+#legend {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+.legend-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: var(--muted);
+  gap: 0.25rem;
+}
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
 }
