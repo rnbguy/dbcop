@@ -20,6 +20,5 @@ derive_more = { workspace = true }
 workspace = true
 
 [features]
-default       = [ "partial-order" ]
-partial-order = [  ]
-serde         = [ "dep:serde" ]
+default = [  ]
+serde   = [ "dep:serde" ]
