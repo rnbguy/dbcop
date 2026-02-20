@@ -152,9 +152,9 @@ and `tracing::trace!` for instrumentation.
 
 ## WASM Usage
 
-The `dbcop_wasm` crate exposes a single function via `wasm_bindgen`:
+The `dbcop_wasm` crate exposes two functions via `wasm_bindgen`:
 
-`check_consistency(history_json: &str, level: &str) -> String`
+### `check_consistency(history_json: &str, level: &str) -> String`
 
 - `history_json`: JSON-encoded array of sessions (same format as CLI input
   files).
@@ -171,6 +171,43 @@ Returns a JSON string with the following schema:
   `{"ok": false, "error": "unknown consistency level"}`.
 - On malformed JSON input:
   `{"ok": false, "error": "<parse error description>"}`.
+
+### `check_consistency_trace(history_json: &str, level: &str) -> String`
+
+Same parameters as `check_consistency`. Returns a richer JSON response suitable
+for web visualization, including parsed session data and graph edges.
+
+On success:
+
+```json
+{
+  "ok": true,
+  "level": "serializable",
+  "session_count": 3,
+  "transaction_count": 12,
+  "sessions": [
+    [
+      {
+        "id": { "session_id": 1, "session_height": 0 },
+        "reads": { "0": 1 },
+        "writes": { "0": 2 },
+        "committed": true
+      }
+    ]
+  ],
+  "witness": { "CommitOrder": [...] },
+  "witness_edges": [
+    [{ "session_id": 1, "session_height": 0 }, { "session_id": 2, "session_height": 0 }]
+  ],
+  "wr_edges": [
+    [{ "session_id": 0, "session_height": 0 }, { "session_id": 1, "session_height": 0 }]
+  ]
+}
+```
+
+On check failure: same structure but with `"ok": false` and `"error"` instead of
+`"witness"`/`"witness_edges"`. The `sessions` and `wr_edges` fields are still
+present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
 
 ## Key Types
 
