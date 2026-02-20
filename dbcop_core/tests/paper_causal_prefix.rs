@@ -127,7 +127,10 @@ fn cc_pass_independent() {
         vec![committed(vec![r("b", 1)])],
         vec![committed(vec![r("c", 1)])],
     ];
-    assert!(check_causal(&h).is_ok(), "independent sessions must pass CC");
+    assert!(
+        check_causal(&h).is_ok(),
+        "independent sessions must pass CC"
+    );
 }
 
 /// CC VIOLATION: a shorter 6-session ww-conflict cycle.
@@ -169,7 +172,10 @@ fn cc_pass_long_chain() {
         vec![committed(vec![r("v3", 1), w("v4", 1)])],
         vec![committed(vec![r("v4", 1)])],
     ];
-    assert!(check_causal(&h).is_ok(), "5-session acyclic chain must pass CC");
+    assert!(
+        check_causal(&h).is_ok(),
+        "5-session acyclic chain must pass CC"
+    );
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -225,10 +231,7 @@ fn pc_violation_not_prefix() {
     ];
 
     // CC and PC pass: no causal ordering cycle.
-    assert!(
-        check_causal(&h).is_ok(),
-        "lost update must pass CC"
-    );
+    assert!(check_causal(&h).is_ok(), "lost update must pass CC");
     assert!(
         check_prefix(&h).is_ok(),
         "lost update must pass PC (SI is the first failing level)"
@@ -297,6 +300,12 @@ fn pc_pass_three_sessions() {
         vec![committed(vec![w("c", 1)])],
         vec![committed(vec![r("a", 1), r("b", 1), r("c", 1)])],
     ];
-    assert!(check_causal(&h).is_ok(), "three-session history must pass CC");
-    assert!(check_prefix(&h).is_ok(), "three-session history must pass PC");
+    assert!(
+        check_causal(&h).is_ok(),
+        "three-session history must pass CC"
+    );
+    assert!(
+        check_prefix(&h).is_ok(),
+        "three-session history must pass PC"
+    );
 }

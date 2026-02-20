@@ -31,16 +31,19 @@ fn rc_violation_dirty_read() {
     // Build manually: the macro only supports committed transactions.
     let h = vec![
         // S1: one uncommitted transaction that writes x=42
-        vec![Transaction::uncommitted(vec![
-            Event::<&str, u64>::write("x", 42),
-        ])],
+        vec![Transaction::uncommitted(vec![Event::<&str, u64>::write(
+            "x", 42,
+        )])],
         // S2: reads x=42 (from the uncommitted write)
-        vec![Transaction::committed(vec![
-            Event::<&str, u64>::read("x", 42),
-        ])],
+        vec![Transaction::committed(vec![Event::<&str, u64>::read(
+            "x", 42,
+        )])],
     ];
     let result = check_committed_read(&h);
-    assert!(result.is_err(), "expected RC violation (dirty read), got Ok");
+    assert!(
+        result.is_err(),
+        "expected RC violation (dirty read), got Ok"
+    );
 }
 
 /// RC via the unified check() API — pass case.
@@ -217,10 +220,7 @@ fn ra_check_api_violation() {
         ],
     };
     let result = check(&h, Consistency::AtomicRead);
-    assert!(
-        result.is_err(),
-        "expected RA violation via check(), got Ok",
-    );
+    assert!(result.is_err(), "expected RA violation via check(), got Ok",);
 }
 
 /// Sees newer version of x after seeing older version across two transactions → RA violation.

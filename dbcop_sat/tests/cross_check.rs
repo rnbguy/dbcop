@@ -236,10 +236,7 @@ fn cross_check_write_skew() {
         check(&h, Consistency::Prefix).is_ok(),
         "write skew should pass PC",
     );
-    assert!(
-        check_prefix(&h).is_ok(),
-        "write skew should pass SAT-PC",
-    );
+    assert!(check_prefix(&h).is_ok(), "write skew should pass SAT-PC",);
 
     // Both solvers must agree that write skew passes SI
     assert_agree_si(&h, "write-skew-si");
