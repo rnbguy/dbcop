@@ -3,6 +3,13 @@
 //! Provides alternative solvers for Prefix, Serializable, and Snapshot Isolation
 //! that encode the linearization constraints as a SAT problem instead of DFS
 //! backtracking.
+//!
+// TODO: explore QF_IDL (Integer Difference Logic) encoding -- ordering
+//   constraints are naturally `pos(i) - pos(j) < 0`, avoiding O(n^3)
+//   transitivity clauses.
+// TODO: explore QF_LIA (Linear Integer Arithmetic) encoding -- assign integer
+//   position variables directly with `pos(i) < pos(j)` constraints for a more
+//   compact representation.
 
 use std::collections::HashMap;
 use std::hash::Hash;
