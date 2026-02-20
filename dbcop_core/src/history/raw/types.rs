@@ -3,6 +3,7 @@ use core::fmt::{Debug, Formatter, Result};
 
 use crate::history::atomic::types::TransactionId;
 
+/// A single read or write operation within a transaction.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Event<Variable, Version> {
@@ -95,6 +96,7 @@ where
     }
 }
 
+/// A sequence of events executed atomically, either committed or aborted.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 pub struct Transaction<Variable, Version> {
     pub events: Vec<Event<Variable, Version>>,
@@ -119,8 +121,10 @@ impl<Variable, Version> Transaction<Variable, Version> {
     }
 }
 
+/// An ordered sequence of transactions from a single client/node.
 pub type Session<Variable, Version> = Vec<Transaction<Variable, Version>>;
 
+/// Uniquely identifies an event within a history by session, transaction, and position.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EventId {
     pub session_id: u64,
