@@ -3,9 +3,13 @@
   "tasks": {
     "wasmbuild": "deno run -A jsr:@deno/wasmbuild@0.21.0 --project dbcop_wasm --out wasmlib",
     "prepare": "deno run -A npm:husky",
-    "serve-web": "deno run --allow-net --allow-read jsr:@std/http@1/file-server web/"
+    "serve-web": "deno run --allow-net --allow-read jsr:@std/http@1/file-server web/",
+    "deno:fmt": "deno fmt --check",
+    "deno:lint": "deno lint",
+    "deno:check": "deno check web/main.ts",
+    "deno:ci": "deno task deno:fmt && deno task deno:lint && deno task deno:check"
   },
   "fmt": {
-    "exclude": [".sisyphus"]
+    "exclude": [".sisyphus", ".omc", ".claude", "node_modules", "wasmlib"]
   }
 }

@@ -14,3 +14,6 @@ fi
 
 # Check Rust formatting
 cargo +nightly fmt --check --all
+
+# Check Deno formatting, linting, and types
+deno task deno:ci

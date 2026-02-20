@@ -52,18 +52,23 @@ Examples:
 - TOML formatting: run `taplo format <file>` before committing any .toml change.
   Verify with `taplo format --check <file>`. CI enforces this on all .toml
   files.
+- Deno checks: `deno task deno:ci` runs fmt, lint, and type checks. Requires
+  wasmlib built first via `deno task wasmbuild`.
 - Tests: `cargo test -p <crate>` or `cargo test --workspace`
 - no_std check: `cargo build -p dbcop_core --no-default-features` must always
   compile.
 
 ## CI Checks
 
-All three must pass before merging:
+All four must pass before merging:
 
-1. `build` -- cargo build, clippy, test, end-to-end checks
-2. `format` -- uses `actions-rust-lang/rustfmt@v1` (nightly rustfmt, automatic)
-3. `code-quality` -- taplo format --check on all .toml files, deno fmt --check,
-   typos
+1. `build` (rust.yaml) -- cargo build, clippy, test, end-to-end checks
+2. `format` (rust.yaml) -- uses `actions-rust-lang/rustfmt@v1` (nightly rustfmt,
+   automatic)
+3. `code-quality` (code-quality.yaml) -- taplo format --check on all .toml
+   files, typos spell check
+4. `Deno` (deno.yaml) -- builds WASM, runs deno fmt/lint/check, runs WASM
+   integration tests
 
 ## Code Constraints
 
@@ -80,11 +85,12 @@ All three must pass before merging:
 
 ## Pre-commit Hook (.husky/pre-commit)
 
-Two checks run on staged files:
+Three checks run on staged files:
 
 1. Rejects any non-ASCII character in staged `.rs`, `.ts`, `.js` files.
 2. Runs `cargo +nightly fmt --check --all` -- fails if any Rust file needs
    reformatting.
+3. Runs `deno task deno:ci` -- checks Deno formatting, linting, and types.
 
 To install hooks after cloning: `deno task prepare`
 
@@ -106,12 +112,15 @@ dbcop/                          workspace root
     testgen/                     test history generator -- dbcop_testgen
     drivers/                     database drivers -- dbcop_drivers
   web/                           Deno web app: history input, WASM integration, graph visualization
+  tests/
+    wasm.test.ts                 WASM integration tests (deno test)
   .github/workflows/
-    rust.yml                     build + format CI
-    code-quality.yml             taplo + deno fmt + typos CI
-  .husky/pre-commit              ASCII check + cargo +nightly fmt
+    rust.yaml                    build + format CI
+    code-quality.yaml            taplo + typos CI
+    deno.yaml                    Deno fmt/lint/check + WASM tests CI
+  .husky/pre-commit              ASCII check + cargo +nightly fmt + deno:ci
   taplo.toml                     TOML formatter config
-  deno.json                      deno tasks: prepare (husky), wasmbuild, serve-web
+  deno.json                      deno tasks: prepare, wasmbuild, serve-web, deno:fmt/lint/check/ci
   rustfmt.toml                   nightly rustfmt config
 ```
 
@@ -273,9 +282,9 @@ present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
 
 ## Ignored Directories
 
-`.sisyphus/` and `.omc/` are in `.gitignore`. Do NOT commit anything from those
-directories. They contain orchestration state, plans, notepads, and agent
-memory.
+`.sisyphus/`, `.omc/`, and `.claude/` are in `.gitignore`. Do NOT commit
+anything from those directories. They contain orchestration state, plans,
+notepads, and agent memory.
 
 ## Performance Decisions
 
