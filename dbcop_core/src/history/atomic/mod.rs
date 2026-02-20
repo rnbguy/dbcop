@@ -51,7 +51,7 @@ where
                     session_order.add_edge(*t1, *t2);
                 } else {
                     session_order.add_edge(TransactionId::default(), *t2);
-                };
+                }
             }
         }
 

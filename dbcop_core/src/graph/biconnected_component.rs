@@ -50,7 +50,9 @@ where
             non_group: HashSet::new(),
         };
 
-        for vertex in solver.graph.adj_map.keys() {
+        let mut vertices: Vec<_> = solver.graph.adj_map.keys().collect();
+        vertices.sort();
+        for vertex in vertices {
             match graph
                 .adj_map
                 .get(vertex)
@@ -135,13 +137,15 @@ where
         self.lowpoint.insert(vertex.clone(), depth);
         self.dfs_stack.push(vertex.clone());
 
-        for neighbor in self
+        let mut neighbors: Vec<_> = self
             .graph
             .adj_map
             .get(vertex)
             .iter()
             .flat_map(|neighbors| neighbors.iter())
-        {
+            .collect();
+        neighbors.sort();
+        for neighbor in neighbors {
             if !self.visited.contains(neighbor) {
                 self.parent.insert(neighbor.clone(), vertex.clone());
                 self.vertex_components_helper(neighbor, depth + 1);
