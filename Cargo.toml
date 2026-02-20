@@ -36,7 +36,7 @@ tracing            = { version = "0.1" }
 tracing-subscriber = { version = "0.3", default-features = false, features = [ "fmt", "env-filter" ] }
 serde              = { version = "1.0" }
 hashbrown          = { version = "0.16" }
-wasm-bindgen       = { version = "=0.2.106" }
+wasm-bindgen       = { version = "=0.2.109" }
 typed-builder      = { version = "0.23" }
 chrono             = { version = "0.4" }
 rand               = { version = "0.9" }
