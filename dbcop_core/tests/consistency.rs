@@ -1,6 +1,6 @@
 use dbcop_core::history::atomic::types::AtomicTransactionHistory;
 use dbcop_core::history::atomic::AtomicTransactionPO;
-use dbcop_core::history::non_atomic::types::{Event, Session, Transaction};
+use dbcop_core::history::raw::types::{Event, Session, Transaction};
 use dbcop_core::solver::atomic_read::check_atomic_read;
 use dbcop_core::solver::causal::check_causal_read;
 use dbcop_core::solver::committed_read::check_committed_read;

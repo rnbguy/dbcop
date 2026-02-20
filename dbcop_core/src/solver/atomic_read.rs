@@ -2,7 +2,7 @@
 
 use crate::history::atomic::types::AtomicTransactionHistory;
 use crate::history::atomic::AtomicTransactionPO;
-use crate::history::non_atomic::types::Session;
+use crate::history::raw::types::Session;
 use crate::solver::error::Error;
 use crate::Consistency;
 
@@ -38,7 +38,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::history::non_atomic::types::{Event, Transaction};
+    use crate::history::raw::types::{Event, Transaction};
 
     use super::*;
 

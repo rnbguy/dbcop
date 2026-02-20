@@ -1,5 +1,5 @@
 use super::types::Event;
-use crate::history::non_atomic::types::EventId;
+use crate::history::raw::types::EventId;
 
 /// Error converting a raw history to an atomic transactional history
 #[derive(Debug)]

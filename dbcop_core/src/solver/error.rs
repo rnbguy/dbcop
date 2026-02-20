@@ -1,6 +1,6 @@
 use ::derive_more::From;
 
-use crate::history::non_atomic::error::Error as NonAtomicError;
+use crate::history::raw::error::Error as NonAtomicError;
 use crate::Consistency;
 
 #[derive(Debug, From)]
