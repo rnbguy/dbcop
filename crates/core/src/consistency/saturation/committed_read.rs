@@ -19,6 +19,7 @@ use crate::Consistency;
 /// # Errors
 ///
 /// Returns `Error::CycleInCommittedRead` if the history is not a committed read history.
+#[allow(clippy::too_many_lines)]
 pub fn check_committed_read<Variable, Version>(
     histories: &[Session<Variable, Version>],
 ) -> Result<DiGraph<TransactionId>, Error<Variable, Version>>
