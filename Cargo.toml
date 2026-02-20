@@ -6,6 +6,7 @@ members = [
   "dbcop_cli",
   "dbcop_wasm",
   "dbcop_sat",
+  "dbcop_drivers",
 ]
 
 [workspace.package]
