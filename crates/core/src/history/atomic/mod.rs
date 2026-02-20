@@ -9,16 +9,32 @@ use hashbrown::HashMap;
 use crate::graph::digraph::DiGraph;
 use crate::history::atomic::types::{AtomicTransactionHistory, TransactionId};
 
+/// Partial order over transactions derived from an atomic history.
+///
+/// Built from an [`AtomicTransactionHistory`] via `From`, this struct holds
+/// every relation needed by the saturation and linearization checkers.
+/// The session order and write-read relations are fixed at construction;
+/// the visibility relation is grown by checkers during saturation.
 #[derive(Debug)]
 pub struct AtomicTransactionPO<Variable>
 where
     Variable: Clone + Eq + Hash,
 {
+    /// The synthetic root transaction `(0, 0)`.
     pub root: TransactionId,
+    /// Per-transaction read-set and write-set.
     pub history: AtomicTransactionHistory<Variable>,
+    /// Transitive closure of the per-session chain order.
+    /// Includes edges from the root to every transaction.
     pub session_order: DiGraph<TransactionId>,
+    /// Per-variable write-read graphs: an edge `(w, r)` in `write_read_relation[x]`
+    /// means transaction `r` read variable `x` from transaction `w`.
     pub write_read_relation: HashMap<Variable, DiGraph<TransactionId>>,
+    /// Union of all per-variable write-read graphs.
     pub wr_union: DiGraph<TransactionId>,
+    /// Visibility relation, initialized to the session order and extended
+    /// by saturation checkers. An edge `(a, b)` means transaction `a` is
+    /// visible to transaction `b`.
     pub visibility_relation: DiGraph<TransactionId>,
 }
 
