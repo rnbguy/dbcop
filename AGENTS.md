@@ -122,7 +122,9 @@ dbcop/                          workspace root
 
 - `DiGraph<T>` -- directed graph with adjacency map. Key methods:
   `add_edge(from, to)`, `add_vertex(v)`, `closure()`, `topological_sort()`,
-  `union(other)`, `is_acyclic()`, `to_edge_list()`.
+  `union(other)`, `is_acyclic()`, `to_edge_list()`,
+  `find_cycle_edge() -> Option<(T, T)>` (returns an edge on a cycle via Kahn's
+  algorithm).
 
 - `AtomicTransactionPO` -- per-history partial order. Holds:
   `session_order: DiGraph<TransactionId>`,
@@ -150,6 +152,15 @@ dbcop/                          workspace root
   `SplitCommitOrder(Vec<(TransactionId, bool)>)` (SnapshotIsolation),
   `SaturationOrder(DiGraph<TransactionId>)` (Committed Read, Atomic Read,
   Causal).
+
+- `Error<Variable, Version>` enum: returned by `check()` on failure. Variants:
+  `NonAtomic(NonAtomicError)` (structural issue like uncommitted writes),
+  `Invalid(Consistency)` (violates consistency level, no specific pair known --
+  used by linearization failures),
+  `Cycle { level: Consistency, a:
+  TransactionId, b: TransactionId }` (cycle
+  detected with a conflicting edge pair -- used by saturation checkers:
+  Committed Read, Atomic Read, Causal).
 
 - `check_committed_read()` returns `Result<DiGraph<TransactionId>, Error>` --
   the committed order graph on success.

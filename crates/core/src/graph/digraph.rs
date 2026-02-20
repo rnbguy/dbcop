@@ -105,6 +105,61 @@ where
         }
     }
 
+    /// Returns an edge `(a, b)` that participates in a cycle, or `None` if acyclic.
+    ///
+    /// Uses Kahn's algorithm to strip acyclic vertices, then picks an edge
+    /// among the remaining (all of which lie on cycles).
+    /// Time complexity: O(V+E).
+    #[must_use]
+    pub fn find_cycle_edge(&self) -> Option<(T, T)> {
+        let mut in_degree: HashMap<T, usize> = HashMap::new();
+
+        for vertex in self.adj_map.keys() {
+            in_degree.entry(vertex.clone()).or_insert(0);
+        }
+        for neighbors in self.adj_map.values() {
+            for neighbor in neighbors {
+                *in_degree.entry(neighbor.clone()).or_insert(0) += 1;
+            }
+        }
+
+        let mut queue: Vec<T> = in_degree
+            .iter()
+            .filter(|(_, &deg)| deg == 0)
+            .map(|(v, _)| v.clone())
+            .collect();
+
+        let mut removed: HashSet<T> = HashSet::new();
+
+        while let Some(vertex) = queue.pop() {
+            removed.insert(vertex.clone());
+            if let Some(neighbors) = self.adj_map.get(&vertex) {
+                for neighbor in neighbors {
+                    if let Some(deg) = in_degree.get_mut(neighbor) {
+                        *deg -= 1;
+                        if *deg == 0 {
+                            queue.push(neighbor.clone());
+                        }
+                    }
+                }
+            }
+        }
+
+        // All vertices not removed are on cycles. Pick the first edge among them.
+        for (src, neighbors) in &self.adj_map {
+            if removed.contains(src) {
+                continue;
+            }
+            for dst in neighbors {
+                if !removed.contains(dst) {
+                    return Some((src.clone(), dst.clone()));
+                }
+            }
+        }
+
+        None
+    }
+
     /// Returns true if there is a path from `source` to `target` in the graph.
     #[allow(dead_code)]
     fn is_reachable_helper(&self, source: &T, target: &T, reachable: &mut HashSet<T>) -> bool {
