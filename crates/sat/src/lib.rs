@@ -16,12 +16,13 @@ use std::hash::Hash;
 
 use dbcop_core::consistency::error::Error;
 use dbcop_core::consistency::saturation::causal::check_causal_read;
+use dbcop_core::consistency::witness::Witness;
 use dbcop_core::history::atomic::types::TransactionId;
 use dbcop_core::history::atomic::AtomicTransactionPO;
 use dbcop_core::history::raw::types::Session;
 use dbcop_core::Consistency;
 use rustsat::solvers::{Solve, SolverResult};
-use rustsat::types::Lit;
+use rustsat::types::{Lit, TernaryVal};
 use rustsat_batsat::BasicSolver;
 
 /// Map from vertex pairs to SAT variable indices.
@@ -116,6 +117,38 @@ fn encode_ordering<V: Eq + Hash + Copy + Ord>(
     }
 
     (solver, vars)
+}
+
+/// Extract a total ordering of vertices from the SAT solver model.
+///
+/// For each vertex `u`, counts how many other vertices `w` have
+/// `before(w, u)` true in the satisfying assignment, yielding a
+/// position in the linearization. Returns vertices sorted by
+/// ascending position.
+fn extract_order<V: Eq + Hash + Copy>(
+    solver: &BasicSolver,
+    vars: &OrderVars<V>,
+    vertices: &[V],
+) -> Vec<V> {
+    let mut positioned: Vec<(usize, V)> = vertices
+        .iter()
+        .map(|&u| {
+            let pos = vertices
+                .iter()
+                .filter(|&&w| {
+                    vars.vars.get(&(w, u)).is_some_and(|&var_idx| {
+                        matches!(
+                            solver.lit_val(Lit::positive(var_idx)).unwrap(),
+                            TernaryVal::True
+                        )
+                    })
+                })
+                .count();
+            (pos, u)
+        })
+        .collect();
+    positioned.sort_by_key(|&(pos, _)| pos);
+    positioned.into_iter().map(|(_, v)| v).collect()
 }
 
 /// Extract all visibility edges from the PO.
@@ -218,15 +251,13 @@ fn check_serializable_from_po<Variable: Eq + Hash + Clone + Ord>(
 /// Returns an error if the history violates prefix consistency.
 pub fn check_prefix<Variable, Version>(
     sessions: &[Session<Variable, Version>],
-) -> Result<(), Error<Variable, Version>>
+) -> Result<Witness, Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone + Ord,
     Version: Eq + Hash + Clone,
 {
     let po = check_causal_read(sessions)?;
-    check_prefix_from_po(&po)
-        .then_some(())
-        .ok_or(Error::Invalid(Consistency::Prefix))
+    check_prefix_from_po(&po).ok_or(Error::Invalid(Consistency::Prefix))
 }
 
 /// Check prefix consistency from an already-computed partial order.
@@ -235,7 +266,7 @@ where
 /// read phase has no additional constraint (`allow_next` always true for reads).
 fn check_prefix_from_po<Variable: Eq + Hash + Clone + Ord>(
     po: &AtomicTransactionPO<Variable>,
-) -> bool {
+) -> Option<Witness> {
     let txn_ids: Vec<TransactionId> = po.history.0.keys().copied().collect();
 
     // Split-phase vertices: (txn_id, false=read, true=write)
@@ -304,7 +335,18 @@ fn check_prefix_from_po<Variable: Eq + Hash + Clone + Ord>(
         }
     }
 
-    matches!(solver.solve().unwrap(), SolverResult::Sat)
+    match solver.solve().unwrap() {
+        SolverResult::Sat => {
+            let order = extract_order(&solver, &vars, &vertices);
+            let commit_order: Vec<TransactionId> = order
+                .into_iter()
+                .filter(|&(_, is_write)| is_write)
+                .map(|(txn_id, _)| txn_id)
+                .collect();
+            Some(Witness::CommitOrder(commit_order))
+        }
+        _ => None,
+    }
 }
 
 /// Check snapshot isolation using SAT.
@@ -314,15 +356,13 @@ fn check_prefix_from_po<Variable: Eq + Hash + Clone + Ord>(
 /// Returns an error if the history violates snapshot isolation.
 pub fn check_snapshot_isolation<Variable, Version>(
     sessions: &[Session<Variable, Version>],
-) -> Result<(), Error<Variable, Version>>
+) -> Result<Witness, Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone + Ord,
     Version: Eq + Hash + Clone,
 {
     let po = check_causal_read(sessions)?;
-    check_si_from_po(&po)
-        .then_some(())
-        .ok_or(Error::Invalid(Consistency::SnapshotIsolation))
+    check_si_from_po(&po).ok_or(Error::Invalid(Consistency::SnapshotIsolation))
 }
 
 /// Check snapshot isolation from an already-computed partial order.
@@ -336,7 +376,9 @@ where
 /// that are NOT ordered by visibility, their read-write intervals cannot
 /// interleave. That is, either t1's write phase comes before t2's read phase,
 /// or t2's write phase comes before t1's read phase.
-fn check_si_from_po<Variable: Eq + Hash + Clone + Ord>(po: &AtomicTransactionPO<Variable>) -> bool {
+fn check_si_from_po<Variable: Eq + Hash + Clone + Ord>(
+    po: &AtomicTransactionPO<Variable>,
+) -> Option<Witness> {
     let txn_ids: Vec<TransactionId> = po.history.0.keys().copied().collect();
 
     let mut vertices: Vec<(TransactionId, bool)> = Vec::new();
@@ -424,7 +466,13 @@ fn check_si_from_po<Variable: Eq + Hash + Clone + Ord>(po: &AtomicTransactionPO<
             .unwrap();
     }
 
-    matches!(solver.solve().unwrap(), SolverResult::Sat)
+    match solver.solve().unwrap() {
+        SolverResult::Sat => {
+            let order = extract_order(&solver, &vars, &vertices);
+            Some(Witness::SplitCommitOrder(order))
+        }
+        _ => None,
+    }
 }
 
 #[cfg(test)]
