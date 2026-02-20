@@ -1,9 +1,7 @@
-pub mod atomic_read;
-pub mod causal;
-pub mod committed_read;
-pub mod constrained_linearization;
 pub mod error;
-pub mod prefix;
-pub mod repeatable_read;
-pub mod serializable;
-pub mod snapshot_isolation;
+pub mod linearization;
+pub mod saturation;
+
+// Re-export submodules at the solver level for backwards compatibility.
+pub use linearization::{constrained_linearization, prefix, serializable, snapshot_isolation};
+pub use saturation::{atomic_read, causal, committed_read, repeatable_read};
