@@ -55,9 +55,12 @@ where
     Variable: Eq + Hash + Clone + Ord,
     Version: Eq + Hash + Clone,
 {
+    tracing::debug!(sessions = sessions.len(), ?level, "checking consistency");
+
     // Trivially consistent: no sessions or all sessions empty
     #[allow(clippy::redundant_closure_for_method_calls)]
     if sessions.is_empty() || sessions.iter().all(|s| s.is_empty()) {
+        tracing::debug!("trivially consistent: no sessions or all empty");
         return Ok(Witness::CommitOrder(Vec::new()));
     }
 

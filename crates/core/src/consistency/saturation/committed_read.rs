@@ -19,6 +19,7 @@ use crate::Consistency;
 /// # Errors
 ///
 /// Returns `Error::CycleInCommittedRead` if the history is not a committed read history.
+#[allow(clippy::too_many_lines)]
 pub fn check_committed_read<Variable, Version>(
     histories: &[Session<Variable, Version>],
 ) -> Result<DiGraph<TransactionId>, Error<Variable, Version>>
@@ -26,6 +27,11 @@ where
     Variable: Eq + Hash + Clone,
     Version: Eq + Hash + Clone,
 {
+    tracing::debug!(
+        sessions = histories.len(),
+        "committed read check: validating history"
+    );
+
     is_valid_history(histories)?;
 
     let mut committed_order: DiGraph<TransactionId> = DiGraph::default();
@@ -134,14 +140,17 @@ where
     }
 
     if committed_order.topological_sort().is_some() {
+        tracing::debug!("committed read check: passed");
         Ok(committed_order)
     } else if let Some((a, b)) = committed_order.find_cycle_edge() {
+        tracing::debug!(?a, ?b, "committed read check: cycle detected");
         Err(Error::Cycle {
             level: Consistency::CommittedRead,
             a,
             b,
         })
     } else {
+        tracing::debug!("committed read check: failed (no cycle edge found)");
         Err(Error::Invalid(Consistency::CommittedRead))
     }
 }
