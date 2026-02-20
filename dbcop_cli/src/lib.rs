@@ -1,6 +1,8 @@
 //! dbcop CLI -- generate and verify transactional histories.
 
-use clap::{Parser, Subcommand};
+use std::path::PathBuf;
+
+use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Parser)]
 #[command(name = "dbcop", about = "Runtime monitoring for transactional consistency")]
@@ -12,7 +14,62 @@ pub struct App {
 #[derive(Debug, Subcommand)]
 pub enum Command {
     /// Generate random transactional histories
-    Generate,
+    Generate(GenerateArgs),
     /// Verify consistency of transactional histories
-    Verify,
+    Verify(VerifyArgs),
+}
+
+#[derive(Debug, Parser)]
+pub struct GenerateArgs {
+    /// Number of histories to generate
+    #[arg(long)]
+    pub n_hist: u64,
+    /// Number of nodes (sessions)
+    #[arg(long)]
+    pub n_node: u64,
+    /// Number of variables
+    #[arg(long)]
+    pub n_var: u64,
+    /// Number of transactions per node
+    #[arg(long)]
+    pub n_txn: u64,
+    /// Number of events per transaction
+    #[arg(long)]
+    pub n_evt: u64,
+    /// Output directory for generated history files
+    #[arg(long)]
+    pub output_dir: PathBuf,
+}
+
+#[derive(Debug, Parser)]
+pub struct VerifyArgs {
+    /// Input directory containing history JSON files
+    #[arg(long)]
+    pub input_dir: PathBuf,
+    /// Consistency level to check
+    #[arg(long)]
+    pub consistency: ConsistencyLevel,
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+pub enum ConsistencyLevel {
+    CommittedRead,
+    AtomicRead,
+    Causal,
+    Prefix,
+    SnapshotIsolation,
+    Serializable,
+}
+
+impl From<ConsistencyLevel> for dbcop_core::Consistency {
+    fn from(level: ConsistencyLevel) -> Self {
+        match level {
+            ConsistencyLevel::CommittedRead => Self::CommittedRead,
+            ConsistencyLevel::AtomicRead => Self::AtomicRead,
+            ConsistencyLevel::Causal => Self::Causal,
+            ConsistencyLevel::Prefix => Self::Prefix,
+            ConsistencyLevel::SnapshotIsolation => Self::SnapshotIsolation,
+            ConsistencyLevel::Serializable => Self::Serializable,
+        }
+    }
 }
