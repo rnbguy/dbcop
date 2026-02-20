@@ -1,4 +1,56 @@
-//! Checks if a valid history maintains causal consistency.
+//! Causal Consistency checker using iterated saturation.
+//!
+//! Causal Consistency strengthens Atomic Read by requiring the visibility
+//! relation to be transitively closed. If transaction T1 is visible to T2,
+//! and T2 is visible to T3, then T1 must also be visible to T3. This
+//! captures the notion that causal dependencies propagate through the
+//! system.
+//!
+//! # Algorithm
+//!
+//! This checker runs a saturation loop that alternates between computing
+//! new write-write (`ww`) edges and incrementally closing the visibility
+//! relation:
+//!
+//! 1. Build an [`AtomicTransactionPO`] from the raw sessions.
+//! 2. Merge write-read (`wr`) edges into visibility.
+//! 3. Compute the transitive closure of visibility (`vis_is_trans`).
+//! 4. **Saturation loop**:
+//!    a. Compute `ww` edges via [`causal_ww`] using current visibility.
+//!    b. Collect any `ww` edges not yet in the visibility relation.
+//!    c. If no new edges, the fixpoint is reached -- break.
+//!    d. Otherwise, add new edges with [`incremental_closure`] (which
+//!    extends the transitively-closed graph without a full recompute).
+//!    e. Repeat from (a).
+//! 5. Check that the final visibility relation is acyclic.
+//!
+//! The incremental closure in step 4d avoids the O(V*(V+E)) cost of a
+//! full transitive closure on each iteration, using BFS-based
+//! ancestor/descendant cross-product instead.
+//!
+//! # Data flow
+//!
+//! ```text
+//! sessions -> AtomicTransactionPO -> vis_includes(wr) -> vis_is_trans()
+//!     -> loop { causal_ww() -> new edges? -> incremental_closure() }
+//!     -> acyclicity check -> Ok(PO) or Err(Cycle)
+//! ```
+//!
+//! # Errors
+//!
+//! - [`Error::NonAtomic`] if the history is structurally invalid.
+//! - [`Error::Cycle`] if the visibility relation contains a cycle after
+//!   saturation.
+//!
+//! # Reference
+//!
+//! Corresponds to Algorithm 1 in Biswas and Enea (2019) at the Causal
+//! Consistency level, with incremental closure as a performance
+//! optimization.
+//!
+//! [`AtomicTransactionPO`]: crate::history::atomic::AtomicTransactionPO
+//! [`causal_ww`]: crate::history::atomic::AtomicTransactionPO::causal_ww
+//! [`incremental_closure`]: crate::graph::digraph::DiGraph::incremental_closure
 
 use alloc::vec::Vec;
 use core::hash::Hash;
@@ -9,9 +61,21 @@ use crate::history::atomic::AtomicTransactionPO;
 use crate::history::raw::types::Session;
 use crate::Consistency;
 
+/// Check whether a history satisfies Causal Consistency.
+///
+/// Runs a saturation loop that alternates between computing write-write
+/// edges and incrementally closing the visibility relation until a
+/// fixpoint is reached. Then checks the result for acyclicity.
+///
+/// On success, returns the full [`AtomicTransactionPO`] whose
+/// `visibility_relation` field is the transitively-closed, acyclic
+/// witness graph.
+///
 /// # Errors
 ///
-/// Returns [`Error::Invalid`] if the history does not maintain causal consistency.
+/// - Returns [`Error::NonAtomic`] for structurally invalid histories.
+/// - Returns [`Error::Cycle`] with the offending edge pair if the
+///   visibility relation contains a cycle.
 pub fn check_causal_read<Variable, Version>(
     histories: &[Session<Variable, Version>],
 ) -> Result<AtomicTransactionPO<Variable>, Error<Variable, Version>>

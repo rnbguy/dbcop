@@ -1,4 +1,50 @@
-//! Checks if a valid history is a committed read history.
+//! Read Committed consistency checker using saturation.
+//!
+//! Read Committed requires that every read observes a value written by a
+//! committed transaction (never an aborted or in-progress write) and that
+//! reads within the same transaction on the same variable observe writes
+//! in a consistent committed order.
+//!
+//! # Algorithm
+//!
+//! This checker builds a *committed order* graph and tests it for acyclicity:
+//!
+//! 1. **Session-order edges** - For each session, add edges from the root
+//!    transaction to the first transaction, then chain successive transactions.
+//! 2. **Write-read edges** - For each read event, locate the committed write
+//!    it observes and add a `wr_x` edge from the writing transaction to the
+//!    reading transaction.
+//! 3. **Committed-order edges** - When two reads in the same transaction read
+//!    the same variable from different transactions, the earlier write must
+//!    precede the later write in committed order.
+//! 4. **Acyclicity check** - Attempt a topological sort of the committed
+//!    order graph. If one exists, the history satisfies Read Committed.
+//!    If not, find a cycle edge and report it.
+//!
+//! Unlike the other saturation checkers, this module operates directly on
+//! raw sessions rather than on [`AtomicTransactionPO`], because it must
+//! inspect individual read/write events to validate committed writes.
+//!
+//! # Data flow
+//!
+//! ```text
+//! sessions -> validate -> build committed order DiGraph -> topological sort
+//!     |                        |                              |
+//!     +-- session-order edges  +-- wr_x + committed edges     +-- Ok(DiGraph) or Err(Cycle)
+//! ```
+//!
+//! # Errors
+//!
+//! - [`Error::NonAtomic`] if the history contains uncommitted or overwritten
+//!   writes.
+//! - [`Error::Cycle`] if a cycle is found in the committed order graph.
+//!
+//! # Reference
+//!
+//! Corresponds to Algorithm 1 in Biswas and Enea (2019), restricted to the
+//! Read Committed level.
+//!
+//! [`AtomicTransactionPO`]: crate::history::atomic::AtomicTransactionPO
 
 use core::hash::Hash;
 
@@ -12,13 +58,19 @@ use crate::history::raw::types::{Event, EventId, Session};
 use crate::history::raw::{get_all_writes, get_committed_writes, is_valid_history};
 use crate::Consistency;
 
-/// Checks if a valid history is a committed read history.
+/// Check whether a history satisfies Read Committed consistency.
 ///
-/// On success, returns the committed order as a [`DiGraph`] witnessing acyclicity.
+/// Builds a committed order [`DiGraph`] from session-order, write-read, and
+/// committed-order edges, then checks for acyclicity via topological sort.
+///
+/// On success, returns the committed order graph as a witness of acyclicity.
 ///
 /// # Errors
 ///
-/// Returns `Error::CycleInCommittedRead` if the history is not a committed read history.
+/// - Returns [`Error::NonAtomic`] if the history contains reads from
+///   uncommitted or overwritten writes.
+/// - Returns [`Error::Cycle`] with the offending edge pair if the committed
+///   order graph contains a cycle.
 #[allow(clippy::too_many_lines)]
 pub fn check_committed_read<Variable, Version>(
     histories: &[Session<Variable, Version>],

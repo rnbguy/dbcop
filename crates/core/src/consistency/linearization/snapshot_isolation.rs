@@ -1,3 +1,48 @@
+//! Snapshot Isolation linearization solver.
+//!
+//! Snapshot Isolation strengthens Prefix Consistency by additionally
+//! requiring write-write conflict freedom: two concurrent transactions
+//! must not write to the same variable. Each transaction reads from a
+//! consistent snapshot and commits atomically, but concurrent writers
+//! on the same variable are forbidden.
+//!
+//! # Approach
+//!
+//! This module implements a [`ConstrainedLinearizationSolver`] that
+//! searches for a valid split commit order via depth-first search with
+//! backtracking. Like the Prefix solver, each transaction is split into
+//! two vertices:
+//!
+//! - `(TransactionId, false)` -- the *read phase*.
+//! - `(TransactionId, true)` -- the *write phase*.
+//!
+//! In addition to the `active_write` constraint from Prefix Consistency,
+//! the solver tracks `active_variable` -- the set of variables that have
+//! been written by a transaction whose write phase has been placed but
+//! whose readers have not all been placed yet. A read phase is only
+//! allowed if none of its write variables overlap with `active_variable`,
+//! enforcing the no-write-write-conflict property.
+//!
+//! # Data flow
+//!
+//! ```text
+//! AtomicTransactionPO (from causal check)
+//!     -> SnapshotIsolationSolver -> get_linearization() via DFS
+//!     -> Some(Vec<(TransactionId, bool)>) or None
+//!     -> Witness::SplitCommitOrder
+//! ```
+//!
+//! # Witness
+//!
+//! On success, the full split linearization is returned as
+//! `Witness::SplitCommitOrder(Vec<(TransactionId, bool)>)`, preserving
+//! the read/write phase distinction.
+//!
+//! # Reference
+//!
+//! Implements the constrained linearization search described in
+//! Theorem 4.10 of Biswas and Enea (2019).
+
 use alloc::vec::Vec;
 use core::hash::Hash;
 
@@ -7,6 +52,18 @@ use crate::consistency::constrained_linearization::ConstrainedLinearizationSolve
 use crate::history::atomic::types::TransactionId;
 use crate::history::atomic::AtomicTransactionPO;
 
+/// Linearization solver for Snapshot Isolation.
+///
+/// Wraps an [`AtomicTransactionPO`] and tracks two constraints:
+///
+/// - `active_write` -- same as [`PrefixConsistencySolver`]: maps each
+///   variable to the set of transactions with unresolved readers.
+/// - `active_variable` -- the set of variables currently "locked" by a
+///   write phase that has been committed but whose readers are still
+///   outstanding. A new read phase is blocked if its write set overlaps
+///   with `active_variable`.
+///
+/// [`PrefixConsistencySolver`]: super::prefix::PrefixConsistencySolver
 #[derive(Debug)]
 pub struct SnapshotIsolationSolver<Variable>
 where
