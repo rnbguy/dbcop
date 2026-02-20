@@ -24,7 +24,7 @@ workspace = true
 
 [features]
 default = [  ]
-serde   = [ "dep:serde" ]
+serde   = [ "dep:serde", "hashbrown/serde" ]
 
 [[bench]]
 name    = "consistency"

@@ -1,6 +1,6 @@
 //! Checks if a valid history maintains atomic read.
 
-use ::core::hash::Hash;
+use core::hash::Hash;
 
 use crate::consistency::error::Error;
 use crate::history::atomic::types::AtomicTransactionHistory;
