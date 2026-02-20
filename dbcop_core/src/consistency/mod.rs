@@ -44,7 +44,7 @@ where
     Version: Eq + Hash + Clone,
 {
     match level {
-        Consistency::CommittedRead => check_committed_read(sessions).map(|()| ()),
+        Consistency::CommittedRead => check_committed_read(sessions),
         Consistency::AtomicRead => check_atomic_read(sessions).map(|_| ()),
         Consistency::Causal => check_causal_read(sessions).map(|_| ()),
         Consistency::Prefix => {
