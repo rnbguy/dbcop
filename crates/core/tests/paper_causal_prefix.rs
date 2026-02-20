@@ -19,6 +19,7 @@
 //!     where a CC-valid history fails: SnapshotIsolation, not Prefix.
 
 use dbcop_core::consistency::error::Error;
+use dbcop_core::consistency::Witness;
 use dbcop_core::history::raw::types::{Event, Session, Transaction};
 use dbcop_core::{check, Consistency};
 
@@ -36,11 +37,11 @@ fn r(var: &'static str, ver: u64) -> Event<&'static str, u64> {
     Event::read(var, ver)
 }
 
-fn check_causal(h: &[Session<&'static str, u64>]) -> Result<(), Error<&'static str, u64>> {
+fn check_causal(h: &[Session<&'static str, u64>]) -> Result<Witness, Error<&'static str, u64>> {
     check(h, Consistency::Causal)
 }
 
-fn check_prefix(h: &[Session<&'static str, u64>]) -> Result<(), Error<&'static str, u64>> {
+fn check_prefix(h: &[Session<&'static str, u64>]) -> Result<Witness, Error<&'static str, u64>> {
     check(h, Consistency::Prefix)
 }
 

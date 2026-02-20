@@ -14,12 +14,14 @@ use crate::Consistency;
 
 /// Checks if a valid history is a committed read history.
 ///
+/// On success, returns the committed order as a [`DiGraph`] witnessing acyclicity.
+///
 /// # Errors
 ///
 /// Returns `Error::CycleInCommittedRead` if the history is not a committed read history.
 pub fn check_committed_read<Variable, Version>(
     histories: &[Session<Variable, Version>],
-) -> Result<(), Error<Variable, Version>>
+) -> Result<DiGraph<TransactionId>, Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone,
     Version: Eq + Hash + Clone,
@@ -134,7 +136,7 @@ where
     committed_order
         .topological_sort()
         .is_some()
-        .then_some(())
+        .then_some(committed_order)
         .ok_or(Error::Invalid(Consistency::CommittedRead))
 }
 

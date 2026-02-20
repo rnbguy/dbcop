@@ -133,10 +133,26 @@ dbcop/                          workspace root
 - `Consistency` enum: `CommittedRead`, `AtomicRead`, `Causal`, `Prefix`,
   `SnapshotIsolation`, `Serializable`.
 
+- `check()` entry point: returns `Result<Witness, Error<Variable, Version>>`.
+  Each consistency level produces a specific `Witness` variant on success:
+  - Committed Read: `SaturationOrder(DiGraph<TransactionId>)` (committed order
+    graph)
+  - Atomic Read: `SaturationOrder(DiGraph<TransactionId>)` (visibility relation)
+  - Causal: `SaturationOrder(DiGraph<TransactionId>)` (visibility relation)
+  - Prefix: `CommitOrder(Vec<TransactionId>)` (transaction commit order)
+  - Snapshot Isolation: `SplitCommitOrder(Vec<(TransactionId, bool)>)` (split
+    read/write linearization)
+  - Serializable: `CommitOrder(Vec<TransactionId>)` (transaction commit order)
+  - Empty history: `CommitOrder(Vec::new())` (trivial witness)
+
 - `Witness` enum: returned by `check()` on success. Variants:
   `CommitOrder(Vec<TransactionId>)` (Prefix, Serializable),
   `SplitCommitOrder(Vec<(TransactionId, bool)>)` (SnapshotIsolation),
-  `SaturationOrder(DiGraph<TransactionId>)` (CommittedRead, AtomicRead, Causal).
+  `SaturationOrder(DiGraph<TransactionId>)` (Committed Read, Atomic Read,
+  Causal).
+
+- `check_committed_read()` returns `Result<DiGraph<TransactionId>, Error>` --
+  the committed order graph on success.
 
 ## Ignored Directories
 
