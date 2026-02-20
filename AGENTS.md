@@ -72,7 +72,7 @@ All three must pass before merging:
 - Preserve no_std compatibility in `dbcop_core`. Never use std-only types
   without a feature gate.
 - Serde derives must be gated:
-  `#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]`
+  `#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]`
 - Do NOT rename existing public types (e.g. `CommittedRead` stays
   `CommittedRead`).
 - Do NOT add a `Consistency::RepeatableRead` variant.
@@ -98,7 +98,7 @@ dbcop/                          workspace root
         graph/digraph.rs           DiGraph<T> -- core graph type
         consistency/               check() entry point, consistency algorithms
           saturation/              saturation-based checkers (CommittedRead, Causal, etc.)
-          linearization/           linearization-based checkers (SnapshotIsolation, Serializability, StrongSerializability)
+          linearization/           linearization-based checkers (Prefix, SnapshotIsolation, Serializable)
         history/atomic/            AtomicTransactionPO and AtomicTransactionHistory
     cli/                         CLI binary -- dbcop_cli
     wasm/                        WASM bindings -- dbcop_wasm
@@ -122,15 +122,16 @@ dbcop/                          workspace root
 
 - `DiGraph<T>` -- directed graph with adjacency map. Key methods:
   `add_edge(from, to)`, `add_vertex(v)`, `closure()`, `topological_sort()`,
-  `union(other)`, `is_acyclic()`.
+  `union(other)`, `is_acyclic()`, `to_edge_list()`.
 
 - `AtomicTransactionPO` -- per-history partial order. Holds:
   `session_order: DiGraph<TransactionId>`,
   `write_read_relation: HashMap<Variable, DiGraph<TransactionId>>`,
+  `wr_union: DiGraph<TransactionId>`,
   `visibility_relation: DiGraph<TransactionId>`.
 
-- `Consistency` enum: `CommittedRead`, `Causal`, `Prefix`, `SnapshotIsolation`,
-  `Serializability`, `StrongSerializability`.
+- `Consistency` enum: `CommittedRead`, `AtomicRead`, `Causal`, `Prefix`,
+  `SnapshotIsolation`, `Serializable`.
 
 ## Ignored Directories
 
@@ -161,3 +162,15 @@ memory.
 - `crates/core/benches/consistency.rs` -- 18 Criterion benchmarks (6 consistency
   levels x 3 history sizes).
 - Always add tests when adding new functionality.
+
+## AGENTS.md Update Protocol
+
+After every merged PR, update this file to reflect what changed:
+
+- New types, methods, or fields added to the codebase
+- New conventions or patterns established
+- Corrections to anything that was wrong or outdated
+- New performance decisions or architectural choices
+
+Include the AGENTS.md update in the same PR as the code change. This keeps the
+file accurate as a living reference for future agents.
