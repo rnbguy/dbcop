@@ -1,0 +1,40 @@
+name: Deno
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  deno:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+
+      - name: Build WASM
+        run: deno task wasmbuild
+
+      - name: Format check
+        run: deno task deno:fmt
+
+      - name: Lint
+        run: deno task deno:lint
+
+      - name: Type check
+        run: deno task deno:check
+
+      - name: Run tests
+        run: deno test -A tests/

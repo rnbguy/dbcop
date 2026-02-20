@@ -11,8 +11,6 @@ jobs:
 
       - name: Spell Check with Typos
         uses: crate-ci/typos@master
-        with:
-          config: ./.github/typos.toml
 
       - name: Install Taplo
         uses: taiki-e/cache-cargo-install-action@v2
@@ -21,8 +19,3 @@ jobs:
           locked: true
       - name: Check TOML formatting
         run: taplo format --check
-
-      - name: Set up Deno
-        uses: denoland/setup-deno@v2
-      - name: Check Deno formatting
-        run: deno fmt --check

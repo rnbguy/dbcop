@@ -19,3 +19,7 @@ wasmlib/
 # Sisyphus and OMC directories
 .sisyphus/
 .omc/
+.claude/
+
+# Node modules (Deno nodeModulesDir)
+node_modules/
