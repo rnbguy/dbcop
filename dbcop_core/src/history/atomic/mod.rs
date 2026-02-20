@@ -18,6 +18,7 @@ where
     pub history: AtomicTransactionHistory<Variable>,
     pub session_order: DiGraph<TransactionId>,
     pub write_read_relation: HashMap<Variable, DiGraph<TransactionId>>,
+    pub wr_union: DiGraph<TransactionId>,
     pub visibility_relation: DiGraph<TransactionId>,
 }
 
@@ -85,10 +86,16 @@ where
             }
         }
 
+        let mut wr_union = DiGraph::default();
+        for g in write_read_relation.values() {
+            wr_union.union(g);
+        }
+
         Self {
             root,
             history,
             write_read_relation,
+            wr_union,
             visibility_relation: session_order.clone(),
             session_order,
         }
@@ -102,13 +109,7 @@ where
     /// Returns the union of the write-read relation of all variables
     #[must_use]
     pub fn get_wr(&self) -> DiGraph<TransactionId> {
-        let mut wr: DiGraph<TransactionId> = DiGraph::default();
-
-        for (_, wr_x) in &self.write_read_relation {
-            wr.union(wr_x);
-        }
-
-        wr
+        self.wr_union.clone()
     }
 
     /// Takes the union of the visibility relation and the given graph
