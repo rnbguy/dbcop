@@ -8,4 +8,4 @@ pub mod consistency;
 pub mod graph;
 pub mod history;
 
-pub use consistency::Consistency;
+pub use consistency::{check, Consistency};
