@@ -4,12 +4,21 @@ use core::hash::Hash;
 
 use hashbrown::{HashMap, HashSet};
 
+/// Directed graph backed by an adjacency map.
+///
+/// Each vertex of type `T` maps to the set of its outgoing neighbors.
+/// Vertices are added implicitly when they appear in an edge, or explicitly
+/// via [`add_vertex`](Self::add_vertex). Self-loops are permitted.
+///
+/// Used throughout `dbcop_core` to represent session order, visibility
+/// relations, and write-read dependencies between transactions.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct DiGraph<T>
 where
     T: Hash + Eq + Clone + Debug,
 {
+    /// Maps each vertex to the set of vertices it has edges to.
     pub adj_map: HashMap<T, HashSet<T>>,
 }
 
@@ -17,6 +26,9 @@ impl<T> DiGraph<T>
 where
     T: Hash + Eq + Clone + Debug,
 {
+    /// Inserts a directed edge from `source` to `target`.
+    ///
+    /// Both vertices are added to the graph if not already present.
     pub fn add_edge(&mut self, source: T, target: T) {
         self.adj_map
             .entry(source)
@@ -25,15 +37,18 @@ where
         self.adj_map.entry(target).or_default();
     }
 
+    /// Inserts directed edges from `source` to every vertex in `targets`.
     pub fn add_edges(&mut self, source: T, targets: &[T]) {
         let entry = self.adj_map.entry(source).or_default();
         entry.extend(targets.iter().cloned());
     }
 
+    /// Adds a vertex with no outgoing edges (if not already present).
     pub fn add_vertex(&mut self, source: T) {
         self.adj_map.entry(source).or_default();
     }
 
+    /// Returns `true` if an edge from `source` to `target` exists.
     pub fn has_edge(&self, source: &T, target: &T) -> bool {
         self.adj_map
             .get(source)
@@ -47,6 +62,7 @@ where
         self.topological_sort().is_none()
     }
 
+    /// Returns `true` if the graph has no cycles.
     #[must_use]
     pub fn is_acyclic(&self) -> bool {
         !self.has_cycle()
@@ -188,6 +204,10 @@ where
         reachable
     }
 
+    /// Computes the transitive closure of the graph.
+    ///
+    /// Returns a new graph where an edge `(u, v)` exists if and only if
+    /// `v` is reachable from `u` in the original graph.
     #[must_use]
     pub fn closure(&self) -> Self {
         Self {
@@ -204,6 +224,9 @@ where
         }
     }
 
+    /// Merges all edges from `other` into this graph.
+    ///
+    /// Returns `true` if any new edge was added.
     pub fn union(&mut self, other: &Self) -> bool {
         let mut change = false;
         for (source, other_neighbors) in &other.adj_map {

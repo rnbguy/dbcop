@@ -26,14 +26,28 @@ pub struct AtomicTransactionInfo<Variable> {
     pub writes: HashSet<Variable>,
 }
 
+/// Unique identifier for a transaction within a history.
+///
+/// A transaction is identified by the session it belongs to (`session_id`)
+/// and its position within that session (`session_height`). Ordering is
+/// lexicographic: first by `session_id`, then by `session_height`.
+///
+/// The default value `(0, 0)` serves as the **root node** in session-order
+/// and visibility graphs. Every real transaction in every session has the
+/// root as a predecessor.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TransactionId {
+    /// 1-based session index. Session 0 is reserved for the root.
     pub session_id: u64,
+    /// 0-based position of the transaction within its session.
     pub session_height: u64,
 }
 
 impl TransactionId {
+    /// Returns the root transaction `(0, 0)`.
+    ///
+    /// The root is a synthetic predecessor of every transaction in the history.
     #[must_use]
     pub const fn root() -> Self {
         Self {
@@ -43,6 +57,11 @@ impl TransactionId {
     }
 }
 
+/// Maps every transaction in a history to its read-set and write-set.
+///
+/// Constructed from raw sessions via `TryFrom<&[Session]>`, which validates
+/// that the history is repeatable-read (no fractured reads) and resolves
+/// every read to its source write transaction.
 #[derive(Debug)]
 pub struct AtomicTransactionHistory<Variable>(
     pub HashMap<TransactionId, AtomicTransactionInfo<Variable>>,
