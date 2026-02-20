@@ -1,3 +1,47 @@
+//! Serializability linearization solver.
+//!
+//! Serializability is the strongest consistency level. It requires a
+//! total order on all transactions such that executing them sequentially
+//! in that order produces the same reads and writes as the original
+//! concurrent execution. Every read must be explained by the
+//! immediately preceding write on the same variable in the total order.
+//!
+//! # Approach
+//!
+//! This module implements a [`ConstrainedLinearizationSolver`] that
+//! searches for a valid total commit order via depth-first search with
+//! backtracking. Unlike the Prefix and Snapshot Isolation solvers,
+//! transactions are *not* split into read/write phases -- each vertex
+//! is a plain `TransactionId`, because serializability requires reads
+//! and writes to appear atomically at the same point.
+//!
+//! The solver tracks `active_write` -- for each variable, the set of
+//! transactions that have read a value but whose writing transaction
+//! has not yet been placed. A transaction is only allowed in the
+//! linearization if placing it does not conflict with any outstanding
+//! active writes.
+//!
+//! # Data flow
+//!
+//! ```text
+//! AtomicTransactionPO (from causal check)
+//!     -> SerializabilitySolver -> get_linearization() via DFS
+//!     -> Some(Vec<TransactionId>) or None
+//!     -> Witness::CommitOrder
+//! ```
+//!
+//! # Witness
+//!
+//! On success, the linearization is directly returned as
+//! `Witness::CommitOrder(Vec<TransactionId>)`.
+//!
+//! # Reference
+//!
+//! Implements the constrained linearization search described in
+//! Theorem 4.8 of Biswas and Enea (2019), without the split-vertex
+//! optimization (since serializability requires atomic transaction
+//! placement).
+
 use alloc::vec::Vec;
 use core::hash::Hash;
 
@@ -7,6 +51,13 @@ use crate::consistency::constrained_linearization::ConstrainedLinearizationSolve
 use crate::history::atomic::types::TransactionId;
 use crate::history::atomic::AtomicTransactionPO;
 
+/// Linearization solver for Serializability.
+///
+/// Wraps an [`AtomicTransactionPO`] and tracks `active_write` -- a map
+/// from each variable to the set of transactions that have read from a
+/// write whose writer has not yet been placed in the linearization.
+/// A transaction can only be placed when all of its write variables
+/// have at most one active writer (itself).
 #[derive(Debug)]
 pub struct SerializabilitySolver<Variable>
 where

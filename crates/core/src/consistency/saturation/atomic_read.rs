@@ -1,4 +1,48 @@
-//! Checks if a valid history maintains atomic read.
+//! Atomic Read consistency checker using saturation.
+//!
+//! Atomic Read (also called "repeatable read" in some literature) strengthens
+//! Read Committed by requiring that all reads within a single transaction
+//! observe a consistent snapshot -- no fractured reads are allowed. If
+//! transaction T reads variable x from T1 and variable y from T2, then the
+//! visibility relation must be consistent with a single point-in-time view.
+//!
+//! # Algorithm
+//!
+//! This is a single-pass saturation checker (no fixpoint loop needed):
+//!
+//! 1. Build an [`AtomicTransactionPO`] from the raw sessions, which computes
+//!    the session order, write-read relations, and initial visibility.
+//! 2. Merge write-read (`wr`) edges into the visibility relation.
+//! 3. Compute write-write (`ww`) edges via [`causal_ww`] -- for each
+//!    variable x, if transaction T2 is visible to a reader of T1's write
+//!    on x, then T2 must precede T1 in write order.
+//! 4. Merge all `ww` edges into visibility.
+//! 5. Check that the resulting visibility relation is acyclic.
+//!
+//! Because `ww` edges are derived from the current visibility and no
+//! transitive closure is taken, a single round of edge insertion suffices.
+//!
+//! # Data flow
+//!
+//! ```text
+//! sessions -> AtomicTransactionPO -> vis_includes(wr) -> causal_ww()
+//!     -> vis_includes(ww) -> acyclicity check -> Ok(PO) or Err(Cycle)
+//! ```
+//!
+//! # Errors
+//!
+//! - [`Error::NonAtomic`] if the history is structurally invalid (e.g.
+//!   uncommitted writes).
+//! - [`Error::Cycle`] if the visibility relation contains a cycle after
+//!   adding `ww` edges.
+//!
+//! # Reference
+//!
+//! Corresponds to Algorithm 1 in Biswas and Enea (2019) at the Atomic Read
+//! level.
+//!
+//! [`AtomicTransactionPO`]: crate::history::atomic::AtomicTransactionPO
+//! [`causal_ww`]: crate::history::atomic::AtomicTransactionPO::causal_ww
 
 use core::hash::Hash;
 
@@ -8,10 +52,19 @@ use crate::history::atomic::AtomicTransactionPO;
 use crate::history::raw::types::Session;
 use crate::Consistency;
 
-/// checks if a valid history maintains atomic read
+/// Check whether a history satisfies Atomic Read consistency.
+///
+/// Builds an [`AtomicTransactionPO`], saturates the visibility relation with
+/// write-read and write-write edges, then checks for acyclicity.
+///
+/// On success, returns the full [`AtomicTransactionPO`] whose
+/// `visibility_relation` field is the acyclic witness graph.
+///
 /// # Errors
 ///
-/// Returns [`Error::Invalid`] if the history does not maintain atomic read.
+/// - Returns [`Error::NonAtomic`] for structurally invalid histories.
+/// - Returns [`Error::Cycle`] with the offending edge pair if the visibility
+///   relation contains a cycle.
 pub fn check_atomic_read<Variable, Version>(
     histories: &[Session<Variable, Version>],
 ) -> Result<AtomicTransactionPO<Variable>, Error<Variable, Version>>
