@@ -17,7 +17,7 @@ tracing     = { workspace = true }
 derive_more = { workspace = true }
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.5", features = [ "html_reports" ] }
 
 [lints]
 workspace = true
@@ -27,5 +27,5 @@ default = [  ]
 serde   = [ "dep:serde" ]
 
 [[bench]]
-name = "consistency"
+name    = "consistency"
 harness = false
