@@ -88,7 +88,7 @@ dbcop/                          workspace root
       graph/digraph.rs           DiGraph<T> -- core graph type
       consistency/               check() entry point, consistency algorithms
         saturation/              saturation-based checkers (CommittedRead, Causal, etc.)
-        linearization/           linearization-based checkers (SI, Ser, SSer)
+        linearization/           linearization-based checkers (SnapshotIsolation, Serializability, StrongSerializability)
       history/atomic/            AtomicTransactionPO and AtomicTransactionHistory
   dbcop_cli/                    CLI binary
   dbcop_wasm/                   WASM bindings
