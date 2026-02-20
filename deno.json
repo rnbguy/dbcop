@@ -9,6 +9,12 @@
     "deno:check": "deno check web/main.ts",
     "deno:ci": "deno task deno:fmt && deno task deno:lint && deno task deno:check"
   },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.19"
+  },
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"]
+  },
   "fmt": {
     "exclude": [".sisyphus", ".omc", ".claude", "node_modules", "wasmlib"]
   }

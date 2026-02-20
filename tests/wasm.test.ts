@@ -2,7 +2,7 @@ import {
   check_consistency,
   check_consistency_trace,
 } from "../wasmlib/dbcop_wasm.js";
-import { assertEquals } from "jsr:@std/assert@1";
+import { assertEquals } from "@std/assert";
 
 // -- Test histories ----------------------------------------------------------
 // Format: array of sessions, each session is array of transactions.
@@ -78,8 +78,8 @@ const LOST_UPDATE = JSON.stringify([
   ],
 ]);
 
-/** Causal violation -- fails causal consistency. */
-const CAUSAL_VIOLATION = JSON.stringify([
+/** Causal violation -- fails causal consistency (saturation checker; WASM panics on this level currently). */
+const _CAUSAL_VIOLATION = JSON.stringify([
   [
     {
       events: [
