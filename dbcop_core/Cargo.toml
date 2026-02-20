@@ -13,7 +13,6 @@ readme = "README.md"
 [dependencies]
 hashbrown = { workspace = true }
 serde = { workspace = true, optional = true, features = ["derive"] }
-ascent = { workspace = true }
 tracing = { workspace = true }
 derive_more = { workspace = true }
 
