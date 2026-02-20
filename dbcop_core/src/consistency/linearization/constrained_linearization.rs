@@ -7,8 +7,8 @@ use hashbrown::{HashMap, HashSet};
 
 // Zobrist hash: XOR two u64 hashes with different seeds -> u128
 fn zobrist_value<T: Hash>(v: &T) -> u128 {
-    use core::hash::BuildHasher;
-    use core::hash::Hasher;
+    use core::hash::{BuildHasher, Hasher};
+
     use hashbrown::DefaultHashBuilder;
 
     let builder = DefaultHashBuilder::default();

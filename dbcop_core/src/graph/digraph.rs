@@ -158,6 +158,18 @@ where
         }
         change
     }
+
+    /// Returns all edges as a list of (source, target) pairs.
+    #[must_use]
+    pub fn to_edge_list(&self) -> Vec<(T, T)> {
+        let mut edges = Vec::new();
+        for (src, dsts) in &self.adj_map {
+            for dst in dsts {
+                edges.push((src.clone(), dst.clone()));
+            }
+        }
+        edges
+    }
 }
 
 #[cfg(test)]

@@ -1,6 +1,7 @@
 //! Checks if a valid history is a committed read history.
 
 use core::hash::Hash;
+
 use hashbrown::HashMap;
 
 use crate::consistency::error::Error;
