@@ -92,17 +92,19 @@ To install hooks after cloning: `deno task prepare`
 
 ```
 dbcop/                          workspace root
-  dbcop_core/                   main library (no_std)
-    src/
-      graph/digraph.rs           DiGraph<T> -- core graph type
-      consistency/               check() entry point, consistency algorithms
-        saturation/              saturation-based checkers (CommittedRead, Causal, etc.)
-        linearization/           linearization-based checkers (SnapshotIsolation, Serializability, StrongSerializability)
-      history/atomic/            AtomicTransactionPO and AtomicTransactionHistory
-  dbcop_cli/                    CLI binary
-  dbcop_wasm/                   WASM bindings
-  dbcop_sat/                    SAT solver backend
-  dbcop_testgen/                test history generator
+  crates/
+    core/                        main library (no_std) -- dbcop_core
+      src/
+        graph/digraph.rs           DiGraph<T> -- core graph type
+        consistency/               check() entry point, consistency algorithms
+          saturation/              saturation-based checkers (CommittedRead, Causal, etc.)
+          linearization/           linearization-based checkers (SnapshotIsolation, Serializability, StrongSerializability)
+        history/atomic/            AtomicTransactionPO and AtomicTransactionHistory
+    cli/                         CLI binary -- dbcop_cli
+    wasm/                        WASM bindings -- dbcop_wasm
+    sat/                         SAT solver backend -- dbcop_sat
+    testgen/                     test history generator -- dbcop_testgen
+    drivers/                     database drivers -- dbcop_drivers
   .github/workflows/
     rust.yml                     build + format CI
     code-quality.yml             taplo + deno fmt + typos CI
@@ -154,8 +156,8 @@ memory.
 
 - Unit tests: `#[cfg(test)] mod tests` blocks inside `src/` files.
 - Integration tests: `tests/` directories under each crate.
-- `dbcop_core/tests/paper_polynomial.rs` -- 13 tests verifying polynomial-time
+- `crates/core/tests/paper_polynomial.rs` -- 13 tests verifying polynomial-time
   checker correctness against known histories.
-- `dbcop_core/benches/consistency.rs` -- 18 Criterion benchmarks (6 consistency
+- `crates/core/benches/consistency.rs` -- 18 Criterion benchmarks (6 consistency
   levels x 3 history sizes).
 - Always add tests when adding new functionality.

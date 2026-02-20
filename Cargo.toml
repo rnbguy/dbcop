@@ -1,12 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
-  "dbcop_core",
-  "dbcop_testgen",
-  "dbcop_cli",
-  "dbcop_wasm",
-  "dbcop_sat",
-  "dbcop_drivers",
+  "crates/core",
+  "crates/testgen",
+  "crates/cli",
+  "crates/wasm",
+  "crates/sat",
+  "crates/drivers",
 ]
 
 [workspace.package]
@@ -26,8 +26,8 @@ rust-version = "1.73.0"
 readme = "README.md"
 
 [workspace.dependencies]
-dbcop_core    = { version = "0.2.0", path = "dbcop_core" }
-dbcop_testgen = { version = "0.2.0", path = "dbcop_testgen" }
+dbcop_core    = { version = "0.2.0", path = "crates/core" }
+dbcop_testgen = { version = "0.2.0", path = "crates/testgen" }
 
 clap          = { version = "4.5", features = [ "derive" ] }
 serde_json    = { version = "1.0", default-features = false }
