@@ -114,6 +114,28 @@ dbcop/                          workspace root
   rustfmt.toml                   nightly rustfmt config
 ```
 
+## CLI Usage
+
+The `dbcop` binary has two subcommands: `generate` and `verify`.
+
+### Verify Flags
+
+- `--input-dir <DIR>` -- directory containing history JSON files (required)
+- `--consistency <LEVEL>` -- consistency level to check (required). Values:
+  `committed-read`, `atomic-read`, `causal`, `prefix`, `snapshot-isolation`,
+  `serializable`.
+- `--verbose` -- on PASS prints witness details (Debug format), on FAIL prints
+  full error details. Output: `{filename}: PASS\n  witness: {witness:?}` or
+  `{filename}: FAIL\n  error: {error:?}`.
+- `--json` -- outputs one JSON object per file to stdout. On PASS:
+  `{"file": "...", "ok": true, "witness": {...}}`. On FAIL:
+  `{"file": "...", "ok": false, "error": {...}}`. Witness and error are
+  serialized via serde (requires the `serde` feature on `dbcop_core`, which the
+  CLI enables by default).
+
+Default output (no flags): `{filename}: PASS` or `{filename}: FAIL ({error:?})`
+on a single line.
+
 ## Key Types
 
 - `TransactionId { session_id: u64, session_height: u64 }` Default value (0, 0)
