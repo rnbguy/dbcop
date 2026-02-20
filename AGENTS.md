@@ -244,6 +244,11 @@ memory.
   for biconnected component decomposition (Theorem 5.2) to reduce NP-complete
   checker complexity by solving independent sub-histories separately.
 
+- Incremental transitive closure (`digraph.rs`): `incremental_closure()` extends
+  an existing closed graph with new edges using BFS ancestor/descendant
+  cross-product. Used in causal checker to avoid O(V\*(V+E)) full closure on
+  each saturation iteration.
+
 ## Testing
 
 - Unit tests: `#[cfg(test)] mod tests` blocks inside `src/` files.

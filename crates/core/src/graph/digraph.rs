@@ -226,6 +226,56 @@ where
         }
         edges
     }
+
+    /// Extends an already transitively-closed graph with new edges, maintaining
+    /// the closure property incrementally.
+    ///
+    /// For each new edge `(u, v)`, finds all ancestors of `u` (via backward
+    /// scan) and all descendants of `v` (via forward BFS), then adds edges
+    /// from every ancestor to every descendant.
+    ///
+    /// Returns `true` if any edge was added.
+    ///
+    /// Precondition: `self` should already be transitively closed for correct
+    /// incremental behavior. An empty graph is trivially closed.
+    pub fn incremental_closure<I: IntoIterator<Item = (T, T)>>(&mut self, new_edges: I) -> bool {
+        let mut changed = false;
+        for (u, v) in new_edges {
+            let mut ancestors = HashSet::new();
+            let mut stack: Vec<T> = Vec::new();
+            stack.push(u.clone());
+            while let Some(node) = stack.pop() {
+                if ancestors.insert(node.clone()) {
+                    for (src, dsts) in &self.adj_map {
+                        if dsts.contains(&node) {
+                            stack.push(src.clone());
+                        }
+                    }
+                }
+            }
+            let mut descendants = HashSet::new();
+            let mut stack: Vec<T> = Vec::new();
+            stack.push(v.clone());
+            while let Some(node) = stack.pop() {
+                if descendants.insert(node.clone()) {
+                    if let Some(dsts) = self.adj_map.get(&node) {
+                        for d in dsts {
+                            stack.push(d.clone());
+                        }
+                    }
+                }
+            }
+            for a in &ancestors {
+                for d in &descendants {
+                    if !self.has_edge(a, d) {
+                        self.add_edge(a.clone(), d.clone());
+                        changed = true;
+                    }
+                }
+            }
+        }
+        changed
+    }
 }
 
 #[cfg(test)]
@@ -332,5 +382,51 @@ mod tests {
         let topo = graph.topological_sort();
         assert!(topo.is_some());
         assert_eq!(topo.unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_incremental_closure_from_empty() {
+        let edges: [(u32, u32); 4] = [(0, 1), (1, 2), (0, 3), (3, 4)];
+
+        let mut full = DiGraph::default();
+        for (a, b) in edges {
+            full.add_edge(a, b);
+        }
+        let expected = full.closure();
+
+        let mut incremental: DiGraph<u32> = DiGraph::default();
+        incremental.incremental_closure(edges);
+
+        assert_eq!(incremental, expected);
+    }
+
+    #[test]
+    fn test_incremental_closure_extends_closed_graph() {
+        let mut graph: DiGraph<u32> = DiGraph::default();
+        graph.add_edge(0, 1);
+        graph.add_edge(1, 2);
+        graph = graph.closure();
+
+        let changed = graph.incremental_closure([(2u32, 3)]);
+        assert!(changed);
+
+        let mut expected: DiGraph<u32> = DiGraph::default();
+        expected.add_edge(0, 1);
+        expected.add_edge(1, 2);
+        expected.add_edge(2, 3);
+        let expected = expected.closure();
+
+        assert_eq!(graph, expected);
+    }
+
+    #[test]
+    fn test_incremental_closure_no_change() {
+        let mut graph: DiGraph<u32> = DiGraph::default();
+        graph.add_edge(0, 1);
+        graph.add_edge(1, 2);
+        graph = graph.closure();
+
+        let changed = graph.incremental_closure([(0u32, 2)]);
+        assert!(!changed);
     }
 }
