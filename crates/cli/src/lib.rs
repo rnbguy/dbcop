@@ -52,6 +52,12 @@ pub struct VerifyArgs {
     /// Consistency level to check
     #[arg(long)]
     pub consistency: ConsistencyLevel,
+    /// Print witness details on PASS and full error details on FAIL
+    #[arg(long)]
+    pub verbose: bool,
+    /// Output results as JSON (one object per file)
+    #[arg(long)]
+    pub json: bool,
 }
 
 #[derive(Debug, Clone, ValueEnum)]

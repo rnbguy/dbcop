@@ -80,10 +80,36 @@ fn verify(args: &dbcop_cli::VerifyArgs) {
             });
 
         match dbcop_core::check(history.get_data(), level) {
-            Ok(_witness) => println!("{filename}: PASS"),
+            Ok(witness) => {
+                if args.json {
+                    let result = serde_json::json!({
+                        "file": filename,
+                        "ok": true,
+                        "witness": witness,
+                    });
+                    println!("{}", serde_json::to_string(&result).unwrap());
+                } else if args.verbose {
+                    println!("{filename}: PASS");
+                    println!("  witness: {witness:?}");
+                } else {
+                    println!("{filename}: PASS");
+                }
+            }
             Err(e) => {
-                println!("{filename}: FAIL ({e:?})");
                 any_failed = true;
+                if args.json {
+                    let result = serde_json::json!({
+                        "file": filename,
+                        "ok": false,
+                        "error": e,
+                    });
+                    println!("{}", serde_json::to_string(&result).unwrap());
+                } else if args.verbose {
+                    println!("{filename}: FAIL");
+                    println!("  error: {e:?}");
+                } else {
+                    println!("{filename}: FAIL ({e:?})");
+                }
             }
         }
     }
