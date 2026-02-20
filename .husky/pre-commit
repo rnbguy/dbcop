@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+# Reject non-ASCII characters in staged .rs .ts .js files
+STAGED=$(git diff --cached --name-only | grep -E '\.(rs|ts|js)$' || true)
+if [ -n "$STAGED" ]; then
+  NON_ASCII=$(echo "$STAGED" | xargs grep -Pln '[^\x00-\x7F]' 2>/dev/null || true)
+  if [ -n "$NON_ASCII" ]; then
+    echo "ERROR: non-ASCII characters found in:"
+    echo "$NON_ASCII"
+    exit 1
+  fi
+fi
+
+# Check Rust formatting
+cargo fmt --check --all
