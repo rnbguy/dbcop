@@ -15,3 +15,7 @@ Cargo.lock
 
 # wasmbuild artifacts
 wasmlib/
+
+# Sisyphus and OMC directories
+.sisyphus/
+.omc/
