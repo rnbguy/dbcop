@@ -26,6 +26,7 @@ pub struct AtomicTransactionInfo<Variable> {
     pub writes: HashSet<Variable>,
 }
 
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TransactionId {
     pub session_id: u64,
