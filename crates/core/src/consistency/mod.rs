@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use core::hash::Hash;
 
 use self::error::Error;
@@ -39,13 +40,15 @@ pub enum Consistency {
 
 /// Check whether the given history satisfies the specified consistency level.
 ///
+/// On success, returns a [`Witness`] proving the history is consistent.
+///
 /// # Errors
 ///
 /// Returns an error if the history violates the consistency level.
 pub fn check<Variable, Version>(
     sessions: &[Session<Variable, Version>],
     level: Consistency,
-) -> Result<(), Error<Variable, Version>>
+) -> Result<Witness, Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone + Ord,
     Version: Eq + Hash + Clone,
@@ -53,19 +56,30 @@ where
     // Trivially consistent: no sessions or all sessions empty
     #[allow(clippy::redundant_closure_for_method_calls)]
     if sessions.is_empty() || sessions.iter().all(|s| s.is_empty()) {
-        return Ok(());
+        return Ok(Witness::CommitOrder(Vec::new()));
     }
 
     match level {
-        Consistency::CommittedRead => check_committed_read(sessions),
-        Consistency::AtomicRead => check_atomic_read(sessions).map(|_| ()),
-        Consistency::Causal => check_causal_read(sessions).map(|_| ()),
+        Consistency::CommittedRead => check_committed_read(sessions).map(Witness::SaturationOrder),
+        Consistency::AtomicRead => {
+            check_atomic_read(sessions).map(|po| Witness::SaturationOrder(po.visibility_relation))
+        }
+        Consistency::Causal => {
+            check_causal_read(sessions).map(|po| Witness::SaturationOrder(po.visibility_relation))
+        }
         Consistency::Prefix => {
             let po = check_causal_read(sessions)?;
             let mut solver = PrefixConsistencySolver::from(po);
             solver
                 .get_linearization()
-                .map(|_| ())
+                .map(|lin| {
+                    Witness::CommitOrder(
+                        lin.into_iter()
+                            .filter(|(_, is_write)| *is_write)
+                            .map(|(tid, _)| tid)
+                            .collect(),
+                    )
+                })
                 .ok_or(Error::Invalid(Consistency::Prefix))
         }
         Consistency::SnapshotIsolation => {
@@ -73,7 +87,7 @@ where
             let mut solver = SnapshotIsolationSolver::from(po);
             solver
                 .get_linearization()
-                .map(|_| ())
+                .map(Witness::SplitCommitOrder)
                 .ok_or(Error::Invalid(Consistency::SnapshotIsolation))
         }
         Consistency::Serializable => {
@@ -81,7 +95,7 @@ where
             let mut solver = SerializabilitySolver::from(po);
             solver
                 .get_linearization()
-                .map(|_| ())
+                .map(Witness::CommitOrder)
                 .ok_or(Error::Invalid(Consistency::Serializable))
         }
     }

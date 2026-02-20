@@ -80,7 +80,7 @@ fn verify(args: &dbcop_cli::VerifyArgs) {
             });
 
         match dbcop_core::check(history.get_data(), level) {
-            Ok(()) => println!("{filename}: PASS"),
+            Ok(_witness) => println!("{filename}: PASS"),
             Err(e) => {
                 println!("{filename}: FAIL ({e:?})");
                 any_failed = true;
