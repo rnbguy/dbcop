@@ -3,3 +3,7 @@
 dbcop = "dbcop"
 # ba is a SAT literal variable name (b-before-a), not a typo of "by" or "be"
 ba = "ba"
+
+[default.extend-words]
+# SER is the standard abbreviation for Serializability in database literature
+SER = "SER"
