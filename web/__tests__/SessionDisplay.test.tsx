@@ -14,7 +14,7 @@ describe("SessionDisplay", () => {
   it("renders empty state when result is null", () => {
     const c = mount(null);
     expect(c.querySelector(".sessions-empty")).not.toBeNull();
-    expect(c.textContent).toContain("No sessions to display");
+    expect(c.textContent).toContain("No sessions yet");
   });
 
   it("renders empty state when sessions array is empty", () => {
