@@ -7,8 +7,8 @@ interface Props {
 export function SessionDisplay({ result }: Props) {
   if (!result?.sessions || result.sessions.length === 0) {
     return (
-      <div class="sessions-empty empty">
-        <span>No sessions to display</span>
+      <div class="sessions-empty empty" aria-live="polite">
+        <span>No sessions yet. Run a check to see transaction details.</span>
       </div>
     );
   }

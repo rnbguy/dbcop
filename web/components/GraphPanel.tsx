@@ -134,8 +134,8 @@ export function GraphPanel({ result, onExportReady, onHighlightReady }: Props) {
 
   if (!result?.sessions) {
     return (
-      <div class="graph-panel empty">
-        <span>Run a check to see the graph</span>
+      <div class="graph-panel graph-panel-empty empty" aria-live="polite">
+        <span>Run a check to see the transaction graph</span>
       </div>
     );
   }

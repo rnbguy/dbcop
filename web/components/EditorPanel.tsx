@@ -196,8 +196,11 @@ export function EditorPanel(
 
       <Section title="Check" defaultOpen>
         <div class="editor-field">
-          <label class="field-label">Consistency Level</label>
+          <label class="field-label" for="consistency-level-select">
+            Consistency Level
+          </label>
           <select
+            id="consistency-level-select"
             value={level}
             onChange={(e) =>
               setLevel(
@@ -238,11 +241,10 @@ function Section(
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div class="section">
-      <div
+      <button
+        type="button"
         class="section-header"
         onClick={() => setOpen(!open)}
-        role="button"
-        tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") setOpen(!open);
         }}
@@ -252,7 +254,7 @@ function Section(
           size={14}
           class={`section-chevron ${open ? "" : "section-chevron--collapsed"}`}
         />
-      </div>
+      </button>
       {open && <div class="section-body">{children}</div>}
     </div>
   );

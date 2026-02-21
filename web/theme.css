@@ -70,6 +70,11 @@
 
   /* Scrollbar */
   --gh-scrollbar-thumb: #30363d;
+
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 400ms;
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Light mode */

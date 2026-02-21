@@ -94,6 +94,7 @@ export function Toolbar(
         class="btn btn-sm btn-icon"
         onClick={handleShare}
         title="Copy share link"
+        aria-label="Copy share link"
       >
         <Link size={14} />
       </button>
@@ -102,6 +103,7 @@ export function Toolbar(
         class="btn btn-sm btn-icon"
         onClick={() => fileRef.current?.click()}
         title="Import file"
+        aria-label="Import file"
       >
         <Upload size={14} />
       </button>
@@ -110,6 +112,7 @@ export function Toolbar(
         class="btn btn-sm btn-icon"
         onClick={handleExport}
         title="Export history"
+        aria-label="Export history"
       >
         <Download size={14} />
       </button>
@@ -118,6 +121,7 @@ export function Toolbar(
         class="btn btn-sm btn-icon"
         onClick={onOpenBuilder}
         title="Session builder"
+        aria-label="Open session builder"
       >
         <Grid size={14} />
       </button>
@@ -127,6 +131,7 @@ export function Toolbar(
           class="btn btn-sm btn-icon"
           onClick={graphExportPng}
           title="Export graph as PNG"
+          aria-label="Export graph as PNG"
         >
           <Share2 size={14} />
         </button>

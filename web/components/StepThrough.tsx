@@ -293,6 +293,7 @@ export function StepThrough(
             class="btn btn-sm"
             onClick={prevStep}
             disabled={history.length === 0 || historyCursor === 0}
+            aria-label="Previous step"
           >
             <ChevronLeft size={14} /> Prev
           </button>
@@ -303,6 +304,7 @@ export function StepThrough(
             class="btn btn-sm"
             onClick={nextFromHistoryOrApi}
             disabled={!sessionId || done}
+            aria-label="Next step"
           >
             Next <ChevronRight size={14} />
           </button>
@@ -311,6 +313,7 @@ export function StepThrough(
             class="btn btn-sm"
             onClick={() => (playing ? stopPlay() : setPlaying(true))}
             disabled={!sessionId || done}
+            aria-label={playing ? "Pause playback" : "Play steps"}
           >
             {playing ? <Pause size={14} /> : <Play size={14} />}
             {playing ? "Pause" : "Play"}
