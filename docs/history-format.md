@@ -59,21 +59,21 @@ In practice, the CLI and test generator use `u64` for both `Variable` and
 
 ```
 History
-  |
-  +-- sessions: array
-        |
-        +-- [0]: Session (array of transactions)
-        |     |
-        |     +-- [0]: Transaction
-        |     |     +-- events: array of Event
-        |     |     +-- committed: boolean
-        |     |
-        |     +-- [1]: Transaction
-        |           +-- events: array of Event
-        |           +-- committed: boolean
-        |
-        +-- [1]: Session
-              +-- ...
+  │
+  ├── sessions: array
+        │
+        ├── [0]: Session (array of transactions)
+        │     │
+        │     ├── [0]: Transaction
+        │     │     ├── events: array of Event
+        │     │     └── committed: boolean
+        │     │
+        │     └── [1]: Transaction
+        │           ├── events: array of Event
+        │           └── committed: boolean
+        │
+        └── [1]: Session
+              └── ...
 ```
 
 **Key constraints:**

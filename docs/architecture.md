@@ -17,21 +17,21 @@ dbcop is a Rust workspace (v0.2.0, edition 2021, MSRV 1.73.0) with six crates:
 
 ```
 Raw History (JSON)
-    |
-    v
-Vec<Session<V, Ver>>          -- crates/core/src/history/raw/types.rs
-    |
-    | TryFrom validation (repeatable-read check, write uniqueness)
-    v
-AtomicTransactionHistory       -- crates/core/src/history/atomic/types.rs
-    |
-    | Build partial order (session order, write-read relations)
-    v
-AtomicTransactionPO            -- crates/core/src/history/atomic/mod.rs
-    |
-    | check() dispatches by consistency level
-    v
-Result<Witness, Error>         -- crates/core/src/consistency/mod.rs
+    │
+    ▼
+Vec<Session<V, Ver>>          ── crates/core/src/history/raw/types.rs
+    │
+    │ TryFrom validation (repeatable-read check, write uniqueness)
+    ▼
+AtomicTransactionHistory       ── crates/core/src/history/atomic/types.rs
+    │
+    │ Build partial order (session order, write-read relations)
+    ▼
+AtomicTransactionPO            ── crates/core/src/history/atomic/mod.rs
+    │
+    │ check() dispatches by consistency level
+    ▼
+Result<Witness, Error>         ── crates/core/src/consistency/mod.rs
 ```
 
 ## Core Library Modules (`dbcop_core`)
