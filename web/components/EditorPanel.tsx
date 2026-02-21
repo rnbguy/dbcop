@@ -14,9 +14,12 @@ import {
 interface Props {
   onResult: (result: TraceResult | null) => void;
   onLoading: (loading: boolean) => void;
+  onStateChange?: (
+    state: { text: string; level: ConsistencyLevel; format: InputFormat },
+  ) => void;
 }
 
-export function EditorPanel({ onResult, onLoading }: Props) {
+export function EditorPanel({ onResult, onLoading, onStateChange }: Props) {
   const [format, setFormat] = useState<InputFormat>(DEFAULT_FORMAT);
   const [level, setLevel] = useState<ConsistencyLevel>(DEFAULT_LEVEL);
   const [example, setExample] = useState(DEFAULT_EXAMPLE);
@@ -24,6 +27,11 @@ export function EditorPanel({ onResult, onLoading }: Props) {
   const [highlightHtml, setHighlightHtml] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+
+  // Notify parent of editor state changes
+  useEffect(() => {
+    onStateChange?.({ text, level, format });
+  }, [text, level, format, onStateChange]);
 
   const loadExample = useCallback(
     (key: string) => {

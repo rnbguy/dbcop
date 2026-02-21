@@ -3,13 +3,19 @@ import type { TraceResult } from "../types.ts";
 interface Props {
   result: TraceResult | null;
   loading: boolean;
+  timedOut?: boolean;
 }
 
-export function ResultBar({ result, loading }: Props) {
+export function ResultBar({ result, loading, timedOut }: Props) {
   if (loading) {
     return (
       <div class="result-bar">
         <span class="spinner" /> Checking...
+        {timedOut && (
+          <span class="result-hint">
+            NP-complete check taking longer than expected...
+          </span>
+        )}
       </div>
     );
   }

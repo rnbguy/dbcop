@@ -6,7 +6,7 @@
     "serve-web": "deno run --allow-net --allow-read jsr:@std/http@1/file-server web/",
     "deno:fmt": "deno fmt --check",
     "deno:lint": "deno lint",
-    "deno:check": "deno check web/main.ts web/main.tsx web/types.ts web/constants.ts web/wasm.ts web/app.tsx web/components/ThemeToggle.tsx web/components/EditorPanel.tsx web/components/ResultBar.tsx web/components/SessionDisplay.tsx web/components/GraphPanel.tsx",
+    "deno:check": "deno check web/main.ts web/main.tsx web/types.ts web/constants.ts web/wasm.ts web/app.tsx web/components/ThemeToggle.tsx web/components/EditorPanel.tsx web/components/ResultBar.tsx web/components/SessionDisplay.tsx web/components/GraphPanel.tsx web/components/ShortcutHelp.tsx web/hooks/useWasmCheck.ts web/hooks/useKeyboardShortcuts.ts",
     "deno:ci": "deno task deno:fmt && deno task deno:lint && deno task deno:check",
     "build": "deno task wasmbuild && deno run -A web/build.ts"
   },

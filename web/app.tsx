@@ -1,11 +1,17 @@
-import { useState } from "preact/hooks";
+import { useCallback, useMemo, useState } from "preact/hooks";
 import type { Theme } from "./components/ThemeToggle.tsx";
 import { ThemeToggle } from "./components/ThemeToggle.tsx";
 import { EditorPanel } from "./components/EditorPanel.tsx";
 import { ResultBar } from "./components/ResultBar.tsx";
 import { SessionDisplay } from "./components/SessionDisplay.tsx";
 import { GraphPanel } from "./components/GraphPanel.tsx";
-import type { TraceResult } from "./types.ts";
+import { ShortcutHelp } from "./components/ShortcutHelp.tsx";
+import { useWasmCheck } from "./hooks/useWasmCheck.ts";
+import {
+  type ShortcutHandler,
+  useKeyboardShortcuts,
+} from "./hooks/useKeyboardShortcuts.ts";
+import type { ConsistencyLevel, InputFormat, TraceResult } from "./types.ts";
 
 function getInitialTheme(): Theme {
   const stored = globalThis.localStorage?.getItem("theme");
@@ -18,15 +24,51 @@ function getInitialTheme(): Theme {
 
 export function App() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
-  const [result, setResult] = useState<TraceResult | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [{ result, loading, timedOut }, { runCheck, clear: _clear }] =
+    useWasmCheck();
 
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    document.documentElement.setAttribute("data-theme", next);
-    globalThis.localStorage?.setItem("theme", next);
-  };
+  // Track current editor state for keyboard-triggered check
+  const [editorState, setEditorState] = useState<{
+    text: string;
+    level: ConsistencyLevel;
+    format: InputFormat;
+  }>({ text: "", level: "serializable", format: "text" });
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      globalThis.localStorage?.setItem("theme", next);
+      return next;
+    });
+  }, []);
+
+  const handleCheck = useCallback(() => {
+    runCheck(editorState.text, editorState.level, editorState.format);
+  }, [editorState, runCheck]);
+
+  const handleResult = useCallback(
+    (r: TraceResult | null) => {
+      if (r) {
+        // Direct result from EditorPanel check button
+        // (useWasmCheck also stores it, but EditorPanel may call its own check)
+      }
+    },
+    [],
+  );
+
+  const shortcuts: ShortcutHandler = useMemo(() => ({
+    onCheck: handleCheck,
+    onToggleTheme: toggleTheme,
+    onFormatText: () =>
+      setEditorState((s) => ({ ...s, format: "text" as const })),
+    onFormatJson: () =>
+      setEditorState((s) => ({ ...s, format: "json" as const })),
+    onShowHelp: () => setShowHelp((v) => !v),
+  }), [handleCheck, toggleTheme]);
+
+  useKeyboardShortcuts(shortcuts);
 
   return (
     <div class="app">
@@ -40,16 +82,22 @@ export function App() {
 
       <div class="main-layout">
         <aside class="sidebar">
-          <EditorPanel onResult={setResult} onLoading={setLoading} />
+          <EditorPanel
+            onResult={handleResult}
+            onLoading={() => {}}
+            onStateChange={setEditorState}
+          />
         </aside>
         <main class="content">
-          <ResultBar result={result} loading={loading} />
+          <ResultBar result={result} loading={loading} timedOut={timedOut} />
           <div class="content-panels">
             <SessionDisplay result={result} />
             <GraphPanel result={result} />
           </div>
         </main>
       </div>
+
+      <ShortcutHelp open={showHelp} onClose={() => setShowHelp(false)} />
     </div>
   );
 }
