@@ -6,10 +6,22 @@
     "serve-web": "deno run --allow-net --allow-read jsr:@std/http@1/file-server web/",
     "deno:fmt": "deno fmt --check",
     "deno:lint": "deno lint",
-    "deno:check": "deno check web/main.ts web/main.tsx web/types.ts web/constants.ts web/wasm.ts web/app.tsx web/components/ThemeToggle.tsx web/components/EditorPanel.tsx web/components/ResultBar.tsx web/components/SessionDisplay.tsx web/components/GraphPanel.tsx web/components/ShortcutHelp.tsx web/hooks/useWasmCheck.ts web/hooks/useKeyboardShortcuts.ts web/hooks/useShareLink.ts web/components/Toolbar.tsx",
+    "deno:check": "deno check web/ scripts/",
     "schema:check": "deno run -A scripts/check-schema.ts",
-    "deno:ci": "deno task deno:fmt && deno task deno:lint && deno task deno:check && deno task schema:check",
-    "build": "deno task wasmbuild && deno run -A web/build.ts"
+    "deno:ci": {
+      "dependencies": [
+        "deno:fmt",
+        "deno:lint",
+        "deno:check",
+        "schema:check"
+      ]
+    },
+    "build": {
+      "command": "deno run -A web/build.ts",
+      "dependencies": [
+        "wasmbuild"
+      ]
+    }
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@^1.0.19",
@@ -23,7 +35,12 @@
     "lucide-preact": "npm:lucide-preact@0.469.0"
   },
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext", "deno.ns"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext",
+      "deno.ns"
+    ],
     "jsx": "react-jsx",
     "jsxImportSource": "preact"
   },
