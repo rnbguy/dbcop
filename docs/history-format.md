@@ -60,7 +60,7 @@ In practice, the CLI and test generator use `u64` for both `Variable` and
 ```
 History
   │
-  ├── sessions: array
+  └── sessions: array
         │
         ├── [0]: Session (array of transactions)
         │     │
