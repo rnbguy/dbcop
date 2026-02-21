@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use chrono::{DateTime, Duration, Local};
 use dbcop_core::history::raw::types::{Event, Session, Transaction};
 use rand::distr::{Distribution, Uniform};
-use rand::Rng;
+use rand::RngExt;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use typed_builder::TypedBuilder;
