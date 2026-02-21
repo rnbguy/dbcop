@@ -27,5 +27,8 @@ dist/
 # Node modules (Deno nodeModulesDir)
 node_modules/
 
+# Playwright test artifacts
+test-results/
+
 # Screenshots
 *.png

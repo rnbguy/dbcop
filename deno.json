@@ -21,7 +21,9 @@
         "wasmbuild"
       ],
       "command": "deno run -A web/build.ts"
-    }
+    },
+    "test:unit": "deno run -A npm:vitest run",
+    "test:e2e": "npx playwright test"
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@^1.0.19",
@@ -33,7 +35,9 @@
     "preact/hooks": "npm:preact@10/hooks",
     "preact/jsx-runtime": "npm:preact@10/jsx-runtime",
     "lucide-preact": "npm:lucide-preact@0.469.0",
-    "ajv": "npm:ajv@8"
+    "ajv": "npm:ajv@8",
+    "happy-dom": "npm:happy-dom",
+    "@playwright/test": "npm:@playwright/test"
   },
   "compilerOptions": {
     "lib": [
@@ -52,7 +56,8 @@
       ".claude",
       "node_modules",
       "wasmlib",
-      "dist"
+      "dist",
+      "test-results"
     ]
   }
 }
