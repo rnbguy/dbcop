@@ -1,3 +1,4 @@
+use alloc::collections::BTreeSet;
 use alloc::vec::Vec;
 use core::hash::Hash;
 
@@ -9,9 +10,10 @@ use self::linearization::snapshot_isolation::SnapshotIsolationSolver;
 use self::saturation::atomic_read::check_atomic_read;
 use self::saturation::causal::check_causal_read;
 use self::saturation::committed_read::check_committed_read;
+use crate::history::atomic::types::TransactionId;
 use crate::history::raw::types::Session;
 
-pub(crate) mod decomposition;
+pub mod decomposition;
 pub mod error;
 pub mod linearization;
 pub mod saturation;
@@ -106,36 +108,141 @@ where
         Consistency::Causal => {
             check_causal_read(sessions).map(|po| Witness::SaturationOrder(po.visibility_relation))
         }
-        Consistency::Prefix => {
-            let po = check_causal_read(sessions)?;
-            let mut solver = PrefixConsistencySolver::from(po);
-            solver
-                .get_linearization()
-                .map(|lin| {
-                    Witness::CommitOrder(
-                        lin.into_iter()
-                            .filter(|(_, is_write)| *is_write)
-                            .map(|(tid, _)| tid)
-                            .collect(),
-                    )
-                })
-                .ok_or(Error::Invalid(Consistency::Prefix))
-        }
-        Consistency::SnapshotIsolation => {
-            let po = check_causal_read(sessions)?;
-            let mut solver = SnapshotIsolationSolver::from(po);
-            solver
-                .get_linearization()
-                .map(Witness::SplitCommitOrder)
-                .ok_or(Error::Invalid(Consistency::SnapshotIsolation))
-        }
-        Consistency::Serializable => {
-            let po = check_causal_read(sessions)?;
-            let mut solver = SerializabilitySolver::from(po);
-            solver
-                .get_linearization()
-                .map(Witness::CommitOrder)
-                .ok_or(Error::Invalid(Consistency::Serializable))
+        Consistency::Prefix | Consistency::SnapshotIsolation | Consistency::Serializable => {
+            check_npc(sessions, level)
         }
     }
+}
+
+/// Remap witness `TransactionId`s from sub-history session IDs back to the
+/// original session IDs.
+///
+/// `session_ids[i]` is the original session ID corresponding to the
+/// sub-history session ID `i + 1`.
+fn remap_witness(witness: Witness, session_ids: &[u64]) -> Witness {
+    let remap = |tid: TransactionId| -> TransactionId {
+        if tid.session_id == 0 {
+            return tid;
+        }
+        #[allow(clippy::cast_possible_truncation)]
+        TransactionId {
+            session_id: session_ids[tid.session_id as usize - 1],
+            session_height: tid.session_height,
+        }
+    };
+    match witness {
+        Witness::CommitOrder(v) => Witness::CommitOrder(v.into_iter().map(remap).collect()),
+        Witness::SplitCommitOrder(v) => {
+            Witness::SplitCommitOrder(v.into_iter().map(|(tid, b)| (remap(tid), b)).collect())
+        }
+        Witness::SaturationOrder(_) => {
+            unreachable!("SaturationOrder is not produced by NPC linearization checkers")
+        }
+    }
+}
+
+/// Merge two witnesses of the same variant by concatenation.
+fn merge_witnesses(base: Witness, other: Witness) -> Witness {
+    match (base, other) {
+        (Witness::CommitOrder(mut a), Witness::CommitOrder(b)) => {
+            a.extend(b);
+            Witness::CommitOrder(a)
+        }
+        (Witness::SplitCommitOrder(mut a), Witness::SplitCommitOrder(b)) => {
+            a.extend(b);
+            Witness::SplitCommitOrder(a)
+        }
+        _ => unreachable!("mismatched witness variants during merge"),
+    }
+}
+
+/// Check NP-complete consistency levels (Prefix, `SnapshotIsolation`, Serializable)
+/// using connected-component decomposition of the communication graph
+/// (Theorem 5.2 in Biswas & Enea 2019).
+///
+/// Decomposes the communication graph into connected components and checks
+/// each independently, then remaps and merges the witnesses.
+fn check_npc<Variable, Version>(
+    sessions: &[Session<Variable, Version>],
+    level: Consistency,
+) -> Result<Witness, Error<Variable, Version>>
+where
+    Variable: Eq + Hash + Clone + Ord,
+    Version: Eq + Hash + Clone,
+{
+    let po = check_causal_read(sessions)?;
+
+    let comm_graph = decomposition::communication_graph(&po);
+    let all_components = decomposition::connected_components(&comm_graph);
+
+    // Only non-trivial components (>= 2 sessions) require a consistency check.
+    // Singleton sessions are trivially consistent after the causal check.
+    let components_to_check: Vec<BTreeSet<u64>> = all_components
+        .into_iter()
+        .filter(|c| c.len() >= 2)
+        .collect();
+
+    tracing::debug!(
+        components = components_to_check.len(),
+        sessions = sessions.len(),
+        ?level,
+        "communication graph decomposition"
+    );
+
+    // Single (or no) non-trivial component: run DFS directly on the pre-built PO.
+    if components_to_check.len() <= 1 {
+        return match level {
+            Consistency::Prefix => {
+                let mut solver = PrefixConsistencySolver::from(po);
+                solver
+                    .get_linearization()
+                    .map(|lin| {
+                        Witness::CommitOrder(
+                            lin.into_iter()
+                                .filter(|(_, is_write)| *is_write)
+                                .map(|(tid, _)| tid)
+                                .collect(),
+                        )
+                    })
+                    .ok_or(Error::Invalid(Consistency::Prefix))
+            }
+            Consistency::SnapshotIsolation => {
+                let mut solver = SnapshotIsolationSolver::from(po);
+                solver
+                    .get_linearization()
+                    .map(Witness::SplitCommitOrder)
+                    .ok_or(Error::Invalid(Consistency::SnapshotIsolation))
+            }
+            Consistency::Serializable => {
+                let mut solver = SerializabilitySolver::from(po);
+                solver
+                    .get_linearization()
+                    .map(Witness::CommitOrder)
+                    .ok_or(Error::Invalid(Consistency::Serializable))
+            }
+            _ => unreachable!("check_npc called for non-NPC consistency level"),
+        };
+    }
+
+    // Initial empty witness of the correct variant for this level.
+    let mut merged: Witness = match level {
+        Consistency::SnapshotIsolation => Witness::SplitCommitOrder(Vec::new()),
+        _ => Witness::CommitOrder(Vec::new()),
+    };
+
+    // Check each connected component independently and accumulate witnesses.
+    for component in components_to_check {
+        let session_ids: Vec<u64> = component.iter().copied().collect();
+        #[allow(clippy::cast_possible_truncation)]
+        let sub_sessions: Vec<Session<Variable, Version>> = session_ids
+            .iter()
+            .map(|&sid| sessions[sid as usize - 1].clone())
+            .collect();
+
+        let sub_witness = check_npc(&sub_sessions, level)?;
+        let remapped = remap_witness(sub_witness, &session_ids);
+        merged = merge_witnesses(merged, remapped);
+    }
+
+    Ok(merged)
 }

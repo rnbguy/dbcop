@@ -11,9 +11,10 @@
 //   position variables directly with `pos(i) < pos(j)` constraints for a more
 //   compact representation.
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::hash::Hash;
 
+use dbcop_core::consistency::decomposition::{communication_graph, connected_components};
 use dbcop_core::consistency::error::Error;
 use dbcop_core::consistency::saturation::causal::check_causal_read;
 use dbcop_core::consistency::witness::Witness;
@@ -164,6 +165,70 @@ fn visibility_edges<Variable: Eq + Hash + Clone>(
     edges
 }
 
+/// Decompose sessions by connected components of the communication graph.
+///
+/// Returns `Some(components)` when 2+ non-trivial components exist (each
+/// component is a sorted vec of original 1-based session IDs paired with the
+/// corresponding sub-session slice). Returns `None` when decomposition
+/// provides no benefit (0 or 1 non-trivial components).
+#[allow(clippy::type_complexity)]
+fn decompose_sessions<Variable, Version>(
+    po: &AtomicTransactionPO<Variable>,
+    sessions: &[Session<Variable, Version>],
+) -> Option<Vec<(Vec<u64>, Vec<Session<Variable, Version>>)>>
+where
+    Variable: Clone + Eq + Hash,
+    Version: Clone,
+{
+    let comm_graph = communication_graph(po);
+    let all_components = connected_components(&comm_graph);
+
+    let components_to_check: Vec<BTreeSet<u64>> = all_components
+        .into_iter()
+        .filter(|c| c.len() >= 2)
+        .collect();
+
+    if components_to_check.len() <= 1 {
+        return None;
+    }
+
+    Some(
+        components_to_check
+            .into_iter()
+            .map(|component| {
+                let session_ids: Vec<u64> = component.iter().copied().collect();
+                #[allow(clippy::cast_possible_truncation)]
+                let sub_sessions: Vec<Session<Variable, Version>> = session_ids
+                    .iter()
+                    .map(|&sid| sessions[sid as usize - 1].clone())
+                    .collect();
+                (session_ids, sub_sessions)
+            })
+            .collect(),
+    )
+}
+
+/// Remap witness `TransactionId`s from sub-history session IDs to original IDs.
+fn remap_witness_sat(witness: Witness, session_ids: &[u64]) -> Witness {
+    let remap = |tid: TransactionId| -> TransactionId {
+        if tid.session_id == 0 {
+            return tid;
+        }
+        #[allow(clippy::cast_possible_truncation)]
+        TransactionId {
+            session_id: session_ids[tid.session_id as usize - 1],
+            session_height: tid.session_height,
+        }
+    };
+    match witness {
+        Witness::CommitOrder(v) => Witness::CommitOrder(v.into_iter().map(remap).collect()),
+        Witness::SplitCommitOrder(v) => {
+            Witness::SplitCommitOrder(v.into_iter().map(|(tid, b)| (remap(tid), b)).collect())
+        }
+        Witness::SaturationOrder(_) => unreachable!("SaturationOrder not from SAT checkers"),
+    }
+}
+
 /// Check serializability using SAT.
 ///
 /// # Errors
@@ -173,10 +238,18 @@ pub fn check_serializable<Variable, Version>(
     sessions: &[Session<Variable, Version>],
 ) -> Result<(), Error<Variable, Version>>
 where
-    Variable: Eq + Hash + Clone + Ord,
+    Variable: Clone + Eq + Hash + Ord,
     Version: Eq + Hash + Clone,
 {
     let po = check_causal_read(sessions)?;
+
+    if let Some(components) = decompose_sessions(&po, sessions) {
+        for (_, sub_sessions) in components {
+            check_serializable(&sub_sessions)?;
+        }
+        return Ok(());
+    }
+
     check_serializable_from_po(&po)
         .then_some(())
         .ok_or(Error::Invalid(Consistency::Serializable))
@@ -257,6 +330,23 @@ where
     Version: Eq + Hash + Clone,
 {
     let po = check_causal_read(sessions)?;
+
+    if let Some(components) = decompose_sessions(&po, sessions) {
+        let mut merged = Witness::CommitOrder(Vec::new());
+        for (session_ids, sub_sessions) in components {
+            let sub_witness = check_prefix(&sub_sessions)?;
+            let remapped = remap_witness_sat(sub_witness, &session_ids);
+            merged = match (merged, remapped) {
+                (Witness::CommitOrder(mut a), Witness::CommitOrder(b)) => {
+                    a.extend(b);
+                    Witness::CommitOrder(a)
+                }
+                _ => unreachable!("CommitOrder merge mismatch in check_prefix"),
+            };
+        }
+        return Ok(merged);
+    }
+
     check_prefix_from_po(&po).ok_or(Error::Invalid(Consistency::Prefix))
 }
 
@@ -362,6 +452,23 @@ where
     Version: Eq + Hash + Clone,
 {
     let po = check_causal_read(sessions)?;
+
+    if let Some(components) = decompose_sessions(&po, sessions) {
+        let mut merged = Witness::SplitCommitOrder(Vec::new());
+        for (session_ids, sub_sessions) in components {
+            let sub_witness = check_snapshot_isolation(&sub_sessions)?;
+            let remapped = remap_witness_sat(sub_witness, &session_ids);
+            merged = match (merged, remapped) {
+                (Witness::SplitCommitOrder(mut a), Witness::SplitCommitOrder(b)) => {
+                    a.extend(b);
+                    Witness::SplitCommitOrder(a)
+                }
+                _ => unreachable!("SplitCommitOrder merge mismatch in check_snapshot_isolation"),
+            };
+        }
+        return Ok(merged);
+    }
+
     check_si_from_po(&po).ok_or(Error::Invalid(Consistency::SnapshotIsolation))
 }
 

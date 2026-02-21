@@ -1,3 +1,4 @@
+use alloc::collections::BTreeSet;
 use alloc::vec::Vec;
 use core::hash::Hash;
 
@@ -25,7 +26,7 @@ use crate::history::atomic::AtomicTransactionPO;
 /// Paper Section 5, Definition 5.1: Comm(h) = vertices are sessions, edge iff two sessions
 /// read/write a common variable. Theorem 5.2: h satisfies X iff for every biconnected
 /// component C of Comm(h), h↓C satisfies X.
-#[allow(dead_code)]
+#[must_use]
 pub fn communication_graph<Variable>(po: &AtomicTransactionPO<Variable>) -> UGraph<u64>
 where
     Variable: Clone + Eq + Hash,
@@ -71,6 +72,43 @@ where
     }
 
     graph
+}
+
+/// Find connected components of a communication graph.
+///
+/// Returns a [`Vec`] of [`BTreeSet`]s, each containing the session IDs in
+/// one connected component. Isolated sessions appear as singletons.
+#[must_use]
+pub fn connected_components(graph: &UGraph<u64>) -> Vec<BTreeSet<u64>> {
+    let mut visited: HashSet<u64> = HashSet::default();
+    let mut components: Vec<BTreeSet<u64>> = Vec::new();
+
+    let mut all_vertices: Vec<u64> = graph.adj_map.keys().copied().collect();
+    all_vertices.sort_unstable();
+
+    for start in all_vertices {
+        if visited.contains(&start) {
+            continue;
+        }
+        let mut component: BTreeSet<u64> = BTreeSet::new();
+        let mut stack: Vec<u64> = Vec::new();
+        stack.push(start);
+        while let Some(v) = stack.pop() {
+            if !visited.insert(v) {
+                continue;
+            }
+            component.insert(v);
+            if let Some(neighbors) = graph.adj_map.get(&v) {
+                for &n in neighbors {
+                    if !visited.contains(&n) {
+                        stack.push(n);
+                    }
+                }
+            }
+        }
+        components.push(component);
+    }
+    components
 }
 
 #[cfg(test)]
