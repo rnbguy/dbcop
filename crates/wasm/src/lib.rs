@@ -5,17 +5,34 @@
 #![cfg_attr(not(test), no_main)]
 
 extern crate alloc;
+extern crate std;
 
+use alloc::collections::BTreeMap;
 use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use core::cell::{Cell, RefCell};
+use std::thread_local;
 
 use dbcop_core::consistency::saturation::committed_read::check_committed_read;
 use dbcop_core::consistency::witness::Witness;
-use dbcop_core::history::atomic::types::TransactionId;
+use dbcop_core::history::atomic::types::{AtomicTransactionHistory, TransactionId};
+use dbcop_core::history::atomic::AtomicTransactionPO;
 use dbcop_core::history::raw::types::Session;
 use dbcop_core::Consistency;
 use wasm_bindgen::prelude::*;
+
+thread_local! {
+    static STEP_SESSIONS: RefCell<BTreeMap<String, CausalStepSession>> = const { RefCell::new(BTreeMap::new()) };
+    static NEXT_SESSION_ID: Cell<u64> = const { Cell::new(1) };
+}
+
+struct CausalStepSession {
+    step: u64,
+    history_json: String,
+    level: String,
+    po: AtomicTransactionPO<u64>,
+}
 
 fn parse_level(level: &str) -> Option<Consistency> {
     match level {
@@ -52,6 +69,153 @@ fn witness_edges(witness: &Witness) -> Vec<serde_json::Value> {
             .map(|w| serde_json::json!([tid_to_json(&w[0].0), tid_to_json(&w[1].0)]))
             .collect(),
     }
+}
+
+fn next_step_session_id() -> String {
+    NEXT_SESSION_ID.with(|counter| {
+        let id = counter.get();
+        counter.set(id + 1);
+        format!("{id}")
+    })
+}
+
+fn edge_to_json(from: TransactionId, to: TransactionId) -> serde_json::Value {
+    serde_json::json!([tid_to_json(&from), tid_to_json(&to)])
+}
+
+fn parse_embedded_result(result_json: &str) -> serde_json::Value {
+    serde_json::from_str::<serde_json::Value>(result_json)
+        .unwrap_or_else(|e| serde_json::json!({"ok": false, "error": e.to_string()}))
+}
+
+#[must_use]
+#[wasm_bindgen]
+pub fn check_consistency_step_init(history_json: &str, level: &str) -> String {
+    let Some(consistency) = parse_level(level) else {
+        return serde_json::json!({"error": "unknown consistency level"}).to_string();
+    };
+
+    let sessions = match serde_json::from_str::<Vec<Session<u64, u64>>>(history_json) {
+        Ok(s) => s,
+        Err(e) => {
+            return serde_json::json!({"error": e.to_string()}).to_string();
+        }
+    };
+
+    let session_id = next_step_session_id();
+
+    if matches!(consistency, Consistency::Causal) {
+        let atomic_history = match AtomicTransactionHistory::try_from(sessions.as_slice()) {
+            Ok(h) => h,
+            Err(e) => {
+                return serde_json::json!({"error": e}).to_string();
+            }
+        };
+
+        let mut po = AtomicTransactionPO::from(atomic_history);
+        po.vis_includes(&po.get_wr());
+        po.vis_is_trans();
+
+        let state = CausalStepSession {
+            step: 0,
+            history_json: history_json.to_string(),
+            level: level.to_string(),
+            po,
+        };
+
+        STEP_SESSIONS.with(|store| {
+            store.borrow_mut().insert(session_id.clone(), state);
+        });
+
+        serde_json::json!({
+            "session_id": session_id,
+            "step": 0,
+            "level": "causal",
+            "steppable": true,
+            "done": false,
+            "new_edges": [],
+            "total_edges": 0
+        })
+        .to_string()
+    } else {
+        let trace = check_consistency_trace(history_json, level);
+        let result = parse_embedded_result(&trace);
+        serde_json::json!({
+            "session_id": session_id,
+            "step": 0,
+            "level": level,
+            "steppable": false,
+            "done": true,
+            "result": result
+        })
+        .to_string()
+    }
+}
+
+#[must_use]
+#[wasm_bindgen]
+pub fn check_consistency_step_next(session_id: &str) -> String {
+    STEP_SESSIONS.with(|store| {
+        let mut store = store.borrow_mut();
+        let Some(mut state) = store.remove(session_id) else {
+            return serde_json::json!({"error": "unknown session_id"}).to_string();
+        };
+
+        state.step += 1;
+
+        let ww_rel = state.po.causal_ww();
+        let mut new_edges = Vec::new();
+
+        for ww_x in ww_rel.values() {
+            for (src, dsts) in &ww_x.adj_map {
+                for dst in dsts {
+                    if !state.po.visibility_relation.has_edge(src, dst) {
+                        new_edges.push((*src, *dst));
+                    }
+                }
+            }
+        }
+
+        if new_edges.is_empty() {
+            let total_edges = state.po.visibility_relation.to_edge_list().len() as u64;
+            let trace = check_consistency_trace(&state.history_json, &state.level);
+            let result = parse_embedded_result(&trace);
+
+            serde_json::json!({
+                "session_id": session_id,
+                "step": state.step,
+                "phase": "ww",
+                "new_edges": [],
+                "total_edges": total_edges,
+                "done": true,
+                "result": result
+            })
+            .to_string()
+        } else {
+            state
+                .po
+                .visibility_relation
+                .incremental_closure(new_edges.clone());
+            let total_edges = state.po.visibility_relation.to_edge_list().len() as u64;
+            let step = state.step;
+            let new_edges_json: Vec<serde_json::Value> = new_edges
+                .into_iter()
+                .map(|(from, to)| edge_to_json(from, to))
+                .collect();
+
+            store.insert(session_id.to_string(), state);
+
+            serde_json::json!({
+                "session_id": session_id,
+                "step": step,
+                "phase": "vis",
+                "new_edges": new_edges_json,
+                "total_edges": total_edges,
+                "done": false
+            })
+            .to_string()
+        }
+    })
 }
 
 /// Check whether a history (as JSON) satisfies the given consistency level.
