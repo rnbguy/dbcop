@@ -41,7 +41,9 @@ export function useWasmCheck(): [WasmCheckState, WasmCheckActions] {
           const wasm = await import("../wasm.ts");
           let json: string;
           if (format === "text") {
-            json = wasm.check_consistency_trace_text(text, level);
+            // Parser requires trailing newline on every line
+            const normalized = text.endsWith("\n") ? text : text + "\n";
+            json = wasm.check_consistency_trace_text(normalized, level);
           } else {
             json = wasm.check_consistency_trace(text, level);
           }

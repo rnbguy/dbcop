@@ -910,3 +910,12 @@ pre,
   font-size: 13px;
   color: var(--gh-text-secondary);
 }
+
+/* -- Toolbar (share, import, export) -------------------------------------- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  margin-right: 12px;
+}

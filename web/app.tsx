@@ -6,12 +6,14 @@ import { ResultBar } from "./components/ResultBar.tsx";
 import { SessionDisplay } from "./components/SessionDisplay.tsx";
 import { GraphPanel } from "./components/GraphPanel.tsx";
 import { ShortcutHelp } from "./components/ShortcutHelp.tsx";
+import { Toolbar } from "./components/Toolbar.tsx";
 import { useWasmCheck } from "./hooks/useWasmCheck.ts";
 import {
   type ShortcutHandler,
   useKeyboardShortcuts,
 } from "./hooks/useKeyboardShortcuts.ts";
-import type { ConsistencyLevel, InputFormat, TraceResult } from "./types.ts";
+import { useShareLink } from "./hooks/useShareLink.ts";
+import type { ConsistencyLevel, InputFormat } from "./types.ts";
 
 function getInitialTheme(): Theme {
   const stored = globalThis.localStorage?.getItem("theme");
@@ -25,15 +27,34 @@ function getInitialTheme(): Theme {
 export function App() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
   const [showHelp, setShowHelp] = useState(false);
-  const [{ result, loading, timedOut }, { runCheck, clear: _clear }] =
-    useWasmCheck();
+  const [{ result, loading, timedOut }, { runCheck }] = useWasmCheck();
+  const { share, restore } = useShareLink();
 
-  // Track current editor state for keyboard-triggered check
+  // Track current editor state for keyboard-triggered check and share
   const [editorState, setEditorState] = useState<{
     text: string;
     level: ConsistencyLevel;
     format: InputFormat;
-  }>({ text: "", level: "serializable", format: "text" });
+  }>(() => {
+    const restored = restore();
+    if (restored) return restored;
+    return { text: "", level: "serializable", format: "text" };
+  });
+
+  // Graph export functions (set by GraphPanel via callback)
+  const [graphExport, setGraphExport] = useState<
+    {
+      exportPng: () => void;
+    } | null
+  >(null);
+
+  // Import handler (receives text from file drop/select)
+  const [importData, setImportData] = useState<
+    {
+      text: string;
+      format: InputFormat;
+    } | null
+  >(null);
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => {
@@ -48,12 +69,14 @@ export function App() {
     runCheck(editorState.text, editorState.level, editorState.format);
   }, [editorState, runCheck]);
 
-  const handleResult = useCallback(
-    (r: TraceResult | null) => {
-      if (r) {
-        // Direct result from EditorPanel check button
-        // (useWasmCheck also stores it, but EditorPanel may call its own check)
-      }
+  const handleShare = useCallback(() => {
+    return share(editorState);
+  }, [editorState, share]);
+
+  const handleImport = useCallback(
+    (text: string, format: InputFormat) => {
+      setImportData({ text, format });
+      setEditorState((s) => ({ ...s, text, format }));
     },
     [],
   );
@@ -77,22 +100,30 @@ export function App() {
           <h1 class="header-title">dbcop</h1>
           <span class="header-subtitle">consistency checker</span>
         </div>
+        <Toolbar
+          editorState={editorState}
+          onImport={handleImport}
+          onShare={handleShare}
+          graphExportPng={graphExport?.exportPng ?? null}
+          graphExportSvg={null}
+        />
         <ThemeToggle theme={theme} onToggle={toggleTheme} />
       </header>
 
       <div class="main-layout">
         <aside class="sidebar">
           <EditorPanel
-            onResult={handleResult}
+            onResult={() => {}}
             onLoading={() => {}}
             onStateChange={setEditorState}
+            importData={importData}
           />
         </aside>
         <main class="content">
           <ResultBar result={result} loading={loading} timedOut={timedOut} />
           <div class="content-panels">
             <SessionDisplay result={result} />
-            <GraphPanel result={result} />
+            <GraphPanel result={result} onExportReady={setGraphExport} />
           </div>
         </main>
       </div>

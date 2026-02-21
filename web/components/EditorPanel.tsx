@@ -17,9 +17,12 @@ interface Props {
   onStateChange?: (
     state: { text: string; level: ConsistencyLevel; format: InputFormat },
   ) => void;
+  importData?: { text: string; format: InputFormat } | null;
 }
 
-export function EditorPanel({ onResult, onLoading, onStateChange }: Props) {
+export function EditorPanel(
+  { onResult, onLoading, onStateChange, importData }: Props,
+) {
   const [format, setFormat] = useState<InputFormat>(DEFAULT_FORMAT);
   const [level, setLevel] = useState<ConsistencyLevel>(DEFAULT_LEVEL);
   const [example, setExample] = useState(DEFAULT_EXAMPLE);
@@ -73,6 +76,14 @@ export function EditorPanel({ onResult, onLoading, onStateChange }: Props) {
     [example],
   );
 
+  // Apply imported data
+  useEffect(() => {
+    if (importData) {
+      setText(importData.text);
+      setFormat(importData.format);
+    }
+  }, [importData]);
+
   // Syntax highlighting for text format
   useEffect(() => {
     if (format !== "text") {
@@ -111,7 +122,9 @@ export function EditorPanel({ onResult, onLoading, onStateChange }: Props) {
       const wasm = await import("../wasm.ts");
       let resultJson: string;
       if (format === "text") {
-        resultJson = wasm.check_consistency_trace_text(text, level);
+        // Parser requires trailing newline on every line
+        const normalized = text.endsWith("\n") ? text : text + "\n";
+        resultJson = wasm.check_consistency_trace_text(normalized, level);
       } else {
         resultJson = wasm.check_consistency_trace(text, level);
       }
@@ -248,8 +261,8 @@ function tokenClass(kind: string): string {
     Comment: "syn-comment",
     BracketOpen: "syn-bracket",
     BracketClose: "syn-bracket",
-    ColonEquals: "syn-operator",
-    DoubleEquals: "syn-operator",
+    ColonEquals: "syn-write-op",
+    DoubleEquals: "syn-read-op",
     Ident: "syn-variable",
     Integer: "syn-number",
     Dash: "syn-separator",

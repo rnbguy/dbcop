@@ -10,13 +10,15 @@ interface CyInstance {
   fit: (padding?: number) => void;
   style: () => { fromJson: (s: unknown[]) => { update: () => void } };
   json: (opts: { style: unknown[] }) => void;
+  png: (opts?: { full?: boolean; scale?: number; bg?: string }) => string;
 }
 
 interface Props {
   result: TraceResult | null;
+  onExportReady?: (fns: { exportPng: () => void } | null) => void;
 }
 
-export function GraphPanel({ result }: Props) {
+export function GraphPanel({ result, onExportReady }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<CyInstance | null>(null);
 
@@ -48,13 +50,29 @@ export function GraphPanel({ result }: Props) {
       boxSelectionEnabled: false,
     });
 
+    onExportReady?.({
+      exportPng: () => {
+        if (!cyRef.current) return;
+        const dataUrl = cyRef.current.png({
+          full: true,
+          scale: 2,
+          bg: getCssVar("--gh-bg-canvas") || "#0d1117",
+        });
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = "dbcop-graph.png";
+        a.click();
+      },
+    });
+
     return () => {
+      onExportReady?.(null);
       if (cyRef.current) {
         cyRef.current.destroy();
         cyRef.current = null;
       }
     };
-  }, [result]);
+  }, [result, onExportReady]);
 
   // Re-fit on resize
   useEffect(() => {
