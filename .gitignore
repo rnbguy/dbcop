@@ -26,3 +26,6 @@ dist/
 
 # Node modules (Deno nodeModulesDir)
 node_modules/
+
+# Screenshots
+*.png
