@@ -16,72 +16,7 @@
     ></script>
   </head>
   <body>
-    <div class="app">
-      <header>
-        <div class="title">
-          <h1>dbcop</h1>
-          <span class="subtitle">Transactional Consistency Checker</span>
-        </div>
-        <div class="header-actions">
-          <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
-            &#9790;
-          </button>
-        </div>
-      </header>
-      <main>
-        <aside class="sidebar">
-          <div class="sidebar-section">
-            <h2>Example</h2>
-            <select id="example-select">
-              <option value="write-read">Write-Read (PASS)</option>
-              <option value="lost-update">Lost Update (SI FAIL)</option>
-              <option value="serializable">Serializable History (PASS)</option>
-              <option value="causal-violation">Causal Violation</option>
-            </select>
-          </div>
-          <div class="sidebar-section">
-            <h2>History Input</h2>
-            <div class="format-toggle">
-              <button id="fmt-text" class="active">Text</button>
-              <button id="fmt-json">JSON</button>
-            </div>
-            <div class="editor-wrap">
-              <textarea
-                id="history-input"
-                rows="12"
-                spellcheck="false"
-                placeholder="Enter history..."
-              ></textarea>
-              <div class="highlight-overlay" id="highlight-overlay"></div>
-            </div>
-          </div>
-          <div class="sidebar-section">
-            <h2>Consistency Level</h2>
-            <select id="level-select">
-              <option value="committed-read">Read Committed</option>
-              <option value="atomic-read">Atomic Read</option>
-              <option value="causal">Causal Consistency</option>
-              <option value="prefix">Prefix Consistency</option>
-              <option value="snapshot-isolation">Snapshot Isolation</option>
-              <option value="serializable" selected>Serializability</option>
-            </select>
-            <button class="check-btn" id="check-btn">Check Consistency</button>
-          </div>
-        </aside>
-        <div class="content">
-          <div class="result-bar" id="result-bar">
-            <span class="result-placeholder">Run a check to see results.</span>
-          </div>
-          <div class="sessions-panel">
-            <div class="sessions-container" id="sessions-display"></div>
-          </div>
-          <div class="graph-panel">
-            <div id="graph-container"></div>
-            <div id="legend"></div>
-          </div>
-        </div>
-      </main>
-    </div>
+    <div id="app"></div>
     <script type="module" src="main.ts"></script>
   </body>
 </html>

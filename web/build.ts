@@ -1,4 +1,5 @@
 import { copy, ensureDir } from "@std/fs";
+import { denoPlugins } from "@luca/esbuild-deno-loader";
 
 const dist = "dist";
 await ensureDir(dist);
@@ -34,13 +35,16 @@ await Deno.writeTextFile(`${dist}/index.html`, html);
 
 const esbuild = await import("esbuild");
 await esbuild.default.build({
-  entryPoints: ["web/main.ts"],
+  entryPoints: ["web/main.tsx"],
   bundle: true,
   format: "esm",
   platform: "browser",
   external: ["../wasmlib/dbcop_wasm.js"],
   outfile: `${dist}/main.js`,
   minify: true,
+  jsx: "automatic",
+  jsxImportSource: "preact",
+  plugins: [...denoPlugins()],
 });
 await esbuild.default.stop();
 

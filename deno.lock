@@ -4,20 +4,25 @@
     "jsr:@david/path@0.2": "0.2.0",
     "jsr:@david/temp@~0.1.1": "0.1.1",
     "jsr:@deno/wasmbuild@*": "0.21.0",
+    "jsr:@luca/esbuild-deno-loader@0.11": "0.11.1",
     "jsr:@std/assert@1": "1.0.18",
     "jsr:@std/assert@^1.0.19": "1.0.19",
+    "jsr:@std/bytes@^1.0.2": "1.0.6",
     "jsr:@std/cli@^1.0.11": "1.0.28",
+    "jsr:@std/encoding@^1.0.5": "1.0.10",
     "jsr:@std/encoding@^1.0.6": "1.0.10",
     "jsr:@std/fmt@^1.0.4": "1.0.9",
     "jsr:@std/fs@1": "1.0.22",
     "jsr:@std/fs@^1.0.10": "1.0.22",
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "jsr:@std/path@1": "1.1.4",
+    "jsr:@std/path@^1.0.6": "1.1.4",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/streams@^1.0.17": "1.0.17",
     "jsr:@std/tar@~0.1.4": "0.1.10",
     "npm:esbuild@0.25.0": "0.25.0",
-    "npm:husky@*": "9.1.7"
+    "npm:husky@*": "9.1.7",
+    "npm:preact@10": "10.28.3"
   },
   "jsr": {
     "@david/path@0.2.0": {
@@ -39,10 +44,18 @@
         "jsr:@david/path",
         "jsr:@david/temp",
         "jsr:@std/cli",
-        "jsr:@std/encoding",
+        "jsr:@std/encoding@^1.0.6",
         "jsr:@std/fmt",
         "jsr:@std/fs@^1.0.10",
         "jsr:@std/tar"
+      ]
+    },
+    "@luca/esbuild-deno-loader@0.11.1": {
+      "integrity": "dc020d16d75b591f679f6b9288b10f38bdb4f24345edb2f5732affa1d9885267",
+      "dependencies": [
+        "jsr:@std/bytes",
+        "jsr:@std/encoding@^1.0.5",
+        "jsr:@std/path@^1.0.6"
       ]
     },
     "@std/assert@1.0.18": {
@@ -56,6 +69,9 @@
       "dependencies": [
         "jsr:@std/internal"
       ]
+    },
+    "@std/bytes@1.0.6": {
+      "integrity": "f6ac6adbd8ccd99314045f5703e23af0a68d7f7e58364b47d2c7f408aeb5820a"
     },
     "@std/cli@1.0.28": {
       "integrity": "74ef9b976db59ca6b23a5283469c9072be6276853807a83ec6c7ce412135c70a"
@@ -253,13 +269,18 @@
     "husky@9.1.7": {
       "integrity": "sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==",
       "bin": true
+    },
+    "preact@10.28.3": {
+      "integrity": "sha512-tCmoRkPQLpBeWzpmbhryairGnhW9tKV6c6gr/w+RhoRoKEJwsjzipwp//1oCpGPOchvSLaAPlpcJi9MwMmoPyA=="
     }
   },
   "workspace": {
     "dependencies": [
+      "jsr:@luca/esbuild-deno-loader@0.11",
       "jsr:@std/assert@^1.0.19",
       "jsr:@std/fs@1",
-      "npm:esbuild@0.25.0"
+      "npm:esbuild@0.25.0",
+      "npm:preact@10"
     ]
   }
 }
