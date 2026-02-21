@@ -72,8 +72,10 @@ All four must pass before merging:
 
 ## Code Constraints
 
-- No unicode or emoji in any `.rs`, `.ts`, or `.js` file. The pre-commit hook
-  enforces this. ASCII only.
+- No emoji or non-technical unicode in `.rs`, `.ts`, or `.js` files. The
+  pre-commit hook enforces this. Allowed: ASCII + box-drawing (U+2500-U+259F) +
+  arrows (U+2190-U+21FF) + math operators (U+2200-U+22FF). Use unicode
+  box-drawing characters for diagrams in doc comments (compact style preferred).
 - Preserve no_std compatibility in `dbcop_core`. Never use std-only types
   without a feature gate.
 - Serde derives must be gated:

@@ -1,13 +1,14 @@
 #!/bin/sh
 set -e
 
-# Reject non-ASCII characters in staged .rs .ts .js files
+# Reject disallowed unicode in staged .rs .ts .js files
+# Allowed: ASCII + box-drawing (U+2500-U+259F) + arrows (U+2190-U+21FF) + math operators (U+2200-U+22FF)
 STAGED=$(git diff --cached --name-only | grep -E '\.(rs|ts|js)$' || true)
 if [ -n "$STAGED" ]; then
-  NON_ASCII=$(echo "$STAGED" | xargs grep -Pln '[^\x00-\x7F]' 2>/dev/null || true)
-  if [ -n "$NON_ASCII" ]; then
-    echo "ERROR: non-ASCII characters found in:"
-    echo "$NON_ASCII"
+  DISALLOWED=$(echo "$STAGED" | xargs grep -Pln '[^\x00-\x7F\x{2190}-\x{21FF}\x{2200}-\x{22FF}\x{2500}-\x{259F}]' 2>/dev/null || true)
+  if [ -n "$DISALLOWED" ]; then
+    echo "ERROR: disallowed unicode characters found in:"
+    echo "$DISALLOWED"
     exit 1
   fi
 fi
