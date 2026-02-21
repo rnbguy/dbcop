@@ -1,10 +1,12 @@
 import { copy, ensureDir } from "@std/fs";
+import { denoPlugins } from "@luca/esbuild-deno-loader";
 
 const dist = "dist";
 await ensureDir(dist);
 
 await copy("web/index.html", `${dist}/index.html`, { overwrite: true });
 await copy("web/style.css", `${dist}/style.css`, { overwrite: true });
+await copy("web/theme.css", `${dist}/theme.css`, { overwrite: true });
 await copy("wasmlib", `${dist}/wasmlib`, { overwrite: true });
 
 // Patch dist/wasmlib/dbcop_wasm.js for browser compatibility.
@@ -34,13 +36,16 @@ await Deno.writeTextFile(`${dist}/index.html`, html);
 
 const esbuild = await import("esbuild");
 await esbuild.default.build({
-  entryPoints: ["web/main.ts"],
+  entryPoints: ["web/main.tsx"],
   bundle: true,
   format: "esm",
   platform: "browser",
   external: ["../wasmlib/dbcop_wasm.js"],
   outfile: `${dist}/main.js`,
   minify: true,
+  jsx: "automatic",
+  jsxImportSource: "preact",
+  plugins: [...denoPlugins()],
 });
 await esbuild.default.stop();
 
