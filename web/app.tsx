@@ -6,6 +6,7 @@ import { ResultBar } from "./components/ResultBar.tsx";
 import { SessionDisplay } from "./components/SessionDisplay.tsx";
 import { GraphPanel } from "./components/GraphPanel.tsx";
 import { ShortcutHelp } from "./components/ShortcutHelp.tsx";
+import { SessionBuilder } from "./components/SessionBuilder.tsx";
 import { Toolbar } from "./components/Toolbar.tsx";
 import { useWasmCheck } from "./hooks/useWasmCheck.ts";
 import {
@@ -27,6 +28,7 @@ function getInitialTheme(): Theme {
 export function App() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
   const [showHelp, setShowHelp] = useState(false);
+  const [showBuilder, setShowBuilder] = useState(false);
   const [{ result, loading, timedOut }, { runCheck }] = useWasmCheck();
   const { share, restore } = useShareLink();
 
@@ -104,6 +106,7 @@ export function App() {
           editorState={editorState}
           onImport={handleImport}
           onShare={handleShare}
+          onOpenBuilder={() => setShowBuilder(true)}
           graphExportPng={graphExport?.exportPng ?? null}
           graphExportSvg={null}
         />
@@ -129,6 +132,14 @@ export function App() {
       </div>
 
       <ShortcutHelp open={showHelp} onClose={() => setShowHelp(false)} />
+      <SessionBuilder
+        open={showBuilder}
+        onClose={() => setShowBuilder(false)}
+        onExport={(json) => {
+          handleImport(JSON.stringify(json, null, 2), "json");
+          setShowBuilder(false);
+        }}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Download, Link, Share2, Upload } from "lucide-preact";
+import { Download, Grid, Link, Share2, Upload } from "lucide-preact";
 import { useCallback, useRef, useState } from "preact/hooks";
 import type { ConsistencyLevel, InputFormat } from "../types.ts";
 
@@ -6,6 +6,7 @@ interface Props {
   editorState: { text: string; level: ConsistencyLevel; format: InputFormat };
   onImport: (text: string, format: InputFormat) => void;
   onShare: () => string;
+  onOpenBuilder: () => void;
   graphExportPng: (() => void) | null;
   graphExportSvg: (() => void) | null;
 }
@@ -15,6 +16,7 @@ export function Toolbar(
     editorState,
     onImport,
     onShare,
+    onOpenBuilder,
     graphExportPng,
     graphExportSvg: _graphExportSvg,
   }: Props,
@@ -82,6 +84,8 @@ export function Toolbar(
   return (
     <div
       class="toolbar"
+      role="toolbar"
+      aria-label="History actions"
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
     >
@@ -108,6 +112,14 @@ export function Toolbar(
         title="Export history"
       >
         <Download size={14} />
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm btn-icon"
+        onClick={onOpenBuilder}
+        title="Session builder"
+      >
+        <Grid size={14} />
       </button>
       {graphExportPng && (
         <button
