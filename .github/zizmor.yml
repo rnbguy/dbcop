@@ -1,0 +1,7 @@
+# zizmor security linting configuration
+# We use version-tag pinned refs (e.g. @v4, @v1.43.5) instead of SHA hash pins.
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "*": ref-pin
