@@ -64,6 +64,15 @@ Examples:
   refs, not SHA hashes). Fix all other zizmor lints.
 - Static site build: `deno task build` (requires wasmlib built first). Outputs
   to `dist/` (gitignored).
+- Browser WASM compatibility: `web/build.ts` post-processes
+  `dist/wasmlib/dbcop_wasm.js` after copying from `wasmlib/`. The
+  `@deno/wasmbuild`-generated file uses
+  `import * as wasm from "./dbcop_wasm.wasm"` (Deno-native ESM WASM import
+  syntax not supported in Chrome stable). The build script replaces this with
+  `WebAssembly.instantiateStreaming` (with `WebAssembly.instantiate` fallback
+  for servers that do not set `application/wasm` content-type). The WASM import
+  namespace is `"./dbcop_wasm.internal.js"`. The source `wasmlib/dbcop_wasm.js`
+  is never modified -- only the dist copy is patched.
 
 ## CI Checks
 
