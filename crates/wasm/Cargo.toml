@@ -14,7 +14,7 @@ readme                 = "README.md"
 crate-type = [ "cdylib" ]
 
 [dependencies]
-dbcop_core   = { workspace = true, features = [ "serde" ] }
+dbcop_core   = { workspace = true, features = [ "serde", "parser" ] }
 wasm-bindgen = { workspace = true }
 serde        = { workspace = true, features = [ "derive" ] }
 serde_json   = { workspace = true, features = [ "alloc" ] }

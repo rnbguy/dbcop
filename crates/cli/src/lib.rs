@@ -20,6 +20,8 @@ pub enum Command {
     Generate(GenerateArgs),
     /// Verify consistency of transactional histories
     Verify(VerifyArgs),
+    /// Format compact history (.hist) files
+    Fmt(FmtArgs),
 }
 
 #[derive(Debug, Parser)]
@@ -68,6 +70,16 @@ pub enum ConsistencyLevel {
     Prefix,
     SnapshotIsolation,
     Serializable,
+}
+
+#[derive(Debug, Parser)]
+pub struct FmtArgs {
+    /// Input files or directories to format (glob patterns supported)
+    #[arg(required = true)]
+    pub paths: Vec<PathBuf>,
+    /// Check formatting without modifying files (exit 1 if unformatted)
+    #[arg(long)]
+    pub check: bool,
 }
 
 impl From<ConsistencyLevel> for dbcop_core::Consistency {

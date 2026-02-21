@@ -15,7 +15,7 @@ name = "dbcop"
 path = "src/main.rs"
 
 [dependencies]
-dbcop_core    = { workspace = true, features = [ "serde" ] }
+dbcop_core    = { workspace = true, features = [ "serde", "parser" ] }
 dbcop_testgen = { workspace = true }
 
 clap               = { workspace = true }

@@ -6,6 +6,7 @@
 
 extern crate alloc;
 
+use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
@@ -79,7 +80,11 @@ pub fn check_consistency(history_json: &str, level: &str) -> String {
     }
 }
 
-fn build_sessions_json(sessions: &[Session<u64, u64>]) -> (serde_json::Value, u64, u64) {
+fn build_sessions_json<V, W>(sessions: &[Session<V, W>]) -> (serde_json::Value, u64, u64)
+where
+    V: ToString,
+    W: serde::Serialize + ToString,
+{
     let session_count = sessions.len() as u64;
     let transaction_count: u64 = sessions.iter().map(|s| s.len() as u64).sum();
 
@@ -216,4 +221,99 @@ pub fn check_consistency_trace(history_json: &str, level: &str) -> String {
         })
         .to_string(),
     }
+}
+
+/// Parse a compact history DSL string and return JSON.
+///
+/// Returns a JSON string: `Vec<Session<String, u64>>` on success,
+/// or `{"error": "message"}` on failure.
+#[must_use]
+#[wasm_bindgen]
+pub fn parse_history_text(text: &str) -> String {
+    match dbcop_core::history::raw::parser::parse_history(text) {
+        Ok(sessions) => serde_json::to_string(&sessions)
+            .unwrap_or_else(|e| serde_json::json!({"error": e.to_string()}).to_string()),
+        Err(e) => serde_json::json!({"error": e.to_string()}).to_string(),
+    }
+}
+
+/// Check consistency from a compact history DSL string and return a rich trace.
+///
+/// Same output format as `check_consistency_trace` but accepts the text DSL
+/// instead of JSON, and preserves string variable names in the output.
+#[must_use]
+#[wasm_bindgen]
+pub fn check_consistency_trace_text(text: &str, level: &str) -> String {
+    let Some(consistency) = parse_level(level) else {
+        return serde_json::json!({"ok": false, "error": "unknown consistency level"}).to_string();
+    };
+
+    let sessions = match dbcop_core::history::raw::parser::parse_history(text) {
+        Ok(s) => s,
+        Err(e) => {
+            return serde_json::json!({"ok": false, "error": e.to_string()}).to_string();
+        }
+    };
+
+    let (sessions_json, session_count, transaction_count) = build_sessions_json(&sessions);
+
+    let wr_edges: Vec<serde_json::Value> = check_committed_read(&sessions)
+        .ok()
+        .map(|graph| {
+            graph
+                .to_edge_list()
+                .into_iter()
+                .map(|(from, to)| serde_json::json!([tid_to_json(&from), tid_to_json(&to)]))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let level_str = level;
+
+    match dbcop_core::check(&sessions, consistency) {
+        Ok(witness) => {
+            let edges = witness_edges(&witness);
+            serde_json::json!({
+                "ok": true,
+                "level": level_str,
+                "session_count": session_count,
+                "transaction_count": transaction_count,
+                "sessions": sessions_json,
+                "witness": witness,
+                "witness_edges": edges,
+                "wr_edges": wr_edges
+            })
+            .to_string()
+        }
+        Err(error) => serde_json::json!({
+            "ok": false,
+            "level": level_str,
+            "session_count": session_count,
+            "transaction_count": transaction_count,
+            "sessions": sessions_json,
+            "error": error
+        })
+        .to_string(),
+    }
+}
+
+/// Tokenize a compact history DSL string for syntax highlighting.
+///
+/// Returns a JSON array of `{"kind": "...", "start": N, "end": N, "text": "..."}`.
+#[must_use]
+#[wasm_bindgen]
+pub fn tokenize_history(text: &str) -> String {
+    let tokens = dbcop_core::history::raw::lexer::tokenize(text);
+    let result: Vec<serde_json::Value> = tokens
+        .iter()
+        .map(|t| {
+            serde_json::json!({
+                "kind": format!("{:?}", t.kind),
+                "start": t.span.start,
+                "end": t.span.end,
+                "text": t.text(text),
+            })
+        })
+        .collect();
+    serde_json::to_string(&result).unwrap_or_else(|_| "[]".to_string())
 }
