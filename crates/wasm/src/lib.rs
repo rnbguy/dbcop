@@ -230,7 +230,7 @@ pub fn check_consistency_trace(history_json: &str, level: &str) -> String {
 #[must_use]
 #[wasm_bindgen]
 pub fn parse_history_text(text: &str) -> String {
-    match dbcop_core::history::raw::parser::parse_history(text) {
+    match dbcop_parser::parse_history(text) {
         Ok(sessions) => serde_json::to_string(&sessions)
             .unwrap_or_else(|e| serde_json::json!({"error": e.to_string()}).to_string()),
         Err(e) => serde_json::json!({"error": e.to_string()}).to_string(),
@@ -248,7 +248,7 @@ pub fn check_consistency_trace_text(text: &str, level: &str) -> String {
         return serde_json::json!({"ok": false, "error": "unknown consistency level"}).to_string();
     };
 
-    let sessions = match dbcop_core::history::raw::parser::parse_history(text) {
+    let sessions = match dbcop_parser::parse_history(text) {
         Ok(s) => s,
         Err(e) => {
             return serde_json::json!({"ok": false, "error": e.to_string()}).to_string();
@@ -303,7 +303,7 @@ pub fn check_consistency_trace_text(text: &str, level: &str) -> String {
 #[must_use]
 #[wasm_bindgen]
 pub fn tokenize_history(text: &str) -> String {
-    let tokens = dbcop_core::history::raw::lexer::tokenize(text);
+    let tokens = dbcop_parser::tokenize(text);
     let result: Vec<serde_json::Value> = tokens
         .iter()
         .map(|t| {

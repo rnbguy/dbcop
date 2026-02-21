@@ -103,11 +103,10 @@ fn verify(args: &dbcop_cli::VerifyArgs) {
                 eprintln!("Failed to read {filename}: {e}");
                 process::exit(1);
             });
-            let sessions = dbcop_core::history::raw::parser::parse_history(&content)
-                .unwrap_or_else(|e| {
-                    eprintln!("Failed to parse {filename}: {e}");
-                    process::exit(1);
-                });
+            let sessions = dbcop_parser::parse_history(&content).unwrap_or_else(|e| {
+                eprintln!("Failed to parse {filename}: {e}");
+                process::exit(1);
+            });
             dbcop_core::check(&sessions, level).map_err(|e| format!("{e:?}"))
         };
 
@@ -174,11 +173,10 @@ fn fmt(args: &dbcop_cli::FmtArgs) {
             process::exit(1);
         });
 
-        let sessions =
-            dbcop_core::history::raw::parser::parse_history(&content).unwrap_or_else(|e| {
-                eprintln!("Failed to parse {}: {e}", path.display());
-                process::exit(1);
-            });
+        let sessions = dbcop_parser::parse_history(&content).unwrap_or_else(|e| {
+            eprintln!("Failed to parse {}: {e}", path.display());
+            process::exit(1);
+        });
 
         let formatted = dbcop_core::history::raw::display::format_history(&sessions);
 

@@ -16,7 +16,6 @@
 //! [a==1 b:=3] [c:=3]
 //! ```
 
-use alloc::vec::Vec;
 use core::ops::Range;
 
 /// All token kinds produced by the DSL lexer.

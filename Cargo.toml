@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
   "crates/core",
+  "crates/parser",
   "crates/testgen",
   "crates/cli",
   "crates/wasm",
@@ -27,6 +28,7 @@ readme = "README.md"
 
 [workspace.dependencies]
 dbcop_core    = { version = "0.2.0", path = "crates/core" }
+dbcop_parser  = { version = "0.2.0", path = "crates/parser" }
 dbcop_testgen = { version = "0.2.0", path = "crates/testgen" }
 
 clap               = { version = "4.5", features = [ "derive" ] }

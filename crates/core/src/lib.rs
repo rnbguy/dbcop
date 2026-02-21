@@ -43,14 +43,12 @@
 //!
 //! - **`serde`** -- enables `Serialize`/`Deserialize` derives on core types
 //!   (`DiGraph`, `TransactionId`, `Consistency`, `Witness`, `Error`).
-//! - **`parser`** -- enables the compact text DSL parser and lexer (requires
-//!   `std`). Adds `winnow` and `logos` dependencies.
 //!
-//! This crate is `no_std` compatible (requires `alloc`) when the `parser`
-//! feature is not enabled.
+//! This crate is `no_std` compatible (requires `alloc`). The parser and lexer
+//! live in the separate `dbcop_parser` crate.
 
-#![cfg_attr(not(any(test, feature = "parser")), no_std)]
-#![cfg_attr(not(any(test, feature = "parser")), no_main)]
+#![cfg_attr(not(test), no_std)]
+#![cfg_attr(not(test), no_main)]
 extern crate alloc;
 
 pub mod consistency;

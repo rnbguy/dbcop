@@ -1,3 +1,4 @@
+use dbcop_core::history::raw::types::{Event, Session, Transaction};
 /// Winnow-based parser for the compact history text DSL.
 ///
 /// Grammar:
@@ -14,16 +15,11 @@
 /// variable     = IDENT
 /// version      = INTEGER
 /// ```
-use alloc::string::{String, ToString};
-use alloc::vec::Vec;
-
 use winnow::ascii::{dec_uint, newline, till_line_ending};
 use winnow::combinator::{alt, opt, repeat, separated};
 use winnow::prelude::*;
 use winnow::token::{literal, take_while};
 use winnow::ModalResult;
-
-use crate::history::raw::types::{Event, Session, Transaction};
 
 // ---------------------------------------------------------------------------
 // Public error type
@@ -87,10 +83,9 @@ fn offset_to_line_col(input: &str, offset: usize) -> (usize, usize) {
     let safe_offset = offset.min(input.len());
     let prefix = &input[..safe_offset];
     let line = prefix.bytes().filter(|&b| b == b'\n').count() + 1;
-    let column = match prefix.rfind('\n') {
-        Some(pos) => prefix.len() - pos,
-        None => prefix.len() + 1,
-    };
+    let column = prefix
+        .rfind('\n')
+        .map_or_else(|| prefix.len() + 1, |pos| prefix.len() - pos);
     (line, column)
 }
 
@@ -252,9 +247,8 @@ fn session(input: &mut &str) -> ModalResult<Session<String, u64>> {
         if trimmed.starts_with('-') || trimmed.is_empty() {
             break;
         }
-        match session_item.parse_next(input)? {
-            Some(mut txns) => transactions.append(&mut txns),
-            None => {}
+        if let Some(mut txns) = session_item.parse_next(input)? {
+            transactions.append(&mut txns);
         }
     }
 

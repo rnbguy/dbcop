@@ -15,8 +15,6 @@ hashbrown   = { workspace = true }
 serde       = { workspace = true, optional = true, features = [ "derive" ] }
 tracing     = { workspace = true }
 derive_more = { workspace = true }
-winnow      = { workspace = true, optional = true }
-logos       = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion   = { version = "0.8", features = [ "html_reports" ] }
@@ -29,7 +27,6 @@ workspace = true
 default      = [  ]
 serde        = [ "dep:serde", "hashbrown/serde" ]
 compact-serde = [ "serde" ]
-parser       = [ "dep:winnow", "dep:logos" ]
 
 [[bench]]
 name    = "consistency"

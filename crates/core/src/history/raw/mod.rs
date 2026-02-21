@@ -1,9 +1,5 @@
 pub mod display;
 pub mod error;
-#[cfg(feature = "parser")]
-pub mod lexer;
-#[cfg(feature = "parser")]
-pub mod parser;
 pub mod types;
 
 use ::core::hash::Hash;

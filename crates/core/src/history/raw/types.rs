@@ -45,14 +45,14 @@ where
         match self {
             Self::Read { variable, version } => {
                 let mut tup = serializer.serialize_tuple(3)?;
-                tup.serialize_element("r")?;
+                tup.serialize_element(&'r')?;
                 tup.serialize_element(variable)?;
                 tup.serialize_element(version)?;
                 tup.end()
             }
             Self::Write { variable, version } => {
                 let mut tup = serializer.serialize_tuple(3)?;
-                tup.serialize_element("w")?;
+                tup.serialize_element(&'w')?;
                 tup.serialize_element(variable)?;
                 tup.serialize_element(version)?;
                 tup.end()
@@ -94,7 +94,7 @@ where
             where
                 A: SeqAccess<'de>,
             {
-                let tag: &str = seq
+                let tag: char = seq
                     .next_element()?
                     .ok_or_else(|| de::Error::invalid_length(0, &"3"))?;
                 let variable: V = seq
@@ -102,19 +102,21 @@ where
                     .ok_or_else(|| de::Error::invalid_length(1, &"3"))?;
 
                 match tag {
-                    "r" => {
+                    'r' => {
                         let version: Option<W> = seq
                             .next_element()?
                             .ok_or_else(|| de::Error::invalid_length(2, &"3"))?;
                         Ok(Event::Read { variable, version })
                     }
-                    "w" => {
+                    'w' => {
                         let version: W = seq
                             .next_element()?
                             .ok_or_else(|| de::Error::invalid_length(2, &"3"))?;
                         Ok(Event::Write { variable, version })
                     }
-                    other => Err(de::Error::unknown_variant(other, &["r", "w"])),
+                    other => Err(de::Error::custom(alloc::format!(
+                        "unknown tag '{other}', expected 'r' or 'w'"
+                    ))),
                 }
             }
 
