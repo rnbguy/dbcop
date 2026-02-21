@@ -1,12 +1,22 @@
 {
   "nodeModulesDir": "auto",
+  "exclude": [
+    ".sisyphus",
+    ".omc",
+    ".claude",
+    "node_modules",
+    "wasmlib",
+    "dist",
+    "target",
+    "test-results"
+  ],
   "tasks": {
     "wasmbuild": "deno run -A jsr:@deno/wasmbuild@0.21.0 --project dbcop_wasm --out wasmlib",
     "prepare": "deno run -A npm:husky",
-    "serve-web": "deno run --allow-net --allow-read jsr:@std/http@1/file-server web/",
+    "serve-web": "deno run --allow-net --allow-read jsr:@std/http@1/file-server dist/",
     "deno:fmt": "deno fmt --check",
     "deno:lint": "deno lint",
-    "deno:check": "deno check web/main.tsx web/main.ts web/build.ts schemas/validate.ts",
+    "deno:check": "deno check",
     "schema:check": "deno run -A schemas/validate.ts",
     "deno:ci": {
       "dependencies": [
@@ -23,7 +33,10 @@
       "command": "deno run -A web/build.ts"
     },
     "test:unit": "deno run -A npm:vitest run",
-    "test:e2e": "npx playwright test"
+    "test:e2e": {
+      "dependencies": ["build"],
+      "command": "npx playwright test"
+    }
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@^1.0.19",
@@ -37,7 +50,9 @@
     "lucide-preact": "npm:lucide-preact@0.469.0",
     "ajv": "npm:ajv@8",
     "happy-dom": "npm:happy-dom",
-    "@playwright/test": "npm:@playwright/test"
+    "@playwright/test": "npm:@playwright/test",
+    "vitest": "npm:vitest",
+    "vitest/config": "npm:vitest/config"
   },
   "compilerOptions": {
     "lib": [
@@ -48,16 +63,5 @@
     ],
     "jsx": "react-jsx",
     "jsxImportSource": "preact"
-  },
-  "fmt": {
-    "exclude": [
-      ".sisyphus",
-      ".omc",
-      ".claude",
-      "node_modules",
-      "wasmlib",
-      "dist",
-      "test-results"
-    ]
   }
 }

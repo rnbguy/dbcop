@@ -920,7 +920,8 @@
       "npm:esbuild@0.25.0",
       "npm:happy-dom@*",
       "npm:lucide-preact@0.469.0",
-      "npm:preact@10"
+      "npm:preact@10",
+      "npm:vitest@*"
     ]
   }
 }
