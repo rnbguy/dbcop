@@ -44,7 +44,8 @@
 //! - **`serde`** -- enables `Serialize`/`Deserialize` derives on core types
 //!   (`DiGraph`, `TransactionId`, `Consistency`, `Witness`, `Error`).
 //!
-//! This crate is `no_std` compatible (requires `alloc`).
+//! This crate is `no_std` compatible (requires `alloc`). The parser and lexer
+//! live in the separate `dbcop_parser` crate.
 
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(not(test), no_main)]
