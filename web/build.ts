@@ -6,6 +6,7 @@ await ensureDir(dist);
 
 await copy("web/index.html", `${dist}/index.html`, { overwrite: true });
 await copy("web/style.css", `${dist}/style.css`, { overwrite: true });
+await copy("web/theme.css", `${dist}/theme.css`, { overwrite: true });
 await copy("wasmlib", `${dist}/wasmlib`, { overwrite: true });
 
 // Patch dist/wasmlib/dbcop_wasm.js for browser compatibility.
