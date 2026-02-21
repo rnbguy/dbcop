@@ -1,5 +1,5 @@
 use alloc::string::String;
-use core::fmt::Display;
+use core::fmt::{Display, Write};
 
 use crate::history::raw::types::Session;
 
@@ -8,6 +8,7 @@ use crate::history::raw::types::Session;
 /// Sessions are separated by `---`. Each transaction is on its own line.
 /// The output always ends with a trailing newline so that it round-trips
 /// through `parse_history` without needing any external fixup.
+#[must_use]
 pub fn format_history<Variable, Version>(sessions: &[Session<Variable, Version>]) -> String
 where
     Variable: Display,
@@ -19,7 +20,7 @@ where
             output.push_str("---\n");
         }
         for transaction in session {
-            output.push_str(&alloc::format!("{transaction}\n"));
+            let _ = writeln!(output, "{transaction}");
         }
     }
     output
