@@ -6,7 +6,7 @@
     "serve-web": "deno run --allow-net --allow-read jsr:@std/http@1/file-server web/",
     "deno:fmt": "deno fmt --check",
     "deno:lint": "deno lint",
-    "deno:check": "deno check web/main.ts web/main.tsx web/types.ts web/constants.ts",
+    "deno:check": "deno check web/main.ts web/main.tsx web/types.ts web/constants.ts web/wasm.ts web/app.tsx web/components/ThemeToggle.tsx web/components/EditorPanel.tsx web/components/ResultBar.tsx web/components/SessionDisplay.tsx web/components/GraphPanel.tsx",
     "deno:ci": "deno task deno:fmt && deno task deno:lint && deno task deno:check",
     "build": "deno task wasmbuild && deno run -A web/build.ts"
   },
@@ -18,7 +18,8 @@
     "preact": "npm:preact@10",
     "preact/": "npm:preact@10/",
     "preact/hooks": "npm:preact@10/hooks",
-    "preact/jsx-runtime": "npm:preact@10/jsx-runtime"
+    "preact/jsx-runtime": "npm:preact@10/jsx-runtime",
+    "lucide-preact": "npm:lucide-preact@0.469.0"
   },
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "esnext", "deno.ns"],

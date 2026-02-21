@@ -1,61 +1,53 @@
-import { useEffect, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
+import type { Theme } from "./components/ThemeToggle.tsx";
 import { ThemeToggle } from "./components/ThemeToggle.tsx";
-
-type Theme = "dark" | "light";
+import { EditorPanel } from "./components/EditorPanel.tsx";
+import { ResultBar } from "./components/ResultBar.tsx";
+import { SessionDisplay } from "./components/SessionDisplay.tsx";
+import { GraphPanel } from "./components/GraphPanel.tsx";
+import type { TraceResult } from "./types.ts";
 
 function getInitialTheme(): Theme {
-  try {
-    const stored = localStorage.getItem("theme");
-    if (stored === "dark" || stored === "light") return stored;
-    if (globalThis.matchMedia("(prefers-color-scheme: light)").matches) {
-      return "light";
-    }
-  } catch (_) {
-    // ignore
+  const stored = globalThis.localStorage?.getItem("theme");
+  if (stored === "light" || stored === "dark") return stored;
+  if (globalThis.matchMedia?.("(prefers-color-scheme: light)").matches) {
+    return "light";
   }
   return "dark";
 }
 
 export function App() {
-  const [theme, setTheme] = useState<Theme>("dark");
-
-  useEffect(() => {
-    const initial = getInitialTheme();
-    setTheme(initial);
-    document.documentElement.setAttribute("data-theme", initial);
-  }, []);
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [result, setResult] = useState<TraceResult | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const toggleTheme = () => {
-    const next: Theme = theme === "dark" ? "light" : "dark";
+    const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
-    try {
-      localStorage.setItem("theme", next);
-    } catch (_) {
-      // ignore
-    }
     document.documentElement.setAttribute("data-theme", next);
+    globalThis.localStorage?.setItem("theme", next);
   };
 
   return (
     <div class="app">
       <header class="header">
         <div class="header-brand">
-          <span class="header-logo">dbcop</span>
-          <span class="header-sep">/</span>
-          <span class="header-tagline">consistency checker</span>
+          <h1 class="header-title">dbcop</h1>
+          <span class="header-subtitle">consistency checker</span>
         </div>
-        <div class="header-actions">
-          <ThemeToggle theme={theme} onToggle={toggleTheme} />
-        </div>
+        <ThemeToggle theme={theme} onToggle={toggleTheme} />
       </header>
+
       <div class="main-layout">
         <aside class="sidebar">
-          {/* EditorPanel -- added in T6 */}
-          <div class="panel-placeholder">Editor loading...</div>
+          <EditorPanel onResult={setResult} onLoading={setLoading} />
         </aside>
         <main class="content">
-          {/* ResultBar + SessionDisplay + GraphPanel -- added in T7, T8 */}
-          <div class="panel-placeholder">Results loading...</div>
+          <ResultBar result={result} loading={loading} />
+          <div class="content-panels">
+            <SessionDisplay result={result} />
+            <GraphPanel result={result} />
+          </div>
         </main>
       </div>
     </div>

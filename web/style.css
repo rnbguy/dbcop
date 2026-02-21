@@ -434,3 +434,419 @@ pre,
   text-align: center;
   padding: 24px;
 }
+
+/* -- Toggle track (ThemeToggle) ------------------------------------------- */
+.toggle-track {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 22px;
+  background: var(--gh-bg-subtle);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 11px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.toggle-track:hover {
+  background: var(--gh-border-default);
+}
+
+.toggle-thumb--light {
+  transform: translateX(18px);
+  background: var(--gh-accent-fg);
+}
+
+/* -- Section chevron (EditorPanel collapsible) ----------------------------- */
+.section-chevron {
+  color: var(--gh-text-secondary);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.section-chevron--collapsed {
+  transform: rotate(-90deg);
+}
+
+/* -- Header title --------------------------------------------------------- */
+.header-title {
+  font-family:
+    ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas,
+    monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gh-text-primary);
+  letter-spacing: -0.02em;
+}
+
+/* -- Editor panel --------------------------------------------------------- */
+.editor-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.editor-field {
+  padding: 8px 12px;
+}
+
+.field-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gh-text-secondary);
+  margin-bottom: 4px;
+}
+
+.format-toggle {
+  display: flex;
+  gap: 4px;
+}
+
+.editor-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 120px;
+  margin: 0 12px 8px;
+}
+
+.editor-textarea {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  resize: none;
+  padding: 8px;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--gh-text-primary);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+}
+
+.editor-textarea:focus {
+  outline: none;
+  border-color: var(--gh-accent-fg);
+  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.12);
+}
+
+.editor-highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+  pointer-events: none;
+  background: var(--gh-bg-canvas);
+}
+
+.check-btn {
+  width: 100%;
+}
+
+/* -- Result bar ----------------------------------------------------------- */
+.result-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  background: var(--gh-bg-default);
+  border-bottom: 1px solid var(--gh-border-default);
+  min-height: 40px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.result-meta {
+  font-size: 13px;
+  color: var(--gh-text-primary);
+  font-weight: 500;
+}
+
+.result-stat {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--gh-text-secondary);
+}
+
+.result-witness {
+  margin-left: auto;
+  font-size: 12px;
+  font-family:
+    ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas,
+    monospace;
+  color: var(--gh-text-secondary);
+  padding: 1px 6px;
+  background: var(--gh-bg-subtle);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 4px;
+}
+
+.result-error {
+  font-size: 13px;
+  color: var(--gh-danger-fg);
+  font-family:
+    ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas,
+    monospace;
+}
+
+.result-hint {
+  font-size: 12px;
+  color: var(--gh-text-secondary);
+}
+
+/* -- Content panels ------------------------------------------------------- */
+.content-panels {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* -- Sessions panel ------------------------------------------------------- */
+.sessions-panel {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  overflow-x: auto;
+  overflow-y: auto;
+  min-width: 200px;
+  max-width: 50%;
+  border-right: 1px solid var(--gh-border-default);
+}
+
+.sessions-empty {
+  min-width: 200px;
+  max-width: 50%;
+  border-right: 1px solid var(--gh-border-default);
+}
+
+.session-column {
+  flex-shrink: 0;
+  min-width: 140px;
+  max-width: 200px;
+}
+
+.session-header {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gh-text-secondary);
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 2px solid var(--gh-accent-fg);
+}
+
+.txn-card {
+  background: var(--gh-bg-default);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.txn-card:hover {
+  border-color: var(--gh-accent-fg);
+}
+
+.txn-uncommitted {
+  border-color: var(--gh-danger-muted);
+  border-style: dashed;
+}
+
+.txn-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.txn-id {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gh-text-primary);
+}
+
+.txn-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.event-op {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 3px;
+}
+
+.event-write .event-op {
+  background: var(--gh-danger-subtle);
+  color: var(--gh-danger-fg);
+}
+
+.event-read .event-op {
+  background: var(--gh-success-subtle);
+  color: var(--gh-success-fg);
+}
+
+/* -- Graph panel ---------------------------------------------------------- */
+.graph-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  position: relative;
+}
+
+.graph-container {
+  flex: 1;
+  min-height: 0;
+}
+
+/* -- Graph legend --------------------------------------------------------- */
+.graph-legend {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  background: var(--gh-bg-default);
+  border-top: 1px solid var(--gh-border-default);
+  font-size: 11px;
+  color: var(--gh-text-secondary);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-node {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.legend-committed {
+  border-color: var(--gh-accent-fg);
+  background: var(--gh-bg-canvas);
+}
+
+.legend-uncommitted {
+  border-color: var(--gh-danger-fg);
+  border-style: dashed;
+  background: var(--gh-bg-canvas);
+}
+
+.legend-edge {
+  width: 20px;
+  height: 2px;
+}
+
+.legend-wr {
+  background: var(--gh-success-fg);
+}
+
+.legend-co {
+  background: var(--gh-attention-fg);
+}
+
+.legend-so {
+  background: var(--gh-text-secondary);
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--gh-text-secondary) 0 4px,
+    transparent 4px 7px
+  );
+  background-color: transparent;
+}
+
+/* -- Syntax highlighting -------------------------------------------------- */
+.syn-comment {
+  color: var(--gh-text-secondary);
+  font-style: italic;
+}
+.syn-bracket {
+  color: var(--gh-accent-fg);
+  font-weight: 600;
+}
+.syn-operator {
+  color: var(--gh-danger-fg);
+}
+.syn-variable {
+  color: var(--gh-success-fg);
+}
+.syn-number {
+  color: var(--gh-attention-fg);
+}
+.syn-separator {
+  color: var(--gh-border-default);
+  font-weight: 700;
+}
+.syn-bang {
+  color: var(--gh-danger-fg);
+  font-weight: 700;
+}
+.syn-question {
+  color: var(--gh-attention-fg);
+  font-weight: 700;
+}
+
+/* -- Responsive ----------------------------------------------------------- */
+@media (max-width: 800px) {
+  .main-layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    max-width: 100%;
+    max-height: 45vh;
+    border-right: none;
+    border-bottom: 1px solid var(--gh-border-default);
+  }
+
+  .content-panels {
+    flex-direction: column;
+  }
+
+  .sessions-panel {
+    max-width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--gh-border-default);
+  }
+}
