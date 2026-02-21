@@ -12,11 +12,11 @@ rust-version.workspace = true
 [dependencies]
 dbcop_core = { workspace = true }
 winnow     = { workspace = true }
-logos       = { workspace = true }
+logos      = { workspace = true }
 serde      = { workspace = true, optional = true, features = [ "derive" ] }
 
 [features]
-default = []
+default = [  ]
 serde   = [ "dep:serde", "dbcop_core/serde" ]
 
 [dev-dependencies]
