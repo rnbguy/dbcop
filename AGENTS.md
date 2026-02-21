@@ -57,6 +57,13 @@ Examples:
 - Tests: `cargo test -p <crate>` or `cargo test --workspace`
 - no_std check: `cargo build -p dbcop_core --no-default-features` must always
   compile.
+- Workflow validation: `act --list` validates workflow structure locally before
+  pushing. `act` binary is installed at /usr/bin/act.
+- Security linting: `zizmor .github/workflows/` checks for security issues.
+  Config: `.github/zizmor.yml` suppresses hash-pin warnings (we use tag-pinned
+  refs, not SHA hashes). Fix all other zizmor lints.
+- Static site build: `deno task build` (requires wasmlib built first). Outputs
+  to `dist/` (gitignored).
 
 ## CI Checks
 
@@ -69,6 +76,11 @@ All four must pass before merging:
    files, typos spell check
 4. `Deno` (deno.yaml) -- builds WASM, runs deno fmt/lint/check, runs WASM
    integration tests
+
+Additionally, on push to main:
+
+5. `Deploy to GitHub Pages` (pages.yaml) -- builds static site and deploys to
+   GitHub Pages (push to main only)
 
 ## Code Constraints
 
@@ -89,10 +101,13 @@ All four must pass before merging:
 
 Three checks run on staged files:
 
-1. Rejects any non-ASCII character in staged `.rs`, `.ts`, `.js` files.
+1. Rejects disallowed unicode in staged `.rs`, `.ts`, `.js` files. Allowed:
+   ASCII + box-drawing (U+2500-U+259F) + arrows (U+2190-U+21FF) + math operators
+   (U+2200-U+22FF).
 2. Runs `cargo +nightly fmt --check --all` -- fails if any Rust file needs
    reformatting.
-3. Runs `deno task deno:ci` -- checks Deno formatting, linting, and types.
+3. Runs `deno task deno:ci` -- checks Deno formatting, linting, and types
+   (requires wasmlib built first).
 
 To install hooks after cloning: `deno task prepare`
 
@@ -120,9 +135,11 @@ dbcop/                          workspace root
     rust.yaml                    build + format CI
     code-quality.yaml            taplo + typos CI
     deno.yaml                    Deno fmt/lint/check + WASM tests CI
+    pages.yaml                   GitHub Pages deployment (push to main only)
+  .github/zizmor.yml             zizmor config: suppress hash-pin lint (allow tag-pinned refs)
   .husky/pre-commit              ASCII check + cargo +nightly fmt + deno:ci
   taplo.toml                     TOML formatter config
-  deno.json                      deno tasks: prepare, wasmbuild, serve-web, deno:fmt/lint/check/ci
+  deno.json                      deno tasks: prepare, wasmbuild, serve-web, deno:fmt/lint/check/ci, build
   rustfmt.toml                   nightly rustfmt config
 ```
 

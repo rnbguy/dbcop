@@ -21,5 +21,8 @@ wasmlib/
 .omc/
 .claude/
 
+# Static site build output
+dist/
+
 # Node modules (Deno nodeModulesDir)
 node_modules/
