@@ -6,8 +6,8 @@
     "serve-web": "deno run --allow-net --allow-read jsr:@std/http@1/file-server web/",
     "deno:fmt": "deno fmt --check",
     "deno:lint": "deno lint",
-    "deno:check": "deno check web/ scripts/",
-    "schema:check": "deno run -A scripts/check-schema.ts",
+    "deno:check": "deno check web/main.tsx web/main.ts web/build.ts schemas/validate.ts",
+    "schema:check": "deno run -A schemas/validate.ts",
     "deno:ci": {
       "dependencies": [
         "deno:fmt",
@@ -17,10 +17,10 @@
       ]
     },
     "build": {
-      "command": "deno run -A web/build.ts",
       "dependencies": [
         "wasmbuild"
-      ]
+      ],
+      "command": "deno run -A web/build.ts"
     }
   },
   "imports": {
@@ -32,7 +32,8 @@
     "preact/": "npm:preact@10/",
     "preact/hooks": "npm:preact@10/hooks",
     "preact/jsx-runtime": "npm:preact@10/jsx-runtime",
-    "lucide-preact": "npm:lucide-preact@0.469.0"
+    "lucide-preact": "npm:lucide-preact@0.469.0",
+    "ajv": "npm:ajv@8"
   },
   "compilerOptions": {
     "lib": [
