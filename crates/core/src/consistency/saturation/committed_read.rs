@@ -28,9 +28,9 @@
 //! # Data flow
 //!
 //! ```text
-//! sessions -> validate -> build committed order DiGraph -> topological sort
-//!     |                        |                              |
-//!     +-- session-order edges  +-- wr_x + committed edges     +-- Ok(DiGraph) or Err(Cycle)
+//! sessions ─▶ validate ─▶ build committed order DiGraph ─▶ topological sort
+//!     │                        │                                   │
+//!     └── session-order edges  └── wr_x + committed edges          └── Ok(DiGraph) or Err(Cycle)
 //! ```
 //!
 //! # Errors
