@@ -98,6 +98,7 @@ where
 
 /// A sequence of events executed atomically, either committed or aborted.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[derive(Clone)]
 pub struct Transaction<Variable, Version> {
     pub events: Vec<Event<Variable, Version>>,
     pub committed: bool,

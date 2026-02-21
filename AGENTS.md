@@ -319,10 +319,12 @@ notepads, and agent memory.
   sets in `causal_ww()` and `causal_rw()` hot paths to avoid repeated DiGraph
   clones per iteration.
 
-- Communication graph decomposition (`consistency/decomposition.rs`): builds a
-  `UGraph<u64>` of session interactions based on shared variable access. Used
-  for biconnected component decomposition (Theorem 5.2) to reduce NP-complete
-  checker complexity by solving independent sub-histories separately.
+- Communication graph decomposition (`consistency/mod.rs`, `dbcop_sat/lib.rs`):
+  decomposes history by connected components of the communication graph (Theorem
+  5.2 from Biswas & Enea 2019). Checks each component independently, then remaps
+  and merges witnesses. Reduces DFS/SAT search space from O(n!) to O(sum of
+  k_i!) where k_i are component sizes. Applied to NP-complete levels only:
+  Prefix, SnapshotIsolation, Serializable.
 
 - Incremental transitive closure (`digraph.rs`): `incremental_closure()` extends
   an existing closed graph with new edges using BFS ancestor/descendant
@@ -335,6 +337,9 @@ notepads, and agent memory.
 - Integration tests: `tests/` directories under each crate.
 - `crates/core/tests/paper_polynomial.rs` -- 13 tests verifying polynomial-time
   checker correctness against known histories.
+- `crates/core/tests/decomposition_check.rs` -- 3 tests verifying communication
+  graph decomposition in NP-complete checkers (independent clusters, single
+  cluster fallback, write-skew detection across components).
 - `crates/core/benches/consistency.rs` -- 18 Criterion benchmarks (6 consistency
   levels x 3 history sizes).
 - Always add tests when adding new functionality.
