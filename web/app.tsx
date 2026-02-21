@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "preact/hooks";
 import type { Theme } from "./components/ThemeToggle.tsx";
 import { ThemeToggle } from "./components/ThemeToggle.tsx";
 import { EditorPanel } from "./components/EditorPanel.tsx";
@@ -40,6 +46,33 @@ export function App() {
   const [displayResult, setDisplayResult] = useState<TraceResult | null>(null);
   const [displayLoading, setDisplayLoading] = useState(false);
   const [displayTimedOut, setDisplayTimedOut] = useState(false);
+
+  // Sidebar resize state
+  const [sidebarWidth, setSidebarWidth] = useState(340);
+  const resizeRef = useRef<HTMLDivElement>(null);
+
+  const handleResizeStart = useCallback((e: MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = sidebarWidth;
+    const handle = resizeRef.current;
+    if (handle) handle.classList.add("dragging");
+
+    const onMouseMove = (ev: MouseEvent) => {
+      const delta = ev.clientX - startX;
+      const next = Math.min(520, Math.max(220, startWidth + delta));
+      setSidebarWidth(next);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+      if (handle) handle.classList.remove("dragging");
+    };
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  }, [sidebarWidth]);
 
   // Track current editor state for keyboard-triggered check and share
   const [editorState, setEditorState] = useState<{
@@ -138,7 +171,7 @@ export function App() {
       </header>
 
       <div class="main-layout">
-        <aside class="sidebar">
+        <aside class="sidebar" style={{ width: sidebarWidth + "px" }}>
           <EditorPanel
             onResult={(next) => {
               setDisplayResult(next);
@@ -168,6 +201,11 @@ export function App() {
             importData={importData}
           />
         </aside>
+        <div
+          class="resize-handle"
+          ref={resizeRef}
+          onMouseDown={handleResizeStart}
+        />
         <main class="content">
           <ResultBar
             result={displayResult}
