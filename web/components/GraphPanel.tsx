@@ -11,16 +11,28 @@ interface CyInstance {
   style: () => { fromJson: (s: unknown[]) => { update: () => void } };
   json: (opts: { style: unknown[] }) => void;
   png: (opts?: { full?: boolean; scale?: number; bg?: string }) => string;
+  getElementById: (id: string) => CyCollection;
+  batch: (fn: () => void) => void;
+}
+
+interface CyCollection {
+  length: number;
+  addClass: (name: string) => void;
+  removeClass: (name: string) => void;
 }
 
 interface Props {
   result: TraceResult | null;
   onExportReady?: (fns: { exportPng: () => void } | null) => void;
+  onHighlightReady?: (
+    fn: ((edges: [TransactionId, TransactionId][]) => void) | null,
+  ) => void;
 }
 
-export function GraphPanel({ result, onExportReady }: Props) {
+export function GraphPanel({ result, onExportReady, onHighlightReady }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<CyInstance | null>(null);
+  const highlightTimersRef = useRef<number[]>([]);
 
   useEffect(() => {
     if (cyRef.current) {
@@ -65,14 +77,48 @@ export function GraphPanel({ result, onExportReady }: Props) {
       },
     });
 
+    onHighlightReady?.((edges) => {
+      if (!cyRef.current || edges.length === 0) return;
+      const cy = cyRef.current;
+      const collections: CyCollection[] = [];
+
+      cy.batch(() => {
+        for (const [src, tgt] of edges) {
+          for (const edgeId of edgeIdsForPair(src, tgt)) {
+            const edge = cy.getElementById(edgeId);
+            if (edge.length > 0) {
+              edge.addClass("edge-highlight");
+              collections.push(edge);
+            }
+          }
+        }
+      });
+
+      if (collections.length === 0) return;
+
+      const timer = globalThis.setTimeout(() => {
+        cy.batch(() => {
+          for (const edge of collections) {
+            edge.removeClass("edge-highlight");
+          }
+        });
+      }, 1500);
+      highlightTimersRef.current.push(timer);
+    });
+
     return () => {
       onExportReady?.(null);
+      onHighlightReady?.(null);
+      for (const timer of highlightTimersRef.current) {
+        globalThis.clearTimeout(timer);
+      }
+      highlightTimersRef.current = [];
       if (cyRef.current) {
         cyRef.current.destroy();
         cyRef.current = null;
       }
     };
-  }, [result, onExportReady]);
+  }, [result, onExportReady, onHighlightReady]);
 
   // Re-fit on resize
   useEffect(() => {
@@ -341,5 +387,25 @@ function buildGraphStyle(): Record<string, unknown>[] {
         color: edgeSo,
       },
     },
+    {
+      selector: "edge.edge-highlight",
+      style: {
+        "line-color": edgeWr,
+        "target-arrow-color": edgeWr,
+        width: 4,
+        "overlay-opacity": 0.2,
+        "overlay-color": edgeWr,
+      },
+    },
+  ];
+}
+
+function edgeIdsForPair(src: TransactionId, tgt: TransactionId): string[] {
+  const from = txId(src);
+  const to = txId(tgt);
+  return [
+    `${from}-co-${to}`,
+    `${from}-wr-${to}`,
+    `${from}-so-${to}`,
   ];
 }

@@ -14,6 +14,7 @@ import {
 interface Props {
   onResult: (result: TraceResult | null) => void;
   onLoading: (loading: boolean) => void;
+  checkControls?: preact.ComponentChildren;
   onStateChange?: (
     state: { text: string; level: ConsistencyLevel; format: InputFormat },
   ) => void;
@@ -21,7 +22,7 @@ interface Props {
 }
 
 export function EditorPanel(
-  { onResult, onLoading, onStateChange, importData }: Props,
+  { onResult, onLoading, checkControls, onStateChange, importData }: Props,
 ) {
   const [format, setFormat] = useState<InputFormat>(DEFAULT_FORMAT);
   const [level, setLevel] = useState<ConsistencyLevel>(DEFAULT_LEVEL);
@@ -209,13 +210,16 @@ export function EditorPanel(
           </select>
         </div>
         <div class="editor-field">
-          <button
-            type="button"
-            class="btn btn-primary check-btn"
-            onClick={runCheck}
-          >
-            <Play size={14} /> Check
-          </button>
+          <div class="check-actions">
+            <button
+              type="button"
+              class="btn btn-primary check-btn"
+              onClick={runCheck}
+            >
+              <Play size={14} /> Check
+            </button>
+            {checkControls}
+          </div>
         </div>
       </Section>
     </div>

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import type { Theme } from "./components/ThemeToggle.tsx";
 import { ThemeToggle } from "./components/ThemeToggle.tsx";
 import { EditorPanel } from "./components/EditorPanel.tsx";
@@ -7,6 +7,7 @@ import { SessionDisplay } from "./components/SessionDisplay.tsx";
 import { GraphPanel } from "./components/GraphPanel.tsx";
 import { ShortcutHelp } from "./components/ShortcutHelp.tsx";
 import { SessionBuilder } from "./components/SessionBuilder.tsx";
+import { StepThrough } from "./components/StepThrough.tsx";
 import { Toolbar } from "./components/Toolbar.tsx";
 import { useWasmCheck } from "./hooks/useWasmCheck.ts";
 import {
@@ -14,7 +15,12 @@ import {
   useKeyboardShortcuts,
 } from "./hooks/useKeyboardShortcuts.ts";
 import { useShareLink } from "./hooks/useShareLink.ts";
-import type { ConsistencyLevel, InputFormat } from "./types.ts";
+import type {
+  ConsistencyLevel,
+  InputFormat,
+  TraceResult,
+  TransactionId,
+} from "./types.ts";
 
 function getInitialTheme(): Theme {
   const stored = globalThis.localStorage?.getItem("theme");
@@ -31,6 +37,9 @@ export function App() {
   const [showBuilder, setShowBuilder] = useState(false);
   const [{ result, loading, timedOut }, { runCheck }] = useWasmCheck();
   const { share, restore } = useShareLink();
+  const [displayResult, setDisplayResult] = useState<TraceResult | null>(null);
+  const [displayLoading, setDisplayLoading] = useState(false);
+  const [displayTimedOut, setDisplayTimedOut] = useState(false);
 
   // Track current editor state for keyboard-triggered check and share
   const [editorState, setEditorState] = useState<{
@@ -48,6 +57,10 @@ export function App() {
     {
       exportPng: () => void;
     } | null
+  >(null);
+
+  const [highlightEdges, setHighlightEdges] = useState<
+    ((edges: [TransactionId, TransactionId][]) => void) | null
   >(null);
 
   // Import handler (receives text from file drop/select)
@@ -68,8 +81,19 @@ export function App() {
   }, []);
 
   const handleCheck = useCallback(() => {
+    setDisplayLoading(true);
+    setDisplayResult(null);
+    setDisplayTimedOut(false);
     runCheck(editorState.text, editorState.level, editorState.format);
   }, [editorState, runCheck]);
+
+  useEffect(() => {
+    setDisplayLoading(loading);
+    setDisplayTimedOut(timedOut);
+    if (result !== null || !loading) {
+      setDisplayResult(result);
+    }
+  }, [loading, result, timedOut]);
 
   const handleShare = useCallback(() => {
     return share(editorState);
@@ -116,17 +140,47 @@ export function App() {
       <div class="main-layout">
         <aside class="sidebar">
           <EditorPanel
-            onResult={() => {}}
-            onLoading={() => {}}
+            onResult={(next) => {
+              setDisplayResult(next);
+              if (next) setDisplayTimedOut(false);
+            }}
+            onLoading={(next) => {
+              setDisplayLoading(next);
+              if (next) {
+                setDisplayTimedOut(false);
+                setDisplayResult(null);
+              }
+            }}
+            checkControls={
+              <StepThrough
+                input={editorState.text}
+                level={editorState.level}
+                format={editorState.format}
+                graphRef={highlightEdges ? { highlightEdges } : null}
+                onResult={(next) => {
+                  setDisplayResult(next);
+                  setDisplayLoading(false);
+                  setDisplayTimedOut(false);
+                }}
+              />
+            }
             onStateChange={setEditorState}
             importData={importData}
           />
         </aside>
         <main class="content">
-          <ResultBar result={result} loading={loading} timedOut={timedOut} />
+          <ResultBar
+            result={displayResult}
+            loading={displayLoading}
+            timedOut={displayTimedOut}
+          />
           <div class="content-panels">
-            <SessionDisplay result={result} />
-            <GraphPanel result={result} onExportReady={setGraphExport} />
+            <SessionDisplay result={displayResult} />
+            <GraphPanel
+              result={displayResult}
+              onExportReady={setGraphExport}
+              onHighlightReady={setHighlightEdges}
+            />
           </div>
         </main>
       </div>
