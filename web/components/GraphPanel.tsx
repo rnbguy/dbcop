@@ -5,32 +5,12 @@ import type {
   TransactionId,
 } from "../types.ts";
 
-// Viz global is loaded via CDN (viz-standalone.js). Declare minimal interface.
-interface VizInstance {
-  renderSVGElement(src: string): SVGSVGElement;
-}
-
-declare const Viz: {
-  instance(): Promise<VizInstance>;
-};
-
 interface Props {
   result: TraceResult | null;
   onExportReady?: (fns: { exportPng: () => void } | null) => void;
   onHighlightReady?: (
     fn: ((edges: [TransactionId, TransactionId][]) => void) | null,
   ) => void;
-}
-
-let vizPromise: Promise<VizInstance> | null = null;
-
-function getViz(): Promise<VizInstance> {
-  if (!vizPromise) {
-    // deno-lint-ignore no-explicit-any
-    vizPromise = (globalThis as any).Viz?.instance?.() ??
-      Promise.reject(new Error("Viz not loaded"));
-  }
-  return vizPromise!;
 }
 
 function txId(t: TransactionId): string {
@@ -47,113 +27,52 @@ function varLabel(k: string): string {
   return `v${n}`;
 }
 
-function buildLabel(txn: SessionTransaction): string {
-  const parts: string[] = [];
-  for (const [k, v] of Object.entries(txn.writes ?? {})) {
-    parts.push(`W ${varLabel(k)} := ${v}`);
-  }
-  for (const [k, v] of Object.entries(txn.reads ?? {})) {
-    parts.push(`R ${varLabel(k)} == ${v === null ? "?" : v}`);
-  }
-  return parts.join("\\n");
+// -- TxCard -----------------------------------------------------------------
+
+interface TxCardProps {
+  txn: SessionTransaction;
 }
 
-function buildDot(result: TraceResult): string {
-  const css = getComputedStyle(document.documentElement);
-  const c = {
-    bgCanvas: css.getPropertyValue("--gh-bg-canvas").trim() || "#0d1117",
-    bgDefault: css.getPropertyValue("--gh-bg-default").trim() || "#161b22",
-    textPrimary: css.getPropertyValue("--gh-text-primary").trim() || "#e6edf3",
-    textSecondary: css.getPropertyValue("--gh-text-secondary").trim() ||
-      "#8b949e",
-    accentFg: css.getPropertyValue("--gh-accent-fg").trim() || "#58a6ff",
-    dangerFg: css.getPropertyValue("--gh-danger-fg").trim() || "#f85149",
-    successFg: css.getPropertyValue("--gh-success-fg").trim() || "#3fb950",
-    attentionFg: css.getPropertyValue("--gh-attention-fg").trim() || "#d29922",
-    borderDefault: css.getPropertyValue("--gh-border-default").trim() ||
-      "#30363d",
-  };
-
-  // Filter out the root session (session_id === 0)
-  const sessions = (result.sessions ?? []).filter(
-    (s) => s[0]?.id.session_id !== 0,
+function TxCard({ txn }: TxCardProps) {
+  const writes = Object.entries(txn.writes ?? {});
+  const reads = Object.entries(txn.reads ?? {});
+  return (
+    <div
+      class={`tx-card ${txn.committed ? "tx-committed" : "tx-uncommitted"}`}
+    >
+      {writes.map(([k, v]) => (
+        <div class="tx-event tx-write" key={`w-${k}`}>
+          <span class="tx-op">W</span> {varLabel(k)} := {v}
+        </div>
+      ))}
+      {reads.map(([k, v]) => (
+        <div class="tx-event tx-read" key={`r-${k}`}>
+          <span class="tx-op">R</span> {varLabel(k)} == {v === null ? "?" : v}
+        </div>
+      ))}
+    </div>
   );
-
-  const lines: string[] = [];
-  lines.push("digraph {");
-  lines.push(`  bgcolor="${c.bgCanvas}";`);
-  lines.push(
-    `  graph [rankdir=TB, splines=curved, nodesep=1.0, ranksep=0.6, fontname="monospace", fontcolor="${c.textSecondary}", fontsize=10];`,
-  );
-  lines.push(
-    `  node [fontname="monospace", fontsize=9, shape=box, style="rounded,filled", margin="0.2,0.12", width=1.8, fillcolor="${c.bgDefault}", color="${c.borderDefault}", fontcolor="${c.textPrimary}"];`,
-  );
-  lines.push(
-    `  edge [fontname="monospace", fontsize=8, fontcolor="${c.textSecondary}"];`,
-  );
-
-  for (const session of sessions) {
-    const sid = session[0].id.session_id;
-
-    lines.push(`  subgraph cluster_s${sid} {`);
-    lines.push(`    label="Session ${sid}";`);
-    lines.push(`    style=rounded;`);
-    lines.push(`    color="${c.borderDefault}";`);
-    lines.push(`    fontcolor="${c.textSecondary}";`);
-    lines.push(`    fontsize=10;`);
-
-    for (const txn of session) {
-      const id = txId(txn.id);
-      const label = buildLabel(txn);
-      const borderColor = txn.committed ? c.accentFg : c.dangerFg;
-      const borderStyle = txn.committed
-        ? "rounded,filled"
-        : "rounded,filled,dashed";
-      lines.push(
-        `    ${id} [label="${label}", color="${borderColor}", style="${borderStyle}"];`,
-      );
-    }
-
-    // SO edges (intra-session, dashed gray)
-    for (let i = 0; i < session.length - 1; i++) {
-      const src = txId(session[i].id);
-      const tgt = txId(session[i + 1].id);
-      lines.push(
-        `    ${src} -> ${tgt} [style=dashed, color="${c.textSecondary}", arrowsize=0.6, penwidth=1];`,
-      );
-    }
-
-    lines.push(`  }`);
-  }
-
-  // WR edges (green, solid, penwidth=2)
-  for (const [src, tgt] of result.wr_edges ?? []) {
-    if (src.session_id === 0 || tgt.session_id === 0) continue;
-    lines.push(
-      `  ${txId(src)} -> ${
-        txId(tgt)
-      } [color="${c.successFg}", penwidth=2, arrowsize=0.8];`,
-    );
-  }
-
-  // CO/witness edges (amber, solid, penwidth=2)
-  for (const [src, tgt] of result.witness_edges ?? []) {
-    if (src.session_id === 0 || tgt.session_id === 0) continue;
-    lines.push(
-      `  ${txId(src)} -> ${
-        txId(tgt)
-      } [color="${c.attentionFg}", penwidth=2, arrowsize=0.8];`,
-    );
-  }
-
-  lines.push("}");
-  return lines.join("\n");
 }
+
+// -- Edge types -------------------------------------------------------------
+
+interface EdgeDef {
+  key: string;
+  src: TransactionId;
+  tgt: TransactionId;
+  kind: "wr" | "co" | "so";
+}
+
+// -- Main component ---------------------------------------------------------
 
 export function GraphPanel({ result, onExportReady, onHighlightReady }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const slotRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const pathRefs = useRef<Map<string, SVGPathElement>>(new Map());
   const highlightTimers = useRef<number[]>([]);
-  const [renderError, setRenderError] = useState<string | null>(null);
+  const [svgPaths, setSvgPaths] = useState<
+    Array<{ key: string; d: string; kind: string }>
+  >([]);
 
   // Always signal no PNG export
   useEffect(() => {
@@ -161,80 +80,195 @@ export function GraphPanel({ result, onExportReady, onHighlightReady }: Props) {
     return () => onExportReady?.(null);
   }, [onExportReady]);
 
-  // Render graph when result or theme changes
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !result?.sessions) return;
+  // Filter sessions: remove root (session_id === 0)
+  const sessions = (result?.sessions ?? []).filter(
+    (s) => s[0]?.id.session_id !== 0,
+  );
+  const maxHeight = sessions.reduce(
+    (mx, s) => Math.max(mx, s.length),
+    0,
+  );
 
-    let cancelled = false;
-
-    async function render() {
-      try {
-        const viz = await getViz();
-        if (cancelled) return;
-        const dot = buildDot(result!);
-        const svg = viz.renderSVGElement(dot);
-        if (cancelled) return;
-        // Style the SVG to fill its container
-        svg.setAttribute("width", "100%");
-        svg.setAttribute("height", "100%");
-        svg.style.display = "block";
-        container!.innerHTML = "";
-        container!.appendChild(svg);
-        setRenderError(null);
-
-        // Register highlight handler AFTER svg is in DOM
-        if (onHighlightReady) {
-          onHighlightReady((pairs) => {
-            if (!pairs || pairs.length === 0) return;
-            // Build set of edge title strings to match: "S1T0->S2T1"
-            const toHighlight = new Set<string>();
-            for (const [src, tgt] of pairs) {
-              toHighlight.add(`${txId(src)}->${txId(tgt)}`);
-              toHighlight.add(`${txId(src)}&#45;&gt;${txId(tgt)}`);
-            }
-            const edgeGs = container!.querySelectorAll("g.edge");
-            const matched: Element[] = [];
-            for (const g of edgeGs) {
-              const title = g.querySelector("title")?.textContent ?? "";
-              if (toHighlight.has(title)) {
-                g.classList.add("graph-edge-highlight");
-                matched.push(g);
-              }
-            }
-            if (matched.length > 0) {
-              const t = globalThis.setTimeout(() => {
-                for (const el of matched) {
-                  el.classList.remove("graph-edge-highlight");
-                }
-              }, 1500);
-              highlightTimers.current.push(t);
-            }
-          });
-        }
-      } catch (err) {
-        if (!cancelled) setRenderError(String(err));
+  // Build edge definitions
+  const edges: EdgeDef[] = [];
+  if (result?.sessions) {
+    // SO edges (intra-session consecutive)
+    for (const session of sessions) {
+      for (let i = 0; i < session.length - 1; i++) {
+        edges.push({
+          key: `${txId(session[i].id)}->${txId(session[i + 1].id)}`,
+          src: session[i].id,
+          tgt: session[i + 1].id,
+          kind: "so",
+        });
       }
     }
+    // WR edges
+    for (const [src, tgt] of result.wr_edges ?? []) {
+      if (src.session_id === 0 || tgt.session_id === 0) continue;
+      edges.push({
+        key: `${txId(src)}->${txId(tgt)}`,
+        src,
+        tgt,
+        kind: "wr",
+      });
+    }
+    // CO/witness edges
+    for (const [src, tgt] of result.witness_edges ?? []) {
+      if (src.session_id === 0 || tgt.session_id === 0) continue;
+      edges.push({
+        key: `${txId(src)}->${txId(tgt)}`,
+        src,
+        tgt,
+        kind: "co",
+      });
+    }
+  }
 
-    render();
+  // Compute SVG paths after layout
+  const computePaths = () => {
+    const container = containerRef.current;
+    if (!container || sessions.length === 0) {
+      setSvgPaths([]);
+      return;
+    }
+    const cRect = container.getBoundingClientRect();
+    const newPaths: Array<{ key: string; d: string; kind: string }> = [];
+
+    for (const edge of edges) {
+      const srcEl = slotRefs.current.get(txId(edge.src));
+      const tgtEl = slotRefs.current.get(txId(edge.tgt));
+      if (!srcEl || !tgtEl) continue;
+
+      const srcR = srcEl.getBoundingClientRect();
+      const tgtR = tgtEl.getBoundingClientRect();
+
+      let x1: number, y1: number, x2: number, y2: number;
+      let d: string;
+
+      if (edge.kind === "so") {
+        // Vertical: bottom-center to top-center
+        x1 = srcR.left + srcR.width / 2 - cRect.left;
+        y1 = srcR.bottom - cRect.top;
+        x2 = tgtR.left + tgtR.width / 2 - cRect.left;
+        y2 = tgtR.top - cRect.top;
+        d = `M ${x1} ${y1} L ${x2} ${y2}`;
+      } else {
+        // Horizontal: determine direction
+        const srcCX = srcR.left + srcR.width / 2 - cRect.left;
+        const tgtCX = tgtR.left + tgtR.width / 2 - cRect.left;
+        const srcCY = srcR.top + srcR.height / 2 - cRect.top;
+        const tgtCY = tgtR.top + tgtR.height / 2 - cRect.top;
+
+        if (Math.abs(srcCX - tgtCX) < 2) {
+          // Same column: use vertical path
+          x1 = srcR.left + srcR.width / 2 - cRect.left;
+          y1 = srcCY > tgtCY ? srcR.top - cRect.top : srcR.bottom - cRect.top;
+          x2 = tgtR.left + tgtR.width / 2 - cRect.left;
+          y2 = srcCY > tgtCY ? tgtR.bottom - cRect.top : tgtR.top - cRect.top;
+          const cpOff = 20;
+          d = `M ${x1} ${y1} C ${x1 + cpOff} ${y1} ${
+            x2 + cpOff
+          } ${y2} ${x2} ${y2}`;
+        } else if (srcCX < tgtCX) {
+          // Left to right
+          x1 = srcR.right - cRect.left;
+          y1 = srcCY;
+          x2 = tgtR.left - cRect.left;
+          y2 = tgtCY;
+          d = `M ${x1} ${y1} C ${x1 + 40} ${y1} ${x2 - 40} ${y2} ${x2} ${y2}`;
+        } else {
+          // Right to left
+          x1 = srcR.left - cRect.left;
+          y1 = srcCY;
+          x2 = tgtR.right - cRect.left;
+          y2 = tgtCY;
+          d = `M ${x1} ${y1} C ${x1 - 40} ${y1} ${x2 + 40} ${y2} ${x2} ${y2}`;
+        }
+      }
+
+      newPaths.push({ key: edge.key, d, kind: edge.kind });
+    }
+
+    setSvgPaths(newPaths);
+  };
+
+  // Recompute paths on result change / resize / theme change
+  useEffect(() => {
+    if (!result?.sessions || sessions.length === 0) return;
+
+    // Small delay to let DOM settle after render
+    const raf = requestAnimationFrame(() => computePaths());
+
+    const observer = new ResizeObserver(() => computePaths());
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
 
     // Re-render on theme change
-    const observer = new MutationObserver(() => {
-      if (!cancelled) render();
-    });
-    observer.observe(document.documentElement, {
+    const themeObs = new MutationObserver(() => computePaths());
+    themeObs.observe(document.documentElement, {
       attributeFilter: ["data-theme"],
     });
 
     return () => {
-      cancelled = true;
+      cancelAnimationFrame(raf);
       observer.disconnect();
-      onHighlightReady?.(null);
+      themeObs.disconnect();
+    };
+  }, [result]);
+
+  // Register highlight handler
+  useEffect(() => {
+    if (!onHighlightReady || !result?.sessions) return;
+
+    onHighlightReady((pairs) => {
+      if (!pairs || pairs.length === 0) return;
+      const toHighlight = new Set<string>();
+      for (const [src, tgt] of pairs) {
+        toHighlight.add(`${txId(src)}->${txId(tgt)}`);
+      }
+      const matched: SVGPathElement[] = [];
+      for (const [key, el] of pathRefs.current) {
+        if (toHighlight.has(key)) {
+          el.classList.add("graph-edge-highlight");
+          matched.push(el);
+        }
+      }
+      if (matched.length > 0) {
+        const t = globalThis.setTimeout(() => {
+          for (const el of matched) {
+            el.classList.remove("graph-edge-highlight");
+          }
+        }, 1500);
+        highlightTimers.current.push(t);
+      }
+    });
+
+    return () => {
+      onHighlightReady(null);
       for (const t of highlightTimers.current) globalThis.clearTimeout(t);
       highlightTimers.current = [];
     };
-  }, [result, onHighlightReady]);
+  }, [result, onHighlightReady, svgPaths]);
+
+  // Store ref for a slot element
+  const setSlotRef = (id: string) => (el: HTMLDivElement | null) => {
+    if (el) {
+      slotRefs.current.set(id, el);
+    } else {
+      slotRefs.current.delete(id);
+    }
+  };
+
+  // Store ref for a path element
+  const setPathRef = (key: string) => (el: SVGPathElement | null) => {
+    if (el) {
+      pathRefs.current.set(key, el);
+    } else {
+      pathRefs.current.delete(key);
+    }
+  };
 
   if (!result?.sessions) {
     return (
@@ -244,21 +278,120 @@ export function GraphPanel({ result, onExportReady, onHighlightReady }: Props) {
     );
   }
 
-  if (renderError) {
-    return (
-      <div class="graph-panel graph-panel-empty empty">
-        <span>Graph render error: {renderError}</span>
-      </div>
-    );
+  // Build session-to-txn lookup
+  const sessionTxns = new Map<number, Map<number, SessionTransaction>>();
+  for (const session of sessions) {
+    const m = new Map<number, SessionTransaction>();
+    for (const txn of session) {
+      m.set(txn.id.session_height, txn);
+    }
+    sessionTxns.set(session[0].id.session_id, m);
   }
+
+  const sessionIds = sessions.map((s) => s[0].id.session_id).sort(
+    (a, b) => a - b,
+  );
 
   return (
     <div class="graph-panel">
       <div
         ref={containerRef}
         class="graph-container"
-        style={{ overflow: "auto" }}
-      />
+        style={{ overflow: "auto", position: "relative", flex: "1" }}
+      >
+        <div class="graph-table-outer">
+          {sessionIds.map((sid) => (
+            <div class="session-col" key={sid}>
+              <div class="session-col-header">Session {sid}</div>
+              {Array.from({ length: maxHeight }, (_, h) => {
+                const txn = sessionTxns.get(sid)?.get(h);
+                const id = `S${sid}T${h}`;
+                return (
+                  <div
+                    class="tx-slot"
+                    key={id}
+                    data-txid={id}
+                    ref={setSlotRef(id)}
+                  >
+                    {txn ? <TxCard txn={txn} /> : <div class="tx-slot-empty" />}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+        <svg
+          class="graph-edges-svg"
+          aria-hidden="true"
+          focusable="false"
+          style={{
+            position: "absolute",
+            inset: "0",
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
+            overflow: "visible",
+          }}
+        >
+          <defs>
+            <marker
+              id="arrow-wr"
+              markerWidth="8"
+              markerHeight="6"
+              refX="7"
+              refY="3"
+              orient="auto"
+            >
+              <path
+                d="M 0 0 L 8 3 L 0 6 z"
+                fill="var(--gh-edge-wr)"
+              />
+            </marker>
+            <marker
+              id="arrow-co"
+              markerWidth="8"
+              markerHeight="6"
+              refX="7"
+              refY="3"
+              orient="auto"
+            >
+              <path
+                d="M 0 0 L 8 3 L 0 6 z"
+                fill="var(--gh-attention-fg)"
+              />
+            </marker>
+            <marker
+              id="arrow-so"
+              markerWidth="8"
+              markerHeight="6"
+              refX="7"
+              refY="3"
+              orient="auto"
+            >
+              <path
+                d="M 0 0 L 8 3 L 0 6 z"
+                fill="var(--gh-edge-so)"
+              />
+            </marker>
+          </defs>
+          {svgPaths.map((p) => (
+            <path
+              key={p.key}
+              ref={setPathRef(p.key)}
+              d={p.d}
+              fill="none"
+              stroke={p.kind === "wr"
+                ? "var(--gh-edge-wr)"
+                : p.kind === "co"
+                ? "var(--gh-attention-fg)"
+                : "var(--gh-edge-so)"}
+              stroke-width={p.kind === "so" ? 1 : 2}
+              stroke-dasharray={p.kind === "so" ? "4 3" : undefined}
+              marker-end={`url(#arrow-${p.kind})`}
+            />
+          ))}
+        </svg>
+      </div>
       <Legend />
     </div>
   );

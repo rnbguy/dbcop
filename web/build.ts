@@ -9,15 +9,6 @@ await copy("web/style.css", `${dist}/style.css`, { overwrite: true });
 await copy("web/theme.css", `${dist}/theme.css`, { overwrite: true });
 await copy("wasmlib", `${dist}/wasmlib`, { overwrite: true });
 
-// Download viz-standalone.js (pinned to 3.24.0) for browser graph rendering.
-const vizUrl =
-  "https://cdn.jsdelivr.net/npm/@viz-js/viz@3.24.0/dist/viz-global.js";
-const vizResp = await fetch(vizUrl);
-if (!vizResp.ok) {
-  throw new Error(`Failed to fetch viz-standalone.js: ${vizResp.status}`);
-}
-await Deno.writeTextFile(`${dist}/viz-standalone.js`, await vizResp.text());
-
 // Patch dist/wasmlib/dbcop_wasm.js for browser compatibility.
 // The Deno-native 'import * as wasm from "./dbcop_wasm.wasm"' syntax
 // is not supported in Chrome stable. Replace with WebAssembly.instantiateStreaming.

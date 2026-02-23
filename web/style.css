@@ -817,6 +817,86 @@ pre,
 .graph-container {
   flex: 1;
   min-height: 0;
+  position: relative;
+}
+
+.graph-table-outer {
+  display: flex;
+  flex-direction: row;
+  gap: 48px;
+  padding: 24px 32px;
+  min-width: max-content;
+  align-items: flex-start;
+}
+
+.session-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 160px;
+}
+
+.session-col-header {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--gh-text-secondary);
+  padding: 4px 8px;
+  margin-bottom: 8px;
+  border: 1px solid var(--gh-border-default);
+  border-radius: 4px;
+  background: var(--gh-bg-subtle);
+}
+
+.tx-slot {
+  height: 76px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.tx-slot-empty {
+  height: 100%;
+}
+
+.tx-card {
+  background: var(--gh-bg-default);
+  border: 1px solid var(--gh-border-default);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--gh-text-primary);
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.tx-committed {
+  border-color: var(--gh-accent-fg);
+}
+
+.tx-uncommitted {
+  border-color: var(--gh-danger-fg);
+  border-style: dashed;
+}
+
+.tx-event {
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.tx-write .tx-op {
+  color: var(--gh-danger-fg);
+  font-weight: 600;
+}
+
+.tx-read .tx-op {
+  color: var(--gh-success-fg);
+  font-weight: 600;
+}
+
+.graph-edges-svg {
+  z-index: 1;
 }
 
 /* -- Graph legend --------------------------------------------------------- */
@@ -880,11 +960,6 @@ pre,
 }
 
 .graph-edge-highlight {
-  filter: drop-shadow(0 0 4px var(--gh-success-fg));
-}
-
-.graph-container svg g.edge.graph-edge-highlight path,
-.graph-container svg g.edge.graph-edge-highlight polygon {
   filter: drop-shadow(0 0 4px var(--gh-success-fg));
   stroke-width: 4 !important;
 }
