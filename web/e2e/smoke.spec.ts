@@ -346,7 +346,7 @@ test("version-zero text input passes causal check", async ({ page }) => {
   await page.goto("/");
   // Text format is default
   await page.locator(".editor-textarea").fill(
-    "[x==0 x:=1] --- [x==0 x:=2]",
+    "[x==0 x:=1]\n---\n[x==0 x:=2]\n",
   );
   await page.locator(".editor-panel select").nth(1).selectOption("causal");
   await page.locator(".btn-primary.check-btn").click();
@@ -357,7 +357,7 @@ test("version-zero text input passes causal check", async ({ page }) => {
 test("version-zero text input fails snapshot-isolation check", async ({ page }) => {
   await page.goto("/");
   await page.locator(".editor-textarea").fill(
-    "[x==0 x:=1] --- [x==0 x:=2]",
+    "[x==0 x:=1]\n---\n[x==0 x:=2]\n",
   );
   await page.locator(".editor-panel select").nth(1).selectOption(
     "snapshot-isolation",
@@ -373,7 +373,7 @@ test("TxCard renders read before write for R-then-W transaction", async ({ page 
   await page.goto("/");
   // Use history where first transaction has Read then Write
   await page.locator(".editor-textarea").fill(
-    "[x==0 x:=1] --- [x==0 x:=2]",
+    "[x==0 x:=1]\n---\n[x==0 x:=2]\n",
   );
   await page.locator(".editor-panel select").nth(1).selectOption("causal");
   await page.locator(".btn-primary.check-btn").click();
