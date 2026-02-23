@@ -74,7 +74,10 @@ function txKey(txn: SessionTransaction): string {
 
 function varLabel(k: string): string {
   const n = parseInt(k, 10);
-  if (isNaN(n) || n < 0 || n > 25) return `v${k}`;
-  const letters = "xyzabcdefghijklmnopqrstuvw";
-  return letters[n];
+  if (isNaN(n)) return k; // text mode: key is already a proper variable name
+  if (n >= 0 && n <= 25) {
+    const letters = "xyzabcdefghijklmnopqrstuvw";
+    return letters[n];
+  }
+  return `v${n}`;
 }

@@ -919,6 +919,46 @@ pre,
   filter: drop-shadow(0 0 4px var(--gh-success-fg));
 }
 
+.graph-grid {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  padding: 16px;
+  overflow: auto;
+  flex: 1;
+  align-items: flex-start;
+}
+
+.graph-session-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 140px;
+}
+
+.graph-session-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gh-text-secondary);
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--gh-accent-fg);
+  margin-bottom: 2px;
+}
+
+.graph-edges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.graph-edge-highlight {
+  filter: drop-shadow(0 0 4px var(--gh-success-fg));
+}
+
 /* -- Syntax highlighting -------------------------------------------------- */
 .syn-comment {
   color: var(--gh-text-secondary);

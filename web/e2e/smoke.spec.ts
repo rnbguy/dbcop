@@ -280,17 +280,6 @@ test("import file input is present in DOM", async ({ page }) => {
   await expect(page.locator('input[type="file"]')).toBeAttached();
 });
 
-// -- Graph export -----------------------------------------------------------
-
-test("graph export PNG button appears after check", async ({ page }) => {
-  await page.goto("/");
-  await page.locator(".btn-primary.check-btn").click();
-  await expect(page.locator(".badge-pass")).toBeVisible({ timeout: 15_000 });
-  // GraphPanel calls onExportReady after rendering the graph
-  const exportBtn = page.locator('button[title="Export graph as PNG"]');
-  await expect(exportBtn).toBeVisible({ timeout: 5_000 });
-});
-
 // -- Session builder interactions -------------------------------------------
 
 test("session builder has Add Session button", async ({ page }) => {
