@@ -47,7 +47,7 @@ function TxnCard({ txn }: { txn: SessionTransaction }) {
           {writes.map(([k, v]) => (
             <div key={`w-${k}`} class="event-row event-write">
               <span class="event-op">W</span>
-              <span class="mono">x{k} := {v}</span>
+              <span class="mono">{varLabel(k)} := {v}</span>
             </div>
           ))}
         </div>
@@ -58,7 +58,7 @@ function TxnCard({ txn }: { txn: SessionTransaction }) {
             <div key={`r-${k}`} class="event-row event-read">
               <span class="event-op">R</span>
               <span class="mono">
-                x{k} == {v === null ? "?" : v}
+                {varLabel(k)} == {v === null ? "?" : v}
               </span>
             </div>
           ))}
@@ -70,4 +70,11 @@ function TxnCard({ txn }: { txn: SessionTransaction }) {
 
 function txKey(txn: SessionTransaction): string {
   return `${txn.id.session_id}-${txn.id.session_height}`;
+}
+
+function varLabel(k: string): string {
+  const n = parseInt(k, 10);
+  if (isNaN(n) || n < 0 || n > 25) return `v${k}`;
+  const letters = "xyzabcdefghijklmnopqrstuvw";
+  return letters[n];
 }
