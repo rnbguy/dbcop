@@ -35,6 +35,7 @@
   --gh-danger-fg: #f85149;
   --gh-danger-bg: rgba(248, 81, 73, 0.15);
   --gh-warning-fg: #e3b341;
+  --gh-attention-fg: #d29922;
   --gh-warning-bg: rgba(187, 128, 9, 0.15);
 
   /* Syntax highlighting */
@@ -106,6 +107,7 @@
   --gh-danger-fg: #cf222e;
   --gh-danger-bg: rgba(207, 34, 46, 0.1);
   --gh-warning-fg: #9a6700;
+  --gh-attention-fg: #9a6700;
   --gh-warning-bg: rgba(154, 103, 0, 0.1);
 
   --gh-syn-keyword: #cf222e;

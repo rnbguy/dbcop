@@ -49,10 +49,10 @@ function varLabel(k: string): string {
 
 function buildLabel(txn: SessionTransaction): string {
   const parts: string[] = [];
-  for (const [k, v] of Object.entries(txn.writes)) {
+  for (const [k, v] of Object.entries(txn.writes ?? {})) {
     parts.push(`W ${varLabel(k)} := ${v}`);
   }
-  for (const [k, v] of Object.entries(txn.reads)) {
+  for (const [k, v] of Object.entries(txn.reads ?? {})) {
     parts.push(`R ${varLabel(k)} == ${v === null ? "?" : v}`);
   }
   return parts.join("\\n");
@@ -83,7 +83,7 @@ function buildDot(result: TraceResult): string {
   lines.push("digraph {");
   lines.push(`  bgcolor="${c.bgCanvas}";`);
   lines.push(
-    `  graph [rankdir=LR, splines=spline, nodesep=0.5, ranksep=1.2, fontname="monospace", fontcolor="${c.textSecondary}", fontsize=10];`,
+    `  graph [rankdir=TB, splines=spline, nodesep=1.0, ranksep=0.6, fontname="monospace", fontcolor="${c.textSecondary}", fontsize=10];`,
   );
   lines.push(
     `  node [fontname="monospace", fontsize=9, shape=box, style="rounded,filled", margin="0.2,0.12", width=1.8, fillcolor="${c.bgDefault}", color="${c.borderDefault}", fontcolor="${c.textPrimary}"];`,
@@ -95,11 +95,6 @@ function buildDot(result: TraceResult): string {
   for (const session of sessions) {
     const sid = session[0].id.session_id;
 
-    // Force all transactions in the same session to the same rank (= same column in LR)
-    const nodeList = session.map((t) => txId(t.id)).join("; ");
-    lines.push(`  { rank=same; ${nodeList}; }`);
-
-    // Visual cluster for session boundary
     lines.push(`  subgraph cluster_s${sid} {`);
     lines.push(`    label="Session ${sid}";`);
     lines.push(`    style=rounded;`);
