@@ -53,6 +53,35 @@ fn tid_to_json(tid: &TransactionId) -> serde_json::Value {
     })
 }
 
+/// Convert a [`Witness`] into a JSON-safe [`serde_json::Value`].
+///
+/// `SaturationOrder` contains `DiGraph<TransactionId>` whose `HashMap` keys
+/// are not strings, so `serde_json::json!` panics when serializing directly.
+/// This helper converts the graph to an edge-list representation instead.
+fn witness_to_json(witness: &Witness) -> serde_json::Value {
+    match witness {
+        Witness::SaturationOrder(graph) => {
+            let edges: Vec<serde_json::Value> = graph
+                .to_edge_list()
+                .into_iter()
+                .map(|(from, to)| serde_json::json!([tid_to_json(&from), tid_to_json(&to)]))
+                .collect();
+            serde_json::json!({ "SaturationOrder": edges })
+        }
+        Witness::CommitOrder(order) => {
+            let tids: Vec<serde_json::Value> = order.iter().map(tid_to_json).collect();
+            serde_json::json!({ "CommitOrder": tids })
+        }
+        Witness::SplitCommitOrder(order) => {
+            let entries: Vec<serde_json::Value> = order
+                .iter()
+                .map(|(tid, is_write)| serde_json::json!([tid_to_json(tid), is_write]))
+                .collect();
+            serde_json::json!({ "SplitCommitOrder": entries })
+        }
+    }
+}
+
 fn witness_edges(witness: &Witness) -> Vec<serde_json::Value> {
     match witness {
         Witness::SaturationOrder(graph) => graph
@@ -315,7 +344,9 @@ pub fn check_consistency(history_json: &str, level: &str) -> String {
     };
 
     match dbcop_core::check(&sessions, consistency) {
-        Ok(witness) => serde_json::json!({"ok": true, "witness": witness}).to_string(),
+        Ok(witness) => {
+            serde_json::json!({"ok": true, "witness": witness_to_json(&witness)}).to_string()
+        }
         Err(error) => serde_json::json!({"ok": false, "error": error}).to_string(),
     }
 }
@@ -461,7 +492,7 @@ pub fn check_consistency_trace(history_json: &str, level: &str) -> String {
                 "session_count": session_count,
                 "transaction_count": transaction_count,
                 "sessions": sessions_json,
-                "witness": witness,
+                "witness": witness_to_json(&witness),
                 "witness_edges": edges,
                 "wr_edges": wr_edges
             })
@@ -535,7 +566,7 @@ pub fn check_consistency_trace_text(text: &str, level: &str) -> String {
                 "session_count": session_count,
                 "transaction_count": transaction_count,
                 "sessions": sessions_json,
-                "witness": witness,
+                "witness": witness_to_json(&witness),
                 "witness_edges": edges,
                 "wr_edges": wr_edges
             })
@@ -572,4 +603,30 @@ pub fn tokenize_history(text: &str) -> String {
         })
         .collect();
     serde_json::to_string(&result).unwrap_or_else(|_| "[]".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_version_zero_causal_json() {
+        // Verify the core check passes for version-zero causal histories.
+        let input = r#"[[{"events":[{"Read":{"variable":0,"version":0}},{"Write":{"variable":0,"version":1}}],"committed":true}],[{"events":[{"Read":{"variable":0,"version":0}},{"Write":{"variable":0,"version":2}}],"committed":true}]]"#;
+        let sessions: Vec<Session<u64, u64>> = serde_json::from_str(input).unwrap();
+        let result = dbcop_core::check(&sessions, Consistency::Causal);
+        assert!(
+            result.is_ok(),
+            "version-zero causal should pass: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_version_zero_causal_text() {
+        let result = check_consistency_trace_text("[x==0 x:=1]\n---\n[x==0 x:=2]\n", "causal");
+        let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
+        assert_eq!(
+            parsed["ok"], true,
+            "version-zero text causal should pass: {result}"
+        );
+    }
 }
