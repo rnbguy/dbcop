@@ -23,3 +23,4 @@ export const check_consistency_step_init_text = getFn(
 );
 export const check_consistency_step_next = getFn("check_consistency_step_next");
 export const tokenize_history = getFn("tokenize_history");
+export const text_to_json_sessions = getFn("text_to_json_sessions");

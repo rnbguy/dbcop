@@ -7,7 +7,6 @@ import {
   DEFAULT_FORMAT,
   DEFAULT_LEVEL,
   EXAMPLE_KEYS,
-  JSON_EXAMPLES,
   TEXT_EXAMPLES,
 } from "../constants.ts";
 
@@ -28,6 +27,13 @@ export function EditorPanel(
   const [level, setLevel] = useState<ConsistencyLevel>(DEFAULT_LEVEL);
   const [example, setExample] = useState(DEFAULT_EXAMPLE);
   const [text, setText] = useState(TEXT_EXAMPLES[DEFAULT_EXAMPLE].text);
+  // Use uncontrolled textarea to avoid cursor resets from async re-renders
+  const setTextareaValue = useCallback((newText: string) => {
+    setText(newText);
+    if (textareaRef.current) {
+      textareaRef.current.value = newText;
+    }
+  }, []);
   const [highlightHtml, setHighlightHtml] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -38,43 +44,53 @@ export function EditorPanel(
   }, [text, level, format, onStateChange]);
 
   const loadExample = useCallback(
-    (key: string) => {
+    async (key: string) => {
       setExample(key);
+      const ex = TEXT_EXAMPLES[key];
+      if (!ex) return;
       if (format === "text") {
-        const ex = TEXT_EXAMPLES[key];
-        if (ex) {
-          setText(ex.text);
-          setLevel(ex.level);
-        }
+        setTextareaValue(ex.text);
+        setLevel(ex.level);
       } else {
-        const ex = JSON_EXAMPLES[key];
-        if (ex) {
-          setText(JSON.stringify(ex.json, null, 2));
+        // Derive JSON from text dynamically
+        try {
+          const wasm = await import("../wasm.ts");
+          const normalized = ex.text.endsWith("\n") ? ex.text : ex.text + "\n";
+          const jsonStr = wasm.text_to_json_sessions(normalized);
+          setTextareaValue(jsonStr);
+          setLevel(ex.level);
+        } catch {
+          setTextareaValue(ex.text);
           setLevel(ex.level);
         }
       }
     },
-    [format],
+    [format, setTextareaValue],
   );
 
   const switchFormat = useCallback(
-    (f: InputFormat) => {
+    async (f: InputFormat) => {
       setFormat(f);
+      const ex = TEXT_EXAMPLES[example];
+      if (!ex) return;
       if (f === "text") {
-        const ex = TEXT_EXAMPLES[example];
-        if (ex) {
-          setText(ex.text);
-          setLevel(ex.level);
-        }
+        setTextareaValue(ex.text);
+        setLevel(ex.level);
       } else {
-        const ex = JSON_EXAMPLES[example];
-        if (ex) {
-          setText(JSON.stringify(ex.json, null, 2));
+        // Derive JSON from text dynamically
+        try {
+          const wasm = await import("../wasm.ts");
+          const normalized = ex.text.endsWith("\n") ? ex.text : ex.text + "\n";
+          const jsonStr = wasm.text_to_json_sessions(normalized);
+          setTextareaValue(jsonStr);
+          setLevel(ex.level);
+        } catch {
+          setTextareaValue(ex.text);
           setLevel(ex.level);
         }
       }
     },
-    [example],
+    [example, setTextareaValue],
   );
 
   // Apply imported data
@@ -179,7 +195,7 @@ export function EditorPanel(
           <textarea
             ref={textareaRef}
             class="editor-textarea mono"
-            value={text}
+            defaultValue={text}
             onInput={(e) => setText((e.target as HTMLTextAreaElement).value)}
             onScroll={handleScroll}
             spellcheck={false}

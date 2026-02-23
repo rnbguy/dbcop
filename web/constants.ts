@@ -58,109 +58,16 @@ export const TEXT_EXAMPLES: Record<
 // session 3: sees y:=2 but not x:=1 (causal violation)
 [y==2 x==?]`,
   },
-};
-
-// -- Example histories (JSON) -----------------------------------------------
-
-export const JSON_EXAMPLES: Record<
-  string,
-  { json: unknown[]; level: ConsistencyLevel }
-> = {
-  "write-read": {
-    level: "serializable",
-    json: [
-      [
-        { events: [{ Write: { variable: 0, version: 1 } }], committed: true },
-        { events: [{ Read: { variable: 0, version: 1 } }], committed: true },
-      ],
-      [
-        { events: [{ Write: { variable: 0, version: 2 } }], committed: true },
-      ],
-    ],
-  },
-  "lost-update": {
+  "write-skew": {
     level: "snapshot-isolation",
-    json: [
-      [
-        {
-          events: [
-            { Read: { variable: 0, version: 0 } },
-            { Write: { variable: 0, version: 1 } },
-          ],
-          committed: true,
-        },
-      ],
-      [
-        {
-          events: [
-            { Read: { variable: 0, version: 0 } },
-            { Write: { variable: 0, version: 2 } },
-          ],
-          committed: true,
-        },
-      ],
-    ],
-  },
-  serializable: {
-    level: "serializable",
-    json: [
-      [
-        {
-          events: [
-            { Write: { variable: 0, version: 1 } },
-            { Write: { variable: 1, version: 1 } },
-          ],
-          committed: true,
-        },
-      ],
-      [
-        {
-          events: [
-            { Read: { variable: 0, version: 1 } },
-            { Write: { variable: 1, version: 2 } },
-          ],
-          committed: true,
-        },
-      ],
-      [
-        {
-          events: [{ Read: { variable: 1, version: 2 } }],
-          committed: true,
-        },
-      ],
-    ],
-  },
-  "causal-violation": {
-    level: "causal",
-    json: [
-      [
-        {
-          events: [
-            { Write: { variable: 0, version: 1 } },
-            { Write: { variable: 1, version: 1 } },
-          ],
-          committed: true,
-        },
-      ],
-      [
-        {
-          events: [
-            { Read: { variable: 0, version: 1 } },
-            { Write: { variable: 1, version: 2 } },
-          ],
-          committed: true,
-        },
-      ],
-      [
-        {
-          events: [
-            { Read: { variable: 1, version: 2 } },
-            { Read: { variable: 0, version: 0 } },
-          ],
-          committed: true,
-        },
-      ],
-    ],
+    text: `// Write-skew: 3 sessions, 5 transactions each.
+// Passes snapshot-isolation but fails serializable.
+// Each session reads a variable written by another, then writes its own.
+[a==0] [a==0 b:=1] [b==0] [b==0 c:=1] [c==0]
+---
+[b==0] [b==0 c:=2] [c==0] [c==0 a:=2] [a==0]
+---
+[c==0] [c==0 a:=3] [a==0] [a==0 b:=3] [b==0]`,
   },
 };
 

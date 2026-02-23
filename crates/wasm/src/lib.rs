@@ -605,6 +605,77 @@ pub fn tokenize_history(text: &str) -> String {
     serde_json::to_string(&result).unwrap_or_else(|_| "[]".to_string())
 }
 
+/// Convert a compact history DSL string to pretty-printed JSON sessions.
+///
+/// Parses the text DSL, maps variable names to sequential u64 IDs
+/// (first-appearance order), and returns `serde_json::to_string_pretty`
+/// of the resulting `Vec<Session<u64, u64>>`.
+///
+/// Returns a JSON string on success, or `{"error": "..."}` on failure.
+#[must_use]
+#[wasm_bindgen]
+pub fn text_to_json_sessions(text: &str) -> String {
+    let sessions = match dbcop_parser::parse_history(text) {
+        Ok(s) => s,
+        Err(e) => {
+            return serde_json::json!({"error": e.to_string()}).to_string();
+        }
+    };
+
+    // Map variable names to u64 IDs (first-appearance order)
+    let mut var_map: BTreeMap<String, u64> = BTreeMap::new();
+    let mut next_id: u64 = 0;
+    for session in &sessions {
+        for txn in session {
+            for event in &txn.events {
+                let var_name = match event {
+                    Event::Read { variable, .. } => variable,
+                    Event::Write { variable, .. } => variable,
+                };
+                if !var_map.contains_key(var_name) {
+                    var_map.insert(var_name.clone(), next_id);
+                    next_id += 1;
+                }
+            }
+        }
+    }
+
+    let mapped_sessions: Vec<Session<u64, u64>> = sessions
+        .into_iter()
+        .map(|session| {
+            session
+                .into_iter()
+                .map(|txn| {
+                    let events: Vec<Event<u64, u64>> = txn
+                        .events
+                        .into_iter()
+                        .map(|event| match event {
+                            Event::Read { variable, version } => Event::Read {
+                                variable: var_map[&variable],
+                                version,
+                            },
+                            Event::Write { variable, version } => Event::Write {
+                                variable: var_map[&variable],
+                                version,
+                            },
+                        })
+                        .collect();
+                    if txn.committed {
+                        Transaction::committed(events)
+                    } else {
+                        Transaction::uncommitted(events)
+                    }
+                })
+                .collect()
+        })
+        .collect();
+
+    match serde_json::to_string_pretty(&mapped_sessions) {
+        Ok(s) => s,
+        Err(e) => serde_json::json!({"error": e.to_string()}).to_string(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
