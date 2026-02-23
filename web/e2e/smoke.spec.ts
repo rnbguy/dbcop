@@ -339,3 +339,52 @@ test("app title dbcop is visible in light theme", async ({ page }) => {
   });
   await expect(page.locator(".header-title")).toContainText("dbcop");
 });
+
+// -- Bug 3: version-zero text format ----------------------------------------
+
+test("version-zero text input passes causal check", async ({ page }) => {
+  await page.goto("/");
+  // Text format is default
+  await page.locator(".editor-textarea").fill(
+    "[x==0 x:=1] --- [x==0 x:=2]",
+  );
+  await page.locator(".editor-panel select").nth(1).selectOption("causal");
+  await page.locator(".btn-primary.check-btn").click();
+  await expect(page.locator(".badge-pass")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(".result-bar")).toContainText("PASS");
+});
+
+test("version-zero text input fails snapshot-isolation check", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".editor-textarea").fill(
+    "[x==0 x:=1] --- [x==0 x:=2]",
+  );
+  await page.locator(".editor-panel select").nth(1).selectOption(
+    "snapshot-isolation",
+  );
+  await page.locator(".btn-primary.check-btn").click();
+  await expect(page.locator(".badge-fail")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(".result-bar")).toContainText("FAIL");
+});
+
+// -- Bug 4: TxCard event order ----------------------------------------------
+
+test("TxCard renders read before write for R-then-W transaction", async ({ page }) => {
+  await page.goto("/");
+  // Use history where first transaction has Read then Write
+  await page.locator(".editor-textarea").fill(
+    "[x==0 x:=1] --- [x==0 x:=2]",
+  );
+  await page.locator(".editor-panel select").nth(1).selectOption("causal");
+  await page.locator(".btn-primary.check-btn").click();
+  await expect(page.locator(".badge-pass")).toBeVisible({ timeout: 15_000 });
+
+  // First tx-card's first event must be a Read (tx-read class)
+  const firstCard = page.locator(".tx-card").first();
+  const firstEvent = firstCard.locator(".tx-event").first();
+  await expect(firstEvent).toHaveClass(/tx-read/);
+
+  // Second event must be a Write (tx-write class)
+  const secondEvent = firstCard.locator(".tx-event").nth(1);
+  await expect(secondEvent).toHaveClass(/tx-write/);
+});

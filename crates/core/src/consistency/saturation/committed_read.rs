@@ -136,6 +136,10 @@ where
                                 id: current_event_id,
                             })?;
 
+                    // Reads from root (initial state) are always valid
+                    if write_event_id.session_id == 0 {
+                        continue;
+                    }
                     if let Some((committed_version, committed_event_id)) =
                         committed_writes.get(&(write_event_id.transaction_id(), variable.clone()))
                     {

@@ -71,13 +71,23 @@ where
     Variable: Clone + Eq + Ord + Hash,
 {
     fn from(history: AtomicTransactionPO<Variable>) -> Self {
+        let mut active_write: HashMap<Variable, HashSet<TransactionId>> = HashMap::default();
+        // Pre-populate active_write with root's write-read entries.
+        // Root (session_id=0) is never linearized (not in history.0),
+        // but transactions that read from root expect their entries in
+        // active_write when forward_book_keeping runs.
+        let root = TransactionId::default();
+        for (var, wr_graph) in &history.write_read_relation {
+            if let Some(readers) = wr_graph.adj_map.get(&root) {
+                active_write.insert(var.clone(), readers.clone());
+            }
+        }
         Self {
             history,
-            active_write: HashMap::default(),
+            active_write,
         }
     }
 }
-
 impl<Variable> ConstrainedLinearizationSolver for PrefixConsistencySolver<Variable>
 where
     Variable: Clone + Eq + Ord + Hash,

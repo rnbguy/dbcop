@@ -439,4 +439,60 @@ mod tests {
         let result = is_valid_history(&histories);
         assert!(result.is_ok(), "x==0 should map to root: {result:?}");
     }
+
+    #[test]
+    fn test_version_zero_explicit_writer_takes_precedence() {
+        // x:=0 is committed -> x==0 should use that explicit writer, not root.
+        // This exercises the two-pass logic: pass 1 inserts the explicit write;
+        // pass 2 tries or_insert(root) but finds the slot already occupied.
+        let histories = vec![
+            vec![Transaction::committed(vec![Event::write("x", 0u64)])],
+            vec![Transaction::committed(vec![Event::read("x", 0u64)])],
+        ];
+        let result = is_valid_history(&histories);
+        assert!(
+            result.is_ok(),
+            "x==0 with explicit committed x:=0 writer should be valid: {result:?}",
+        );
+    }
+
+    #[test]
+    fn test_version_zero_uncommitted_writer_rejected() {
+        // x:=0 is uncommitted -> the explicit write takes precedence over root
+        // in the write_map, so the read points to an uncommitted writer -> UncommittedWrite.
+        let histories = vec![
+            vec![Transaction::uncommitted(vec![Event::write("x", 0u64)])],
+            vec![Transaction::committed(vec![Event::read("x", 0u64)])],
+        ];
+        let result = is_valid_history(&histories);
+        assert!(
+            matches!(result, Err(Error::UncommittedWrite { .. })),
+            "x==0 with only an uncommitted x:=0 writer should fail with UncommittedWrite: {result:?}",
+        );
+    }
+
+    #[test]
+    fn test_version_zero_multiple_sessions_read_initial() {
+        // Three sessions all read x==0 (initial) and each write a different version.
+        // No explicit x:=0 writer -- all map to root.
+        let histories = vec![
+            vec![Transaction::committed(vec![
+                Event::read("x", 0u64),
+                Event::write("x", 1u64),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 0u64),
+                Event::write("x", 2u64),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 0u64),
+                Event::write("x", 3u64),
+            ])],
+        ];
+        let result = is_valid_history(&histories);
+        assert!(
+            result.is_ok(),
+            "three sessions reading x==0 (initial state) should be valid: {result:?}",
+        );
+    }
 }

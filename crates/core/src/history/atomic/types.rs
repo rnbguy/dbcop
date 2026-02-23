@@ -124,7 +124,6 @@ where
                 atomic_history.insert(current_transaction_id, current_transaction_info);
             }
         }
-
         Ok(Self(atomic_history))
     }
 }
