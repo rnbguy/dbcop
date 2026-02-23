@@ -10,15 +10,14 @@ vi.mock("../wasm.ts", () => ({
   tokenize_history: () => "[]",
 }));
 
-// Mock cytoscape global (loaded via CDN in production).
-vi.stubGlobal("cytoscape", () => ({
-  destroy: () => {},
-  resize: () => {},
-  fit: () => {},
-  style: () => ({ fromJson: () => ({ update: () => {} }) }),
-  json: () => {},
-  png: () => "",
-}));
+// Stub Viz global (loaded via CDN in production)
+vi.stubGlobal("Viz", {
+  instance: () =>
+    Promise.resolve({
+      renderSVGElement: () =>
+        document.createElementNS("http://www.w3.org/2000/svg", "svg"),
+    }),
+});
 
 const { App } = await import("../app.tsx");
 

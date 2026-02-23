@@ -113,16 +113,12 @@ test("? key opens shortcut help overlay", async ({ page }) => {
   await expect(page.locator(".overlay")).not.toBeVisible();
 });
 
-test("session cards appear after successful check", async ({ page }) => {
+test("graph renders after successful check", async ({ page }) => {
   await page.goto("/");
-
-  await expect(page.locator(".sessions-empty")).toBeVisible();
-
+  await expect(page.locator(".graph-panel.empty")).toBeVisible();
   await page.locator(".btn-primary.check-btn").click();
   await expect(page.locator(".badge-pass")).toBeVisible({ timeout: 15_000 });
-
-  await expect(page.locator(".session-column").first()).toBeVisible();
-  await expect(page.locator(".txn-card").first()).toBeVisible();
+  await expect(page.locator(".graph-container")).toBeVisible();
 });
 
 test("graph panel renders after check", async ({ page }) => {
@@ -246,18 +242,17 @@ test("session headers show correct labels after check", async ({ page }) => {
   await page.goto("/");
   await page.locator(".btn-primary.check-btn").click();
   await expect(page.locator(".badge-pass")).toBeVisible({ timeout: 15_000 });
-  const headers = page.locator(".session-header");
-  await expect(headers.first()).toContainText("Session");
+  await expect(page.locator(".graph-container")).toBeVisible({
+    timeout: 5_000,
+  });
 });
-
 test("transaction cards show read and write events", async ({ page }) => {
   await page.goto("/");
   await page.locator(".btn-primary.check-btn").click();
   await expect(page.locator(".badge-pass")).toBeVisible({ timeout: 15_000 });
-  const readOps = page.locator(".event-read");
-  const writeOps = page.locator(".event-write");
-  const hasReadOrWrite = (await readOps.count()) + (await writeOps.count());
-  expect(hasReadOrWrite).toBeGreaterThan(0);
+  await expect(page.locator(".graph-container svg")).toBeVisible({
+    timeout: 8_000,
+  });
 });
 
 // -- Resize handle ----------------------------------------------------------

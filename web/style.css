@@ -738,42 +738,6 @@ pre,
   min-height: 0;
 }
 
-/* -- Sessions panel ------------------------------------------------------- */
-.sessions-panel {
-  flex: 0 0 auto;
-  display: flex;
-  gap: 12px;
-  padding: 16px;
-  overflow-x: auto;
-  overflow-y: auto;
-  min-width: 200px;
-  max-width: 50%;
-  border-right: 1px solid var(--gh-border-default);
-}
-
-.sessions-empty {
-  min-width: 200px;
-  max-width: 50%;
-  border-right: 1px solid var(--gh-border-default);
-}
-
-.session-column {
-  flex-shrink: 0;
-  min-width: 140px;
-  max-width: 200px;
-}
-
-.session-header {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--gh-text-secondary);
-  padding-bottom: 6px;
-  margin-bottom: 6px;
-  border-bottom: 2px solid var(--gh-accent-fg);
-}
-
 .txn-card {
   background: var(--gh-bg-default);
   border: 1px solid var(--gh-border-default);
@@ -915,48 +879,14 @@ pre,
   background-color: transparent;
 }
 
-.graph-panel .edge-highlight {
-  filter: drop-shadow(0 0 4px var(--gh-success-fg));
-}
-
-.graph-grid {
-  position: relative;
-  display: flex;
-  flex-direction: row;
-  gap: 16px;
-  padding: 16px;
-  overflow: auto;
-  flex: 1;
-  align-items: flex-start;
-}
-
-.graph-session-col {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 140px;
-}
-
-.graph-session-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--gh-text-secondary);
-  padding-bottom: 6px;
-  border-bottom: 2px solid var(--gh-accent-fg);
-  margin-bottom: 2px;
-}
-
-.graph-edges {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: visible;
-}
-
 .graph-edge-highlight {
   filter: drop-shadow(0 0 4px var(--gh-success-fg));
+}
+
+.graph-container svg g.edge.graph-edge-highlight path,
+.graph-container svg g.edge.graph-edge-highlight polygon {
+  filter: drop-shadow(0 0 4px var(--gh-success-fg));
+  stroke-width: 4 !important;
 }
 
 /* -- Syntax highlighting -------------------------------------------------- */
@@ -1008,16 +938,6 @@ pre,
     width: 100%;
     max-width: 100%;
     max-height: 45vh;
-    border-right: none;
-    border-bottom: 1px solid var(--gh-border-default);
-  }
-
-  .content-panels {
-    flex-direction: column;
-  }
-
-  .sessions-panel {
-    max-width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--gh-border-default);
   }
@@ -1150,16 +1070,6 @@ pre,
 .builder-panel.open {
   transform: translateX(0);
   opacity: 1;
-}
-
-.sessions-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sessions-empty.empty {
-  padding: 20px;
 }
 
 .graph-panel-empty {

@@ -9,7 +9,6 @@ import type { Theme } from "./components/ThemeToggle.tsx";
 import { ThemeToggle } from "./components/ThemeToggle.tsx";
 import { EditorPanel } from "./components/EditorPanel.tsx";
 import { ResultBar } from "./components/ResultBar.tsx";
-import { SessionDisplay } from "./components/SessionDisplay.tsx";
 import { GraphPanel } from "./components/GraphPanel.tsx";
 import { ShortcutHelp } from "./components/ShortcutHelp.tsx";
 import { SessionBuilder } from "./components/SessionBuilder.tsx";
@@ -213,7 +212,6 @@ export function App() {
             timedOut={displayTimedOut}
           />
           <div class="content-panels">
-            <SessionDisplay result={displayResult} />
             <GraphPanel
               result={displayResult}
               onExportReady={setGraphExport}
