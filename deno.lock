@@ -21,6 +21,8 @@
     "jsr:@std/streams@^1.0.17": "1.0.17",
     "jsr:@std/tar@~0.1.4": "0.1.10",
     "npm:@playwright/test@*": "1.58.2",
+    "npm:@viz-js/viz@3": "3.24.0",
+    "npm:@viz-js/viz@3.24.0": "3.24.0",
     "npm:ajv@*": "8.17.1",
     "npm:ajv@8": "8.17.1",
     "npm:esbuild@0.25.0": "0.25.0",
@@ -589,6 +591,9 @@
         "@vitest/pretty-format",
         "tinyrainbow"
       ]
+    },
+    "@viz-js/viz@3.24.0": {
+      "integrity": "sha512-sTRz2cFN6PwICVC7GVlF2aYNAZ/LwF7Y1mp3B+8LXQ7otyHrzQYSzNBwJ4lctL/aS3x97ppw59z6zIW+wPs6bQ=="
     },
     "ajv@8.17.1": {
       "integrity": "sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g==",

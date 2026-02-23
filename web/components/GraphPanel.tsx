@@ -83,7 +83,7 @@ function buildDot(result: TraceResult): string {
   lines.push("digraph {");
   lines.push(`  bgcolor="${c.bgCanvas}";`);
   lines.push(
-    `  graph [rankdir=TB, splines=spline, nodesep=1.0, ranksep=0.6, fontname="monospace", fontcolor="${c.textSecondary}", fontsize=10];`,
+    `  graph [rankdir=TB, splines=curved, nodesep=1.0, ranksep=0.6, fontname="monospace", fontcolor="${c.textSecondary}", fontsize=10];`,
   );
   lines.push(
     `  node [fontname="monospace", fontsize=9, shape=box, style="rounded,filled", margin="0.2,0.12", width=1.8, fillcolor="${c.bgDefault}", color="${c.borderDefault}", fontcolor="${c.textPrimary}"];`,
@@ -186,7 +186,7 @@ export function GraphPanel({ result, onExportReady, onHighlightReady }: Props) {
         // Register highlight handler AFTER svg is in DOM
         if (onHighlightReady) {
           onHighlightReady((pairs) => {
-            if (pairs.length === 0) return;
+            if (!pairs || pairs.length === 0) return;
             // Build set of edge title strings to match: "S1T0->S2T1"
             const toHighlight = new Set<string>();
             for (const [src, tgt] of pairs) {
