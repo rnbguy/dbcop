@@ -931,8 +931,16 @@ pre,
 .syn-operator {
   color: var(--gh-danger-fg);
 }
-.syn-variable {
+.syn-write-op {
+  color: var(--gh-danger-fg);
+  font-weight: 600;
+}
+.syn-read-op {
   color: var(--gh-success-fg);
+  font-weight: 600;
+}
+.syn-variable {
+  color: var(--gh-accent-fg);
 }
 .syn-number {
   color: var(--gh-attention-fg);
