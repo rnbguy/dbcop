@@ -14,6 +14,7 @@ import type {
 } from "../types.ts";
 import {
   check_consistency_step_init,
+  check_consistency_step_init_text,
   check_consistency_step_next,
 } from "../wasm.ts";
 
@@ -193,16 +194,17 @@ export function StepThrough(
   const startStepCheck = useCallback(() => {
     setError(null);
     stopPlay();
-
-    if (format !== "json") {
-      setError("Step mode only works with JSON format");
-      return;
-    }
-
     setLoading(true);
     try {
+      // Parser requires trailing newline on every line
+      const effectiveInput = format === "text" && !input.endsWith("\n")
+        ? input + "\n"
+        : input;
+      const initFn = format === "text"
+        ? check_consistency_step_init_text
+        : check_consistency_step_init;
       const response = JSON.parse(
-        check_consistency_step_init(input, level),
+        initFn(effectiveInput, level),
       ) as StepInitResponse;
       if (response.error) {
         setError(response.error);

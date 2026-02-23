@@ -18,7 +18,7 @@ use dbcop_core::consistency::saturation::committed_read::check_committed_read;
 use dbcop_core::consistency::witness::Witness;
 use dbcop_core::history::atomic::types::{AtomicTransactionHistory, TransactionId};
 use dbcop_core::history::atomic::AtomicTransactionPO;
-use dbcop_core::history::raw::types::Session;
+use dbcop_core::history::raw::types::{Event, Session, Transaction};
 use dbcop_core::Consistency;
 use wasm_bindgen::prelude::*;
 
@@ -88,22 +88,13 @@ fn parse_embedded_result(result_json: &str) -> serde_json::Value {
         .unwrap_or_else(|e| serde_json::json!({"ok": false, "error": e.to_string()}))
 }
 
-#[must_use]
-#[wasm_bindgen]
-pub fn check_consistency_step_init(history_json: &str, level: &str) -> String {
-    let Some(consistency) = parse_level(level) else {
-        return serde_json::json!({"error": "unknown consistency level"}).to_string();
-    };
-
-    let sessions = match serde_json::from_str::<Vec<Session<u64, u64>>>(history_json) {
-        Ok(s) => s,
-        Err(e) => {
-            return serde_json::json!({"error": e.to_string()}).to_string();
-        }
-    };
-
+fn step_init_impl(
+    sessions: Vec<Session<u64, u64>>,
+    history_json: String,
+    level: &str,
+    consistency: Consistency,
+) -> String {
     let session_id = next_step_session_id();
-
     if matches!(consistency, Consistency::Causal) {
         let atomic_history = match AtomicTransactionHistory::try_from(sessions.as_slice()) {
             Ok(h) => h,
@@ -111,18 +102,15 @@ pub fn check_consistency_step_init(history_json: &str, level: &str) -> String {
                 return serde_json::json!({"error": e}).to_string();
             }
         };
-
         let mut po = AtomicTransactionPO::from(atomic_history);
         po.vis_includes(&po.get_wr());
         po.vis_is_trans();
-
         let state = CausalStepSession {
             step: 0,
-            history_json: history_json.to_string(),
+            history_json,
             level: level.to_string(),
             po,
         };
-
         STEP_SESSIONS.with(|store| {
             store.borrow_mut().insert(session_id.clone(), state);
         });
@@ -138,7 +126,7 @@ pub fn check_consistency_step_init(history_json: &str, level: &str) -> String {
         })
         .to_string()
     } else {
-        let trace = check_consistency_trace(history_json, level);
+        let trace = check_consistency_trace(&history_json, level);
         let result = parse_embedded_result(&trace);
         serde_json::json!({
             "session_id": session_id,
@@ -150,6 +138,94 @@ pub fn check_consistency_step_init(history_json: &str, level: &str) -> String {
         })
         .to_string()
     }
+}
+
+#[must_use]
+#[wasm_bindgen]
+pub fn check_consistency_step_init(history_json: &str, level: &str) -> String {
+    let Some(consistency) = parse_level(level) else {
+        return serde_json::json!({"error": "unknown consistency level"}).to_string();
+    };
+    let sessions = match serde_json::from_str::<Vec<Session<u64, u64>>>(history_json) {
+        Ok(s) => s,
+        Err(e) => {
+            return serde_json::json!({"error": e.to_string()}).to_string();
+        }
+    };
+
+    step_init_impl(sessions, history_json.to_string(), level, consistency)
+}
+
+#[must_use]
+#[wasm_bindgen]
+pub fn check_consistency_step_init_text(text: &str, level: &str) -> String {
+    let Some(consistency) = parse_level(level) else {
+        return serde_json::json!({"error": "unknown consistency level"}).to_string();
+    };
+
+    let sessions = match dbcop_parser::parse_history(text) {
+        Ok(s) => s,
+        Err(e) => {
+            return serde_json::json!({"error": e.to_string()}).to_string();
+        }
+    };
+
+    // Map variable names to u64 IDs (first-appearance order)
+    let mut var_map: BTreeMap<String, u64> = BTreeMap::new();
+    let mut next_id: u64 = 0;
+    for session in &sessions {
+        for txn in session {
+            for event in &txn.events {
+                let var_name = match event {
+                    Event::Read { variable, .. } => variable,
+                    Event::Write { variable, .. } => variable,
+                };
+                if !var_map.contains_key(var_name) {
+                    var_map.insert(var_name.clone(), next_id);
+                    next_id += 1;
+                }
+            }
+        }
+    }
+
+    let mapped_sessions: Vec<Session<u64, u64>> = sessions
+        .into_iter()
+        .map(|session| {
+            session
+                .into_iter()
+                .map(|txn| {
+                    let events: Vec<Event<u64, u64>> = txn
+                        .events
+                        .into_iter()
+                        .map(|event| match event {
+                            Event::Read { variable, version } => Event::Read {
+                                variable: var_map[&variable],
+                                version,
+                            },
+                            Event::Write { variable, version } => Event::Write {
+                                variable: var_map[&variable],
+                                version,
+                            },
+                        })
+                        .collect();
+                    if txn.committed {
+                        Transaction::committed(events)
+                    } else {
+                        Transaction::uncommitted(events)
+                    }
+                })
+                .collect()
+        })
+        .collect();
+
+    let history_json = match serde_json::to_string(&mapped_sessions) {
+        Ok(s) => s,
+        Err(e) => {
+            return serde_json::json!({"error": e.to_string()}).to_string();
+        }
+    };
+
+    step_init_impl(mapped_sessions, history_json, level, consistency)
 }
 
 #[must_use]
@@ -264,7 +340,7 @@ where
                     let mut writes = serde_json::Map::new();
                     for event in &txn.events {
                         match event {
-                            dbcop_core::history::raw::types::Event::Read { variable, version } => {
+                            Event::Read { variable, version } => {
                                 reads.insert(
                                     variable.to_string(),
                                     version
@@ -272,7 +348,7 @@ where
                                         .map_or(serde_json::Value::Null, |v| serde_json::json!(v)),
                                 );
                             }
-                            dbcop_core::history::raw::types::Event::Write { variable, version } => {
+                            Event::Write { variable, version } => {
                                 writes.insert(variable.to_string(), serde_json::json!(version));
                             }
                         }

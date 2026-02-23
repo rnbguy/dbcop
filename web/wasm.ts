@@ -18,5 +18,8 @@ export const check_consistency_trace_text = getFn(
   "check_consistency_trace_text",
 );
 export const check_consistency_step_init = getFn("check_consistency_step_init");
+export const check_consistency_step_init_text = getFn(
+  "check_consistency_step_init_text",
+);
 export const check_consistency_step_next = getFn("check_consistency_step_next");
 export const tokenize_history = getFn("tokenize_history");

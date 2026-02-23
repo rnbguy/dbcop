@@ -207,13 +207,17 @@ test("step check shows step controls for causal level in JSON format", async ({ 
   await expect(stepControls.or(badge)).toBeVisible({ timeout: 15_000 });
 });
 
-test("step check in text format shows error message", async ({ page }) => {
+test("step check in text format works with default example", async ({ page }) => {
   await page.goto("/");
-  // Text format is default - step check should error (requires JSON)
+  // Text format is default - select causal level for steppable mode
+  await page.locator(".editor-panel select").nth(1).selectOption("causal");
   const stepBtn = page.locator(".step-through .check-btn");
   await expect(stepBtn).toBeVisible();
   await stepBtn.click();
-  await expect(page.locator(".step-error")).toBeVisible({ timeout: 5_000 });
+  // Either step controls appear or an immediate result is shown
+  const stepControls = page.locator(".step-controls");
+  const badge = page.locator(".badge-pass, .badge-fail");
+  await expect(stepControls.or(badge)).toBeVisible({ timeout: 15_000 });
 });
 
 // -- Error handling ---------------------------------------------------------
