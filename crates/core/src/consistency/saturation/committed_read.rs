@@ -28,7 +28,7 @@
 //! # Data flow
 //!
 //! ```text
-//! sessions ─▶ validate ─▶ build committed order DiGraph ─▶ topological sort
+//! sessions -> validate -> build committed order DiGraph -> topological sort
 //!     │                        │                                   │
 //!     └── session-order edges  └── wr_x + committed edges          └── Ok(DiGraph) or Err(Cycle)
 //! ```
@@ -77,7 +77,7 @@ pub fn check_committed_read<Variable, Version>(
 ) -> Result<DiGraph<TransactionId>, Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     tracing::debug!(
         sessions = histories.len(),

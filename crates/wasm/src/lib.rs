@@ -338,8 +338,10 @@ where
                 .map(|(th, txn)| {
                     let mut reads = serde_json::Map::new();
                     let mut writes = serde_json::Map::new();
-                    for event in &txn.events {
-                        match event {
+                    let events: Vec<serde_json::Value> = txn
+                        .events
+                        .iter()
+                        .map(|event| match event {
                             Event::Read { variable, version } => {
                                 reads.insert(
                                     variable.to_string(),
@@ -347,12 +349,25 @@ where
                                         .as_ref()
                                         .map_or(serde_json::Value::Null, |v| serde_json::json!(v)),
                                 );
+                                serde_json::json!({
+                                    "type": "R",
+                                    "variable": variable.to_string(),
+                                    "version": version.as_ref().map_or(
+                                        serde_json::Value::Null,
+                                        |v| serde_json::json!(v),
+                                    )
+                                })
                             }
                             Event::Write { variable, version } => {
                                 writes.insert(variable.to_string(), serde_json::json!(version));
+                                serde_json::json!({
+                                    "type": "W",
+                                    "variable": variable.to_string(),
+                                    "version": serde_json::json!(version)
+                                })
                             }
-                        }
-                    }
+                        })
+                        .collect();
                     serde_json::json!({
                         "id": {
                             "session_id": (sid as u64) + 1,
@@ -360,6 +375,7 @@ where
                         },
                         "reads": reads,
                         "writes": writes,
+                        "events": events,
                         "committed": txn.committed
                     })
                 })

@@ -71,7 +71,7 @@ impl<Variable, Version> TryFrom<&[Session<Variable, Version>]>
     for AtomicTransactionHistory<Variable>
 where
     Variable: Eq + Hash + Clone,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     type Error = Error<Variable, Version>;
 

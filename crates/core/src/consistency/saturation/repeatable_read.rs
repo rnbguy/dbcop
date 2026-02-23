@@ -20,7 +20,7 @@ pub fn check_repeatable_read<Variable, Version>(
 ) -> Result<(), Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     is_valid_history(histories)?;
 
