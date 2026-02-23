@@ -6,11 +6,18 @@ export interface TransactionId {
   session_height: number;
 }
 
+export interface TxEvent {
+  type: "R" | "W";
+  variable: string;
+  version: number | null;
+}
+
 export interface SessionTransaction {
   id: TransactionId;
   reads: Record<string, number | null>;
   writes: Record<string, number>;
   committed: boolean;
+  events?: TxEvent[];
 }
 
 export interface TraceResult {

@@ -3,6 +3,7 @@ import type {
   SessionTransaction,
   TraceResult,
   TransactionId,
+  TxEvent,
 } from "../types.ts";
 
 interface Props {
@@ -34,6 +35,30 @@ interface TxCardProps {
 }
 
 function TxCard({ txn }: TxCardProps) {
+  if (txn.events && txn.events.length > 0) {
+    return (
+      <div
+        class={`tx-card ${txn.committed ? "tx-committed" : "tx-uncommitted"}`}
+      >
+        {txn.events.map((evt: TxEvent, i: number) =>
+          evt.type === "W"
+            ? (
+              <div class="tx-event tx-write" key={`e-${i}`}>
+                <span class="tx-op">W</span> {varLabel(evt.variable)} :={" "}
+                {evt.version}
+              </div>
+            )
+            : (
+              <div class="tx-event tx-read" key={`e-${i}`}>
+                <span class="tx-op">R</span> {varLabel(evt.variable)} =={" "}
+                {evt.version === null ? "?" : evt.version}
+              </div>
+            )
+        )}
+      </div>
+    );
+  }
+  // Fallback: render writes then reads (old behavior)
   const writes = Object.entries(txn.writes ?? {});
   const reads = Object.entries(txn.reads ?? {});
   return (
