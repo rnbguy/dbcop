@@ -325,7 +325,7 @@ export function StepThrough(
 
       {steppable === false && (
         <div class="step-controls">
-          <span class="step-counter">Single-pass level</span>
+          <span class="step-counter">Witness Edges</span>
           <div class="step-toggle-group">
             <button
               type="button"
@@ -334,7 +334,7 @@ export function StepThrough(
               }`}
               onClick={() => applySinglePassMode("before")}
             >
-              Before
+              Hide
             </button>
             <button
               type="button"
@@ -343,7 +343,7 @@ export function StepThrough(
               }`}
               onClick={() => applySinglePassMode("after")}
             >
-              After
+              Show
             </button>
           </div>
         </div>

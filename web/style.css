@@ -579,7 +579,7 @@ pre,
 
 .check-actions {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 8px;
 }
 
