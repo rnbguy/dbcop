@@ -53,4 +53,24 @@ let js = await Deno.readTextFile(`${dist}/main.js`);
 js = js.replaceAll("../wasmlib/dbcop_wasm.js", "./wasmlib/dbcop_wasm.js");
 await Deno.writeTextFile(`${dist}/main.js`, js);
 
-console.log("Build complete: dist/");
+// Report artifact sizes
+function fmtSize(bytes: number): string {
+  return bytes < 1024
+    ? `${bytes} B`
+    : bytes < 1024 * 1024
+    ? `${(bytes / 1024).toFixed(1)} KB`
+    : `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+const artifacts = [
+  `${dist}/wasmlib/dbcop_wasm.wasm`,
+  `${dist}/main.js`,
+  `${dist}/style.css`,
+  `${dist}/theme.css`,
+];
+console.log("\nBuild artifacts:");
+for (const path of artifacts) {
+  const stat = await Deno.stat(path);
+  console.log(`  ${path.padEnd(36)} ${fmtSize(stat.size)}`);
+}
+
+console.log("\nBuild complete: dist/");
