@@ -3,8 +3,8 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useReducer,
   useRef,
-  useState,
 } from "preact/hooks";
 import type {
   ConsistencyLevel,
@@ -48,6 +48,135 @@ interface StepRecord {
   newEdges: EdgePair[];
 }
 
+interface StepState {
+  loading: boolean;
+  error: string | null;
+  sessionId: string | null;
+  steppable: boolean | null;
+  done: boolean;
+  phase: string;
+  currentStep: number;
+  history: StepRecord[];
+  historyCursor: number;
+  playing: boolean;
+  singlePassMode: "before" | "after";
+  singlePassResult: TraceResult | null;
+}
+
+type StepAction =
+  | { type: "RESET" }
+  | { type: "START_CHECK" }
+  | {
+    type: "INIT_SESSION";
+    sessionId: string | null;
+    steppable: boolean;
+    done: boolean;
+    currentStep: number;
+  }
+  | {
+    type: "INIT_SINGLE_PASS";
+    sessionId: string | null;
+    done: boolean;
+    currentStep: number;
+    singlePassResult: TraceResult;
+  }
+  | { type: "SET_ERROR"; error: string }
+  | { type: "STEP"; record: StepRecord }
+  | { type: "STEP_DONE"; record: StepRecord }
+  | { type: "NAVIGATE"; cursor: number }
+  | { type: "STOP_PLAY" }
+  | { type: "START_PLAY" }
+  | { type: "SET_SINGLE_PASS_MODE"; mode: "before" | "after" };
+
+const initialState: StepState = {
+  loading: false,
+  error: null,
+  sessionId: null,
+  steppable: null,
+  done: false,
+  phase: "-",
+  currentStep: 0,
+  history: [],
+  historyCursor: 0,
+  playing: false,
+  singlePassMode: "after",
+  singlePassResult: null,
+};
+
+function stepReducer(state: StepState, action: StepAction): StepState {
+  switch (action.type) {
+    case "RESET":
+      return initialState;
+    case "START_CHECK":
+      return { ...state, error: null, playing: false, loading: true };
+    case "INIT_SESSION":
+      return {
+        ...state,
+        sessionId: action.sessionId,
+        steppable: action.steppable,
+        done: action.done,
+        currentStep: action.currentStep,
+        phase: "-",
+        history: [],
+        historyCursor: 0,
+        loading: false,
+      };
+    case "INIT_SINGLE_PASS":
+      return {
+        ...state,
+        sessionId: action.sessionId,
+        steppable: false,
+        done: action.done,
+        currentStep: action.currentStep,
+        phase: "-",
+        history: [],
+        historyCursor: 0,
+        loading: false,
+        singlePassResult: action.singlePassResult,
+        singlePassMode: "after",
+      };
+    case "SET_ERROR":
+      return { ...state, error: action.error, loading: false };
+    case "STEP": {
+      const newHistory = [...state.history, action.record];
+      return {
+        ...state,
+        currentStep: action.record.step,
+        phase: action.record.phase,
+        history: newHistory,
+        historyCursor: newHistory.length - 1,
+      };
+    }
+    case "STEP_DONE": {
+      const newHistory = [...state.history, action.record];
+      return {
+        ...state,
+        currentStep: action.record.step,
+        phase: action.record.phase,
+        history: newHistory,
+        historyCursor: newHistory.length - 1,
+        done: true,
+        playing: false,
+      };
+    }
+    case "NAVIGATE": {
+      const record = state.history[action.cursor];
+      return {
+        ...state,
+        historyCursor: action.cursor,
+        currentStep: record.step,
+        phase: record.phase,
+      };
+    }
+    case "STOP_PLAY":
+      return { ...state, playing: false };
+    case "START_PLAY":
+      return { ...state, playing: true };
+    case "SET_SINGLE_PASS_MODE":
+      return { ...state, singlePassMode: action.mode };
+  }
+}
+
 interface Props {
   input: string;
   level: ConsistencyLevel;
@@ -61,47 +190,20 @@ interface Props {
 export function StepThrough(
   { input, level, format, graphRef, onResult }: Props,
 ) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [steppable, setSteppable] = useState<boolean | null>(null);
-  const [done, setDone] = useState(false);
-  const [phase, setPhase] = useState<string>("-");
-  const [currentStep, setCurrentStep] = useState(0);
-  const [history, setHistory] = useState<StepRecord[]>([]);
-  const [historyCursor, setHistoryCursor] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [singlePassMode, setSinglePassMode] = useState<"before" | "after">(
-    "after",
-  );
-  const [singlePassResult, setSinglePassResult] = useState<TraceResult | null>(
-    null,
-  );
+  const [state, dispatch] = useReducer(stepReducer, initialState);
   const intervalRef = useRef<number | null>(null);
 
-  const resetState = useCallback(() => {
-    setLoading(false);
-    setError(null);
-    setSessionId(null);
-    setSteppable(null);
-    setDone(false);
-    setPhase("-");
-    setCurrentStep(0);
-    setHistory([]);
-    setHistoryCursor(0);
-    setPlaying(false);
-    setSinglePassMode("after");
-    setSinglePassResult(null);
-  }, []);
-
-  const stepLabel = useMemo(() => `Step ${currentStep}`, [currentStep]);
+  const stepLabel = useMemo(
+    () => `Step ${state.currentStep}`,
+    [state.currentStep],
+  );
 
   const stopPlay = useCallback(() => {
     if (intervalRef.current != null) {
       globalThis.clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    setPlaying(false);
+    dispatch({ type: "STOP_PLAY" });
   }, []);
 
   const parseEdges = (edges: unknown): EdgePair[] => {
@@ -126,75 +228,72 @@ export function StepThrough(
 
   const applySinglePassMode = useCallback(
     (mode: "before" | "after") => {
-      setSinglePassMode(mode);
-      if (!singlePassResult) return;
+      dispatch({ type: "SET_SINGLE_PASS_MODE", mode });
+      if (!state.singlePassResult) return;
       if (mode === "after") {
-        onResult(singlePassResult);
+        onResult(state.singlePassResult);
       } else {
-        onResult({ ...singlePassResult, witness_edges: [] });
+        onResult({ ...state.singlePassResult, witness_edges: [] });
       }
     },
-    [singlePassResult, onResult],
+    [state.singlePassResult, onResult],
   );
 
   const nextStep = useCallback(() => {
-    if (!sessionId || done || steppable !== true) return;
+    if (!state.sessionId || state.done || state.steppable !== true) return;
     try {
       const response = JSON.parse(
-        check_consistency_step_next(sessionId),
+        check_consistency_step_next(state.sessionId),
       ) as StepNextResponse;
       if (response.error) {
-        setError(response.error);
+        dispatch({ type: "SET_ERROR", error: response.error });
         stopPlay();
         return;
       }
 
       const step = typeof response.step === "number"
         ? response.step
-        : currentStep;
-      const currentPhase = response.phase ?? phase;
+        : state.currentStep;
+      const currentPhase = response.phase ?? state.phase;
       const edges = parseEdges(response.new_edges);
+      const record: StepRecord = {
+        step,
+        phase: currentPhase ?? "-",
+        newEdges: edges,
+      };
 
-      setCurrentStep(step);
-      setPhase(currentPhase ?? "-");
       applyHighlight(edges);
 
-      setHistory((prev) => {
-        const next = [...prev, {
-          step,
-          phase: currentPhase ?? "-",
-          newEdges: edges,
-        }];
-        setHistoryCursor(next.length - 1);
-        return next;
-      });
-
       if (response.done) {
-        setDone(true);
+        dispatch({ type: "STEP_DONE", record });
         stopPlay();
         if (response.result) {
           onResult(response.result);
         }
+      } else {
+        dispatch({ type: "STEP", record });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      dispatch({
+        type: "SET_ERROR",
+        error: err instanceof Error ? err.message : String(err),
+      });
       stopPlay();
     }
   }, [
     applyHighlight,
-    currentStep,
-    done,
+    state.currentStep,
+    state.done,
     onResult,
-    phase,
-    sessionId,
-    steppable,
+    state.phase,
+    state.sessionId,
+    state.steppable,
     stopPlay,
   ]);
 
   const startStepCheck = useCallback(() => {
-    setError(null);
+    dispatch({ type: "START_CHECK" });
     stopPlay();
-    setLoading(true);
     try {
       // Parser requires trailing newline on every line
       const effectiveInput = format === "text" && !input.endsWith("\n")
@@ -207,57 +306,58 @@ export function StepThrough(
         initFn(effectiveInput, level),
       ) as StepInitResponse;
       if (response.error) {
-        setError(response.error);
+        dispatch({ type: "SET_ERROR", error: response.error });
         return;
       }
 
-      setSessionId(response.session_id ?? null);
-      setSteppable(response.steppable ?? false);
-      setDone(Boolean(response.done));
-      setCurrentStep(response.step ?? 0);
-      setPhase("-");
-      setHistory([]);
-      setHistoryCursor(0);
       const initEdges = parseEdges(response.new_edges);
       applyHighlight(initEdges);
 
       if (response.steppable === false && response.result) {
-        setSinglePassResult(response.result);
-        setSinglePassMode("after");
+        dispatch({
+          type: "INIT_SINGLE_PASS",
+          sessionId: response.session_id ?? null,
+          done: Boolean(response.done),
+          currentStep: response.step ?? 0,
+          singlePassResult: response.result,
+        });
         onResult(response.result);
+      } else {
+        dispatch({
+          type: "INIT_SESSION",
+          sessionId: response.session_id ?? null,
+          steppable: response.steppable ?? false,
+          done: Boolean(response.done),
+          currentStep: response.step ?? 0,
+        });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
+      dispatch({
+        type: "SET_ERROR",
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }, [applyHighlight, format, input, level, onResult, stopPlay]);
 
   const prevStep = useCallback(() => {
-    if (history.length === 0) return;
-    const nextCursor = Math.max(0, historyCursor - 1);
-    setHistoryCursor(nextCursor);
-    const record = history[nextCursor];
-    setCurrentStep(record.step);
-    setPhase(record.phase);
-    applyHighlight(record.newEdges);
-  }, [applyHighlight, history, historyCursor]);
+    if (state.history.length === 0) return;
+    const nextCursor = Math.max(0, state.historyCursor - 1);
+    dispatch({ type: "NAVIGATE", cursor: nextCursor });
+    applyHighlight(state.history[nextCursor].newEdges);
+  }, [applyHighlight, state.history, state.historyCursor]);
 
   const nextFromHistoryOrApi = useCallback(() => {
-    if (historyCursor < history.length - 1) {
-      const nextCursor = historyCursor + 1;
-      setHistoryCursor(nextCursor);
-      const record = history[nextCursor];
-      setCurrentStep(record.step);
-      setPhase(record.phase);
-      applyHighlight(record.newEdges);
+    if (state.historyCursor < state.history.length - 1) {
+      const nextCursor = state.historyCursor + 1;
+      dispatch({ type: "NAVIGATE", cursor: nextCursor });
+      applyHighlight(state.history[nextCursor].newEdges);
       return;
     }
     nextStep();
-  }, [applyHighlight, history, historyCursor, nextStep]);
+  }, [applyHighlight, state.history, state.historyCursor, nextStep]);
 
   useEffect(() => {
-    if (!playing) return;
+    if (!state.playing) return;
     intervalRef.current = globalThis.setInterval(() => {
       nextFromHistoryOrApi();
     }, 800);
@@ -267,15 +367,15 @@ export function StepThrough(
         intervalRef.current = null;
       }
     };
-  }, [nextFromHistoryOrApi, playing]);
+  }, [nextFromHistoryOrApi, state.playing]);
 
   useEffect(() => {
-    resetState();
-  }, [input, level, format, resetState]);
+    dispatch({ type: "RESET" });
+  }, [input, level, format]);
 
   useEffect(() => {
-    if (done) stopPlay();
-  }, [done, stopPlay]);
+    if (state.done) stopPlay();
+  }, [state.done, stopPlay]);
 
   return (
     <div class="step-through">
@@ -283,29 +383,30 @@ export function StepThrough(
         type="button"
         class="btn check-btn"
         onClick={startStepCheck}
-        disabled={loading}
+        disabled={state.loading}
       >
         <Play size={14} /> Step Check
       </button>
 
-      {steppable === true && (
+      {state.steppable === true && (
         <div class="step-controls">
           <button
             type="button"
             class="btn btn-sm"
             onClick={prevStep}
-            disabled={history.length === 0 || historyCursor === 0}
+            disabled={state.history.length === 0 ||
+              state.historyCursor === 0}
             aria-label="Previous step"
           >
             <ChevronLeft size={14} /> Prev
           </button>
           <span class="step-counter">{stepLabel}</span>
-          <span class="step-phase">{phase}</span>
+          <span class="step-phase">{state.phase}</span>
           <button
             type="button"
             class="btn btn-sm"
             onClick={nextFromHistoryOrApi}
-            disabled={!sessionId || done}
+            disabled={!state.sessionId || state.done}
             aria-label="Next step"
           >
             Next <ChevronRight size={14} />
@@ -313,24 +414,25 @@ export function StepThrough(
           <button
             type="button"
             class="btn btn-sm"
-            onClick={() => (playing ? stopPlay() : setPlaying(true))}
-            disabled={!sessionId || done}
-            aria-label={playing ? "Pause playback" : "Play steps"}
+            onClick={() =>
+              state.playing ? stopPlay() : dispatch({ type: "START_PLAY" })}
+            disabled={!state.sessionId || state.done}
+            aria-label={state.playing ? "Pause playback" : "Play steps"}
           >
-            {playing ? <Pause size={14} /> : <Play size={14} />}
-            {playing ? "Pause" : "Play"}
+            {state.playing ? <Pause size={14} /> : <Play size={14} />}
+            {state.playing ? "Pause" : "Play"}
           </button>
         </div>
       )}
 
-      {steppable === false && (
+      {state.steppable === false && (
         <div class="step-controls">
           <span class="step-counter">Witness Edges</span>
           <div class="step-toggle-group">
             <button
               type="button"
               class={`btn btn-sm ${
-                singlePassMode === "before" ? "btn-primary" : ""
+                state.singlePassMode === "before" ? "btn-primary" : ""
               }`}
               onClick={() => applySinglePassMode("before")}
             >
@@ -339,7 +441,7 @@ export function StepThrough(
             <button
               type="button"
               class={`btn btn-sm ${
-                singlePassMode === "after" ? "btn-primary" : ""
+                state.singlePassMode === "after" ? "btn-primary" : ""
               }`}
               onClick={() => applySinglePassMode("after")}
             >
@@ -349,7 +451,7 @@ export function StepThrough(
         </div>
       )}
 
-      {error && <div class="step-error">{error}</div>}
+      {state.error && <div class="step-error">{state.error}</div>}
     </div>
   );
 }
