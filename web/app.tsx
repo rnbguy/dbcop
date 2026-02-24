@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "preact/hooks";
+import { useCallback, useMemo, useRef, useState } from "preact/hooks";
 import type { Theme } from "./components/ThemeToggle.tsx";
 import { ThemeToggle } from "./components/ThemeToggle.tsx";
 import { EditorPanel } from "./components/EditorPanel.tsx";
@@ -14,7 +8,7 @@ import { ShortcutHelp } from "./components/ShortcutHelp.tsx";
 import { SessionBuilder } from "./components/SessionBuilder.tsx";
 import { StepThrough } from "./components/StepThrough.tsx";
 import { Toolbar } from "./components/Toolbar.tsx";
-import { useWasmCheck } from "./hooks/useWasmCheck.ts";
+
 import {
   type ShortcutHandler,
   useKeyboardShortcuts,
@@ -40,11 +34,11 @@ export function App() {
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
   const [showHelp, setShowHelp] = useState(false);
   const [showBuilder, setShowBuilder] = useState(false);
-  const [{ result, loading, timedOut }, { runCheck }] = useWasmCheck();
+  const [result, setResult] = useState<TraceResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
+  const triggerCheckRef = useRef<(() => void) | null>(null);
   const { share, restore } = useShareLink();
-  const [displayResult, setDisplayResult] = useState<TraceResult | null>(null);
-  const [displayLoading, setDisplayLoading] = useState(false);
-  const [displayTimedOut, setDisplayTimedOut] = useState(false);
 
   // Sidebar resize state
   const [sidebarWidth, setSidebarWidth] = useState(340);
@@ -106,19 +100,8 @@ export function App() {
   }, []);
 
   const handleCheck = useCallback(() => {
-    setDisplayLoading(true);
-    setDisplayResult(null);
-    setDisplayTimedOut(false);
-    runCheck(editorState.text, editorState.level, editorState.format);
-  }, [editorState, runCheck]);
-
-  useEffect(() => {
-    setDisplayLoading(loading);
-    setDisplayTimedOut(timedOut);
-    if (result !== null || !loading) {
-      setDisplayResult(result);
-    }
-  }, [loading, result, timedOut]);
+    triggerCheckRef.current?.();
+  }, []);
 
   const handleShare = useCallback(() => {
     return share(editorState);
@@ -164,15 +147,19 @@ export function App() {
         <aside class="sidebar" style={{ width: sidebarWidth + "px" }}>
           <EditorPanel
             onResult={(next) => {
-              setDisplayResult(next);
-              if (next) setDisplayTimedOut(false);
+              setResult(next);
+              if (next) setTimedOut(false);
             }}
             onLoading={(next) => {
-              setDisplayLoading(next);
+              setLoading(next);
               if (next) {
-                setDisplayTimedOut(false);
-                setDisplayResult(null);
+                setTimedOut(false);
+                setResult(null);
               }
+            }}
+            onTimedOut={setTimedOut}
+            onRegisterCheck={(fn) => {
+              triggerCheckRef.current = fn;
             }}
             checkControls={
               <StepThrough
@@ -181,9 +168,9 @@ export function App() {
                 format={editorState.format}
                 graphRef={highlightEdges ? { highlightEdges } : null}
                 onResult={(next) => {
-                  setDisplayResult(next);
-                  setDisplayLoading(false);
-                  setDisplayTimedOut(false);
+                  setResult(next);
+                  setLoading(false);
+                  setTimedOut(false);
                 }}
               />
             }
@@ -198,13 +185,13 @@ export function App() {
         />
         <main class="content">
           <ResultBar
-            result={displayResult}
-            loading={displayLoading}
-            timedOut={displayTimedOut}
+            result={result}
+            loading={loading}
+            timedOut={timedOut}
           />
           <div class="content-panels">
             <GraphPanel
-              result={displayResult}
+              result={result}
               onHighlightReady={setHighlightEdges}
             />
           </div>

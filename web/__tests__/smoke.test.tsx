@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render } from "preact";
 
 // Mock WASM module -- not available in happy-dom.
-// EditorPanel and useWasmCheck both dynamically import this.
+// EditorPanel dynamically imports this.
 vi.mock("../wasm.ts", () => ({
   check_consistency_trace: () => JSON.stringify({ ok: true, sessions: [] }),
   check_consistency_trace_text: () =>

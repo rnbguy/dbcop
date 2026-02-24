@@ -10,9 +10,13 @@ import {
   TEXT_EXAMPLES,
 } from "../constants.ts";
 
+const CHECK_TIMEOUT_MS = 10_000;
+
 interface Props {
   onResult: (result: TraceResult | null) => void;
   onLoading: (loading: boolean) => void;
+  onTimedOut?: (timedOut: boolean) => void;
+  onRegisterCheck?: (fn: () => void) => void;
   checkControls?: preact.ComponentChildren;
   onStateChange?: (
     state: { text: string; level: ConsistencyLevel; format: InputFormat },
@@ -21,7 +25,15 @@ interface Props {
 }
 
 export function EditorPanel(
-  { onResult, onLoading, checkControls, onStateChange, importData }: Props,
+  {
+    onResult,
+    onLoading,
+    onTimedOut,
+    onRegisterCheck,
+    checkControls,
+    onStateChange,
+    importData,
+  }: Props,
 ) {
   const [format, setFormat] = useState<InputFormat>(DEFAULT_FORMAT);
   const [level, setLevel] = useState<ConsistencyLevel>(DEFAULT_LEVEL);
@@ -135,6 +147,12 @@ export function EditorPanel(
   const runCheck = useCallback(async () => {
     onLoading(true);
     onResult(null);
+    onTimedOut?.(false);
+
+    const timeoutId = setTimeout(() => {
+      onTimedOut?.(true);
+    }, CHECK_TIMEOUT_MS);
+
     try {
       const wasm = await import("../wasm.ts");
       let resultJson: string;
@@ -153,9 +171,16 @@ export function EditorPanel(
         error: err instanceof Error ? err.message : String(err),
       });
     } finally {
+      clearTimeout(timeoutId);
+      onTimedOut?.(false);
       onLoading(false);
     }
-  }, [format, level, text, onResult, onLoading]);
+  }, [format, level, text, onResult, onLoading, onTimedOut]);
+
+  // Expose runCheck to parent for keyboard shortcut
+  useEffect(() => {
+    onRegisterCheck?.(runCheck);
+  }, [runCheck, onRegisterCheck]);
 
   return (
     <div class="editor-panel">
