@@ -118,11 +118,8 @@ dbcop/                          workspace root
         history/atomic/            AtomicTransactionPO and AtomicTransactionHistory
     cli/                         CLI binary -- dbcop_cli
     wasm/                        WASM bindings -- dbcop_wasm
-    sat/                         SAT solver backend -- dbcop_sat
-    testgen/                     test history generator -- dbcop_testgen
-    drivers/                     database drivers -- dbcop_drivers
-  tests/
-    wasm.test.ts                 WASM integration tests (deno test)
+      tests/
+        wasm.test.ts             WASM integration tests (deno test)
   .github/workflows/
     rust.yaml                    build + format CI
     code-quality.yaml            taplo + typos CI
@@ -130,13 +127,14 @@ dbcop/                          workspace root
   .github/zizmor.yml             zizmor config: suppress hash-pin lint (allow tag-pinned refs)
   .husky/pre-commit              ASCII check + cargo +nightly fmt + deno:ci
   taplo.toml                     TOML formatter config
-  deno.json                      deno tasks: prepare, wasmbuild, deno:fmt/lint/check/ci, schema:check
+  deno.json                      deno tasks: prepare, wasmbuild, deno:fmt/lint/check/ci
   rustfmt.toml                   nightly rustfmt config
 ```
 
 ## CLI Usage
 
-The `dbcop` binary has two subcommands: `generate` and `verify`.
+The `dbcop` binary has four subcommands: `generate`, `verify`, `fmt`, and
+`schema`.
 
 ### Verify Flags
 
@@ -169,6 +167,18 @@ RUST_LOG=dbcop_core=trace dbcop verify --input-dir ./histories --consistency cau
 Log levels: `debug` shows checker entry/exit and results, `trace` shows
 per-iteration saturation details. The `dbcop_core` crate uses `tracing::debug!`
 and `tracing::trace!` for instrumentation.
+
+### Schema Subcommand
+
+`dbcop schema` prints the JSON Schema for the history input format to stdout.
+
+```bash
+dbcop schema > history.schema.json
+```
+
+The schema is generated at runtime from the `Transaction<u64, u64>` Rust type
+via `schemars`. It describes the expected JSON format: an array of sessions,
+where each session is an array of transactions.
 
 ## WASM Usage
 

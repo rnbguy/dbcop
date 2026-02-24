@@ -1,10 +1,8 @@
 {
-  "nodeModulesDir": "auto",
   "exclude": [
     ".sisyphus",
     ".omc",
     ".claude",
-    "node_modules",
     "wasmlib",
     "target"
   ],
@@ -14,19 +12,15 @@
     "deno:fmt": "deno fmt --check",
     "deno:lint": "deno lint",
     "deno:check": "deno check",
-    "schema:check": "deno run -A schemas/validate.ts",
     "deno:ci": {
       "dependencies": [
         "deno:fmt",
         "deno:lint",
-        "deno:check",
-        "schema:check"
+        "deno:check"
       ]
     }
   },
   "imports": {
-    "@std/assert": "jsr:@std/assert@^1.0.19",
-    "@std/fs": "jsr:@std/fs@1",
-    "ajv": "npm:ajv@8"
+    "@std/assert": "jsr:@std/assert@^1.0.19"
   }
 }

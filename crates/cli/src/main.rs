@@ -14,6 +14,7 @@ fn main() {
         Command::Generate(args) => generate(args),
         Command::Verify(args) => verify(args),
         Command::Fmt(args) => fmt(args),
+        Command::Schema => schema(),
     }
 }
 
@@ -204,6 +205,12 @@ fn fmt(args: &dbcop_cli::FmtArgs) {
     } else {
         println!("{reformatted} file(s) reformatted");
     }
+}
+
+fn schema() {
+    use dbcop_core::history::raw::types::Transaction;
+    let schema = schemars::schema_for!(Vec<Vec<Transaction<u64, u64>>>);
+    println!("{}", serde_json::to_string_pretty(&schema).unwrap());
 }
 
 fn collect_hist_files(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
