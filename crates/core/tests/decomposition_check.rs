@@ -23,6 +23,13 @@ fn two_clusters_plus_singleton_history() -> History {
     ]
 }
 
+fn single_session_two_txn_history() -> History {
+    vec![session(vec![
+        Transaction::committed(vec![Event::write("x", 1)]),
+        Transaction::committed(vec![Event::read("x", 1), Event::write("y", 1)]),
+    ])]
+}
+
 #[test]
 fn decomposition_two_independent_clusters_serializable_pass() {
     // Sessions {1,2} share var "x"; sessions {3,4} share var "y".
@@ -144,4 +151,93 @@ fn decomposition_preserves_singleton_snapshot_isolation_witness() {
     );
     let ids: std::collections::HashSet<u64> = order.iter().map(|(tid, _)| tid.session_id).collect();
     assert_eq!(ids, [1, 2, 3, 4, 5].into());
+}
+
+#[test]
+fn single_session_prefix_witness_is_trivial_chain() {
+    let history = single_session_two_txn_history();
+    let result = check(&history, Consistency::Prefix);
+    assert!(result.is_ok(), "expected pass, got: {result:?}");
+    let Witness::CommitOrder(order) = result.unwrap() else {
+        panic!("expected CommitOrder witness");
+    };
+    assert_eq!(
+        order,
+        vec![
+            dbcop_core::history::atomic::types::TransactionId {
+                session_id: 1,
+                session_height: 0,
+            },
+            dbcop_core::history::atomic::types::TransactionId {
+                session_id: 1,
+                session_height: 1,
+            },
+        ]
+    );
+}
+
+#[test]
+fn single_session_snapshot_witness_is_trivial_split_chain() {
+    let history = single_session_two_txn_history();
+    let result = check(&history, Consistency::SnapshotIsolation);
+    assert!(result.is_ok(), "expected pass, got: {result:?}");
+    let Witness::SplitCommitOrder(order) = result.unwrap() else {
+        panic!("expected SplitCommitOrder witness");
+    };
+    assert_eq!(
+        order,
+        vec![
+            (
+                dbcop_core::history::atomic::types::TransactionId {
+                    session_id: 1,
+                    session_height: 0,
+                },
+                false
+            ),
+            (
+                dbcop_core::history::atomic::types::TransactionId {
+                    session_id: 1,
+                    session_height: 0,
+                },
+                true
+            ),
+            (
+                dbcop_core::history::atomic::types::TransactionId {
+                    session_id: 1,
+                    session_height: 1,
+                },
+                false
+            ),
+            (
+                dbcop_core::history::atomic::types::TransactionId {
+                    session_id: 1,
+                    session_height: 1,
+                },
+                true
+            ),
+        ]
+    );
+}
+
+#[test]
+fn single_session_serializable_witness_is_trivial_chain() {
+    let history = single_session_two_txn_history();
+    let result = check(&history, Consistency::Serializable);
+    assert!(result.is_ok(), "expected pass, got: {result:?}");
+    let Witness::CommitOrder(order) = result.unwrap() else {
+        panic!("expected CommitOrder witness");
+    };
+    assert_eq!(
+        order,
+        vec![
+            dbcop_core::history::atomic::types::TransactionId {
+                session_id: 1,
+                session_height: 0,
+            },
+            dbcop_core::history::atomic::types::TransactionId {
+                session_id: 1,
+                session_height: 1,
+            },
+        ]
+    );
 }

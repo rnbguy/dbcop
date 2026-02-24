@@ -336,6 +336,11 @@ notepads, and agent memory.
   Reduces DFS/SAT search space from O(n!) to O(sum of k_i!) where k_i are
   component sizes. Applied to NP-complete levels only: Prefix,
   SnapshotIsolation, Serializable.
+- Singleton NPC fast-path (`consistency/mod.rs`, `dbcop_sat/lib.rs`): when the
+  projected history has exactly one session, skip DFS/SAT linearization search
+  and synthesize the trivial witness from session order after causal check. Also
+  applied per component during decomposition to avoid recursive re-checking and
+  SAT solving for singleton components.
 
 - Incremental transitive closure (`digraph.rs`): `incremental_closure()` extends
   an existing closed graph with new edges using BFS ancestor/descendant
@@ -359,11 +364,13 @@ notepads, and agent memory.
   `test_inconsistent_local_read_before_write`.
 - `crates/core/tests/paper_polynomial.rs` -- 13 tests verifying polynomial-time
   checker correctness against known histories.
-- `crates/core/tests/decomposition_check.rs` -- 6 tests verifying communication
+- `crates/core/tests/decomposition_check.rs` -- 9 tests verifying communication
   graph decomposition in NP-complete checkers, including singleton-component
-  witness preservation for Prefix/SI/Serializable.
+  witness preservation and single-session trivial witnesses for
+  Prefix/SI/Serializable.
 - `crates/sat/tests/cross_check.rs` includes SAT witness regression tests for
-  singleton-component preservation in Prefix and Snapshot Isolation.
+  singleton-component preservation and single-session fast-path coverage in
+  Prefix/SnapshotIsolation/Serializable.
 - `crates/core/benches/consistency.rs` -- 18 Criterion benchmarks (6 consistency
   levels x 3 history sizes).
 - Always add tests when adding new functionality.

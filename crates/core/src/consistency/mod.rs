@@ -156,6 +156,35 @@ fn merge_witnesses(base: Witness, other: Witness) -> Witness {
     }
 }
 
+/// Build the trivial NPC witness for a single-session history.
+///
+/// For one session, the transaction order is fixed by session order, so
+/// Prefix/Serializable witnesses are the commit chain and Snapshot Isolation
+/// is its split-phase expansion.
+fn singleton_session_witness<Variable, Version>(
+    session: &Session<Variable, Version>,
+    level: Consistency,
+) -> Witness {
+    let commit_order: Vec<TransactionId> = (0..)
+        .zip(session.iter())
+        .map(|(session_height, _)| TransactionId {
+            session_id: 1,
+            session_height,
+        })
+        .collect();
+
+    match level {
+        Consistency::Prefix | Consistency::Serializable => Witness::CommitOrder(commit_order),
+        Consistency::SnapshotIsolation => Witness::SplitCommitOrder(
+            commit_order
+                .into_iter()
+                .flat_map(|tid| [(tid, false), (tid, true)])
+                .collect(),
+        ),
+        _ => unreachable!("singleton_session_witness called for non-NPC level"),
+    }
+}
+
 /// Check NP-complete consistency levels (Prefix, `SnapshotIsolation`, Serializable)
 /// using connected-component decomposition of the communication graph
 /// (Theorem 5.2 in Biswas & Enea 2019).
@@ -171,6 +200,10 @@ where
     Version: Eq + Hash + Clone + Default,
 {
     let po = check_causal_read(sessions)?;
+
+    if sessions.len() == 1 {
+        return Ok(singleton_session_witness(&sessions[0], level));
+    }
 
     let comm_graph = decomposition::communication_graph(&po);
     let all_components = decomposition::connected_components(&comm_graph);
@@ -236,7 +269,11 @@ where
             .map(|&sid| sessions[sid as usize - 1].clone())
             .collect();
 
-        let sub_witness = check_npc(&sub_sessions, level)?;
+        let sub_witness = if sub_sessions.len() == 1 {
+            singleton_session_witness(&sub_sessions[0], level)
+        } else {
+            check_npc(&sub_sessions, level)?
+        };
         let remapped = remap_witness(sub_witness, &session_ids);
         merged = merge_witnesses(merged, remapped);
     }

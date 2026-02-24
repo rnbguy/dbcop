@@ -141,6 +141,13 @@ fn two_clusters_plus_singleton_history() -> Vec<Session<&'static str, u64>> {
     ]
 }
 
+fn single_session_two_txn_history() -> Vec<Session<&'static str, u64>> {
+    vec![vec![
+        Transaction::committed(vec![Event::write("x", 1)]),
+        Transaction::committed(vec![Event::read("x", 1), Event::write("y", 1)]),
+    ]]
+}
+
 // ---------------------------------------------------------------------------
 // Serializability cross-checks
 // ---------------------------------------------------------------------------
@@ -342,4 +349,49 @@ fn sat_snapshot_witness_preserves_singleton_component() {
     );
     let ids: std::collections::HashSet<u64> = order.iter().map(|(tid, _)| tid.session_id).collect();
     assert_eq!(ids, [1, 2, 3, 4, 5].into());
+}
+
+#[test]
+fn sat_single_session_serializable_fast_path() {
+    let h = single_session_two_txn_history();
+    assert!(
+        check_serializable(&h).is_ok(),
+        "single-session histories should skip SAT search and pass after causal check",
+    );
+}
+
+#[test]
+fn sat_single_session_prefix_witness_is_trivial_chain() {
+    let h = single_session_two_txn_history();
+    let Witness::CommitOrder(order) = check_prefix(&h).expect("expected SAT-PC pass") else {
+        panic!("expected CommitOrder witness");
+    };
+    assert_eq!(order.len(), 2, "expected both transactions in witness");
+    assert_eq!(order[0].session_id, 1);
+    assert_eq!(order[0].session_height, 0);
+    assert_eq!(order[1].session_id, 1);
+    assert_eq!(order[1].session_height, 1);
+}
+
+#[test]
+fn sat_single_session_snapshot_witness_is_trivial_split_chain() {
+    let h = single_session_two_txn_history();
+    let Witness::SplitCommitOrder(order) =
+        check_snapshot_isolation(&h).expect("expected SAT-SI pass")
+    else {
+        panic!("expected SplitCommitOrder witness");
+    };
+    assert_eq!(order.len(), 4, "expected split phases for two transactions");
+    assert_eq!(order[0].0.session_id, 1);
+    assert_eq!(order[0].0.session_height, 0);
+    assert!(!order[0].1);
+    assert_eq!(order[1].0.session_id, 1);
+    assert_eq!(order[1].0.session_height, 0);
+    assert!(order[1].1);
+    assert_eq!(order[2].0.session_id, 1);
+    assert_eq!(order[2].0.session_height, 1);
+    assert!(!order[2].1);
+    assert_eq!(order[3].0.session_id, 1);
+    assert_eq!(order[3].0.session_height, 1);
+    assert!(order[3].1);
 }

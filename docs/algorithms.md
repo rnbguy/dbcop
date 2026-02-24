@@ -134,8 +134,9 @@ k_i are the component sizes. For histories where sessions interact sparsely
 small, fast checks.
 
 Applied only to NP-complete levels (Prefix, Snapshot Isolation, Serializable).
-The polynomial saturation checkers are already efficient enough without
-decomposition.
+Singleton components are handled via a trivial witness fast-path (no DFS/SAT
+search) after the causal prerequisite check. The polynomial saturation checkers
+are already efficient enough without decomposition.
 
 ## SAT Encoding (Alternative Solver)
 
