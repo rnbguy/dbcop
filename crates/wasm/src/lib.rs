@@ -118,14 +118,14 @@ fn parse_embedded_result(result_json: &str) -> serde_json::Value {
 }
 
 fn step_init_impl(
-    sessions: Vec<Session<u64, u64>>,
+    sessions: &[Session<u64, u64>],
     history_json: String,
     level: &str,
     consistency: Consistency,
 ) -> String {
     let session_id = next_step_session_id();
     if matches!(consistency, Consistency::Causal) {
-        let atomic_history = match AtomicTransactionHistory::try_from(sessions.as_slice()) {
+        let atomic_history = match AtomicTransactionHistory::try_from(sessions) {
             Ok(h) => h,
             Err(e) => {
                 return serde_json::json!({"error": e}).to_string();
@@ -182,7 +182,7 @@ pub fn check_consistency_step_init(history_json: &str, level: &str) -> String {
         }
     };
 
-    step_init_impl(sessions, history_json.to_string(), level, consistency)
+    step_init_impl(&sessions, history_json.to_string(), level, consistency)
 }
 
 #[must_use]
@@ -206,8 +206,7 @@ pub fn check_consistency_step_init_text(text: &str, level: &str) -> String {
         for txn in session {
             for event in &txn.events {
                 let var_name = match event {
-                    Event::Read { variable, .. } => variable,
-                    Event::Write { variable, .. } => variable,
+                    Event::Read { variable, .. } | Event::Write { variable, .. } => variable,
                 };
                 if !var_map.contains_key(var_name) {
                     var_map.insert(var_name.clone(), next_id);
@@ -254,7 +253,7 @@ pub fn check_consistency_step_init_text(text: &str, level: &str) -> String {
         }
     };
 
-    step_init_impl(mapped_sessions, history_json, level, consistency)
+    step_init_impl(&mapped_sessions, history_json, level, consistency)
 }
 
 #[must_use]
@@ -629,8 +628,7 @@ pub fn text_to_json_sessions(text: &str) -> String {
         for txn in session {
             for event in &txn.events {
                 let var_name = match event {
-                    Event::Read { variable, .. } => variable,
-                    Event::Write { variable, .. } => variable,
+                    Event::Read { variable, .. } | Event::Write { variable, .. } => variable,
                 };
                 if !var_map.contains_key(var_name) {
                     var_map.insert(var_name.clone(), next_id);
