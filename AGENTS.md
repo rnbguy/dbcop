@@ -370,7 +370,8 @@ notepads, and agent memory.
   Prefix/SI/Serializable.
 - `crates/sat/tests/cross_check.rs` includes SAT witness regression tests for
   singleton-component preservation and single-session fast-path coverage in
-  Prefix/SnapshotIsolation/Serializable.
+  Prefix/SnapshotIsolation/Serializable, plus a bounded differential fuzz test
+  against core NPC solvers (`DBCOP_DIFF_FUZZ_SAMPLES`, default 256).
 - `crates/core/benches/consistency.rs` -- 18 Criterion benchmarks (6 consistency
   levels x 3 history sizes).
 - Always add tests when adding new functionality.

@@ -15,5 +15,8 @@ dbcop_core     = { workspace = true }
 rustsat        = "0.7"
 rustsat-batsat = "0.7"
 
+[dev-dependencies]
+dbcop_testgen = { workspace = true }
+
 [lints]
 workspace = true

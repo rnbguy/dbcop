@@ -2,6 +2,7 @@ use dbcop_core::consistency::Witness;
 use dbcop_core::history::raw::types::{Event, Session, Transaction};
 use dbcop_core::{check, Consistency};
 use dbcop_sat::{check_prefix, check_serializable, check_snapshot_isolation};
+use dbcop_testgen::generator::generate_single_history;
 
 // ---------------------------------------------------------------------------
 // Agreement helpers
@@ -394,4 +395,47 @@ fn sat_single_session_snapshot_witness_is_trivial_split_chain() {
     assert_eq!(order[3].0.session_id, 1);
     assert_eq!(order[3].0.session_height, 1);
     assert!(order[3].1);
+}
+
+#[test]
+fn differential_fuzz_sat_vs_core_npc() {
+    let samples = std::env::var("DBCOP_DIFF_FUZZ_SAMPLES")
+        .ok()
+        .and_then(|s| s.parse::<usize>().ok())
+        .unwrap_or(256);
+
+    let node_options = [1_u64, 3, 5];
+    let var_options = [2_u64, 3, 4];
+    let txn_options = [1_u64, 2, 3];
+    let evt_options = [1_u64, 2, 3];
+
+    for i in 0..samples {
+        let n_node = node_options[i % node_options.len()];
+        let n_var = var_options[i % var_options.len()];
+        let n_txn = txn_options[i % txn_options.len()];
+        let n_evt = evt_options[i % evt_options.len()];
+
+        let h = generate_single_history(n_node, n_var, n_txn, n_evt);
+
+        let core_ser = check(&h, Consistency::Serializable).is_ok();
+        let sat_ser = check_serializable(&h).is_ok();
+        assert_eq!(
+            core_ser, sat_ser,
+            "SER mismatch on sample {i} (n_node={n_node}, n_var={n_var}, n_txn={n_txn}, n_evt={n_evt})",
+        );
+
+        let core_pc = check(&h, Consistency::Prefix).is_ok();
+        let sat_pc = check_prefix(&h).is_ok();
+        assert_eq!(
+            core_pc, sat_pc,
+            "PC mismatch on sample {i} (n_node={n_node}, n_var={n_var}, n_txn={n_txn}, n_evt={n_evt})",
+        );
+
+        let core_si = check(&h, Consistency::SnapshotIsolation).is_ok();
+        let sat_si = check_snapshot_isolation(&h).is_ok();
+        assert_eq!(
+            core_si, sat_si,
+            "SI mismatch on sample {i} (n_node={n_node}, n_var={n_var}, n_txn={n_txn}, n_evt={n_evt})",
+        );
+    }
 }

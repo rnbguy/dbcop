@@ -61,6 +61,11 @@ For the NP-complete levels, dbcop first runs the causal checker (as a
 prerequisite), then searches for a valid linearization using depth-first search
 over topological orderings.
 
+Complexity note: Worst-case complexity is NP-complete when the number of
+sessions is unbounded. However, with a bounded number of sessions,
+frontier-memoized search is polynomial in history size because the number of
+distinct frontier states is polynomially bounded by per-session progress states.
+
 ### The Solver Trait
 
 The `ConstrainedLinearizationSolver` trait (`constrained_linearization.rs`)
