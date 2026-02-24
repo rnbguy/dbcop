@@ -52,13 +52,6 @@ dbcop generate \
 dbcop verify --input-dir /tmp/histories --consistency serializable
 ```
 
-## Web Demo
-
-An interactive browser-based checker is available at
-**[rnbguy.github.io/dbcop](https://rnbguy.github.io/dbcop/)** -- paste a history
-JSON, select a consistency level, and visualize the transaction graph with
-write-read and witness edges.
-
 ## Documentation
 
 - [Architecture](docs/architecture.md) -- crate structure, data flow, key types
@@ -70,7 +63,7 @@ write-read and witness edges.
   examples
 - [Algorithms](docs/algorithms.md) -- saturation, linearization, decomposition,
   SAT encoding
-- [Web and WASM](docs/web-and-wasm.md) -- browser app, WASM API, build pipeline
+- [WASM API](docs/wasm-api.md) -- WASM bindings API reference
 - [Development](docs/development.md) -- building, testing, contributing
 
 ## Citation

@@ -62,17 +62,6 @@ Examples:
 - Security linting: `zizmor .github/workflows/` checks for security issues.
   Config: `.github/zizmor.yml` suppresses hash-pin warnings (we use tag-pinned
   refs, not SHA hashes). Fix all other zizmor lints.
-- Static site build: `deno task build` (requires wasmlib built first). Outputs
-  to `dist/` (gitignored).
-- Browser WASM compatibility: `web/build.ts` post-processes
-  `dist/wasmlib/dbcop_wasm.js` after copying from `wasmlib/`. The
-  `@deno/wasmbuild`-generated file uses
-  `import * as wasm from "./dbcop_wasm.wasm"` (Deno-native ESM WASM import
-  syntax not supported in Chrome stable). The build script replaces this with
-  `WebAssembly.instantiateStreaming` (with `WebAssembly.instantiate` fallback
-  for servers that do not set `application/wasm` content-type). The WASM import
-  namespace is `"./dbcop_wasm.internal.js"`. The source `wasmlib/dbcop_wasm.js`
-  is never modified -- only the dist copy is patched.
 
 ## CI Checks
 
@@ -85,11 +74,6 @@ All four must pass before merging:
    files, typos spell check
 4. `Deno` (deno.yaml) -- builds WASM, runs deno fmt/lint/check, runs WASM
    integration tests
-
-Additionally, on push to main:
-
-5. `Deploy to GitHub Pages` (pages.yaml) -- builds static site and deploys to
-   GitHub Pages (push to main only)
 
 ## Code Constraints
 
@@ -137,18 +121,16 @@ dbcop/                          workspace root
     sat/                         SAT solver backend -- dbcop_sat
     testgen/                     test history generator -- dbcop_testgen
     drivers/                     database drivers -- dbcop_drivers
-  web/                           Deno web app: history input, WASM integration, graph visualization
   tests/
     wasm.test.ts                 WASM integration tests (deno test)
   .github/workflows/
     rust.yaml                    build + format CI
     code-quality.yaml            taplo + typos CI
     deno.yaml                    Deno fmt/lint/check + WASM tests CI
-    pages.yaml                   GitHub Pages deployment (push to main only)
   .github/zizmor.yml             zizmor config: suppress hash-pin lint (allow tag-pinned refs)
   .husky/pre-commit              ASCII check + cargo +nightly fmt + deno:ci
   taplo.toml                     TOML formatter config
-  deno.json                      deno tasks: prepare, wasmbuild, serve-web, deno:fmt/lint/check/ci, build
+  deno.json                      deno tasks: prepare, wasmbuild, deno:fmt/lint/check/ci, schema:check
   rustfmt.toml                   nightly rustfmt config
 ```
 
@@ -212,8 +194,8 @@ Returns a JSON string with the following schema:
 
 ### `check_consistency_trace(history_json: &str, level: &str) -> String`
 
-Same parameters as `check_consistency`. Returns a richer JSON response suitable
-for web visualization, including parsed session data and graph edges.
+Same parameters as `check_consistency`. Returns a richer JSON response including
+parsed session data and graph edges.
 
 On success:
 
