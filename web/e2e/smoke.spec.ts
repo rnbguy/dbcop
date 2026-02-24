@@ -182,12 +182,12 @@ test("lost-update fails at serializable level", async ({ page }) => {
   await expect(page.locator(".badge-fail")).toBeVisible({ timeout: 15_000 });
 });
 
-test("lost-update fails at prefix level", async ({ page }) => {
+test("lost-update fails at snapshot-isolation level", async ({ page }) => {
   await page.goto("/");
   await page.locator(".editor-panel select").first().selectOption(
     "lost-update",
   );
-  await page.locator(".editor-panel select").nth(1).selectOption("prefix");
+  // lost-update example defaults to snapshot-isolation; lost update passes at prefix
   await page.locator(".btn-primary.check-btn").click();
   await expect(page.locator(".badge-fail")).toBeVisible({ timeout: 15_000 });
 });
