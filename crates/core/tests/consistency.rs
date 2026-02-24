@@ -31,7 +31,7 @@ fn simple_valid_history() -> Vec<Session<&'static str, u64>> {
 fn build_atomic_po<V, W>(histories: &[Session<V, W>]) -> Result<AtomicTransactionPO<V>, Error<V, W>>
 where
     V: Eq + std::hash::Hash + Clone,
-    W: Eq + std::hash::Hash + Clone,
+    W: Eq + std::hash::Hash + Clone + Default,
 {
     let atomic_history = AtomicTransactionHistory::try_from(histories)?;
     let mut po = AtomicTransactionPO::from(atomic_history);

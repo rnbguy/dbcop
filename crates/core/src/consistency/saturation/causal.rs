@@ -81,7 +81,7 @@ pub fn check_causal_read<Variable, Version>(
 ) -> Result<AtomicTransactionPO<Variable>, Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     tracing::debug!(
         sessions = histories.len(),

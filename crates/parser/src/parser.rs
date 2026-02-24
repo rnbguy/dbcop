@@ -190,12 +190,17 @@ fn comment_line(input: &mut &str) -> ModalResult<Option<Vec<Transaction<String, 
     Ok(None)
 }
 
-/// A session line: one or more transactions separated by inline whitespace,
+/// A session line: one or more transactions separated by optional inline whitespace,
 /// terminated by a newline.
 fn session_line(input: &mut &str) -> ModalResult<Option<Vec<Transaction<String, u64>>>> {
     opt_inline_ws.parse_next(input)?;
-    let txns: Vec<Transaction<String, u64>> =
-        separated(1.., transaction, inline_ws).parse_next(input)?;
+    let first = transaction.parse_next(input)?;
+    let rest: Vec<((), Transaction<String, u64>)> =
+        repeat(0.., (opt_inline_ws, transaction)).parse_next(input)?;
+    let mut txns = vec![first];
+    for ((), txn) in rest {
+        txns.push(txn);
+    }
     opt_inline_ws.parse_next(input)?;
     newline.parse_next(input)?;
     Ok(Some(txns))
@@ -479,5 +484,15 @@ mod tests {
         let (line, col) = offset_to_line_col("hello\nworld\n", 6);
         assert_eq!(line, 2);
         assert_eq!(col, 1);
+    }
+
+    #[test]
+    fn test_no_space_between_transactions() {
+        let input = "[x==1][y==1]\n";
+        let result = parse_history(input).expect("should parse without spaces");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].len(), 2);
+        assert_eq!(result[0][0].events, vec![r("x", 1)]);
+        assert_eq!(result[0][1].events, vec![r("y", 1)]);
     }
 }

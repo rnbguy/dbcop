@@ -71,7 +71,7 @@ impl<Variable, Version> TryFrom<&[Session<Variable, Version>]>
     for AtomicTransactionHistory<Variable>
 where
     Variable: Eq + Hash + Clone,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     type Error = Error<Variable, Version>;
 
@@ -124,7 +124,6 @@ where
                 atomic_history.insert(current_transaction_id, current_transaction_info);
             }
         }
-
         Ok(Self(atomic_history))
     }
 }

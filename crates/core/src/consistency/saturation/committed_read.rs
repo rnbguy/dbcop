@@ -28,7 +28,7 @@
 //! # Data flow
 //!
 //! ```text
-//! sessions ─▶ validate ─▶ build committed order DiGraph ─▶ topological sort
+//! sessions -> validate -> build committed order DiGraph -> topological sort
 //!     │                        │                                   │
 //!     └── session-order edges  └── wr_x + committed edges          └── Ok(DiGraph) or Err(Cycle)
 //! ```
@@ -77,7 +77,7 @@ pub fn check_committed_read<Variable, Version>(
 ) -> Result<DiGraph<TransactionId>, Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     tracing::debug!(
         sessions = histories.len(),
@@ -136,6 +136,10 @@ where
                                 id: current_event_id,
                             })?;
 
+                    // Reads from root (initial state) are always valid
+                    if write_event_id.session_id == 0 {
+                        continue;
+                    }
                     if let Some((committed_version, committed_event_id)) =
                         committed_writes.get(&(write_event_id.transaction_id(), variable.clone()))
                     {

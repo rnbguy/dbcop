@@ -1,10 +1,12 @@
 import { copy, ensureDir } from "@std/fs";
+import { denoPlugins } from "@luca/esbuild-deno-loader";
 
 const dist = "dist";
 await ensureDir(dist);
 
 await copy("web/index.html", `${dist}/index.html`, { overwrite: true });
 await copy("web/style.css", `${dist}/style.css`, { overwrite: true });
+await copy("web/theme.css", `${dist}/theme.css`, { overwrite: true });
 await copy("wasmlib", `${dist}/wasmlib`, { overwrite: true });
 
 // Patch dist/wasmlib/dbcop_wasm.js for browser compatibility.
@@ -29,18 +31,21 @@ wasmJs = wasmJs.replace(wasmImportLine, browserCompatLines.join("\n"));
 await Deno.writeTextFile(wasmJsPath, wasmJs);
 
 let html = await Deno.readTextFile(`${dist}/index.html`);
-html = html.replace('src="main.ts"', 'src="main.js"');
+html = html.replace('src="main.tsx"', 'src="main.js"');
 await Deno.writeTextFile(`${dist}/index.html`, html);
 
 const esbuild = await import("esbuild");
 await esbuild.default.build({
-  entryPoints: ["web/main.ts"],
+  entryPoints: ["web/main.tsx"],
   bundle: true,
   format: "esm",
   platform: "browser",
   external: ["../wasmlib/dbcop_wasm.js"],
   outfile: `${dist}/main.js`,
   minify: true,
+  jsx: "automatic",
+  jsxImportSource: "preact",
+  plugins: [...denoPlugins()],
 });
 await esbuild.default.stop();
 
@@ -48,4 +53,24 @@ let js = await Deno.readTextFile(`${dist}/main.js`);
 js = js.replaceAll("../wasmlib/dbcop_wasm.js", "./wasmlib/dbcop_wasm.js");
 await Deno.writeTextFile(`${dist}/main.js`, js);
 
-console.log("Build complete: dist/");
+// Report artifact sizes
+function fmtSize(bytes: number): string {
+  return bytes < 1024
+    ? `${bytes} B`
+    : bytes < 1024 * 1024
+    ? `${(bytes / 1024).toFixed(1)} KB`
+    : `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+const artifacts = [
+  `${dist}/wasmlib/dbcop_wasm.wasm`,
+  `${dist}/main.js`,
+  `${dist}/style.css`,
+  `${dist}/theme.css`,
+];
+console.log("\nBuild artifacts:");
+for (const path of artifacts) {
+  const stat = await Deno.stat(path);
+  console.log(`  ${path.padEnd(36)} ${fmtSize(stat.size)}`);
+}
+
+console.log("\nBuild complete: dist/");

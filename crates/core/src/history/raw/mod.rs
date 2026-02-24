@@ -34,10 +34,16 @@ pub fn get_all_writes<Variable, Version>(
 ) -> Result<HashMap<Event<Variable, Version>, EventId>, Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     let mut write_map = HashMap::new();
+    let root_event_id = EventId {
+        session_id: 0,
+        session_height: 0,
+        transaction_height: 0,
+    };
 
+    // Pass 1: collect all explicit writes and version-None reads
     // 0 session_id is reserved for variable initization
     for (session_id, session) in (1..).zip(histories.iter()) {
         // (0..).zip() is used for u64 index
@@ -46,12 +52,7 @@ where
                 match event {
                     Event::Read { version, .. } => {
                         if version.is_none() {
-                            let init_event_id = EventId {
-                                session_id: 0,
-                                session_height: 0,
-                                transaction_height: 0,
-                            };
-                            let _ = write_map.insert(event.clone(), init_event_id);
+                            let _ = write_map.insert(event.clone(), root_event_id);
                         }
                     }
                     Event::Write { variable, version } => {
@@ -62,12 +63,10 @@ where
                         };
 
                         // store uncommitted writes too
-
                         let read_event = Event::Read {
                             variable: variable.clone(),
                             version: Some(version.clone()),
                         };
-
                         if let Some(other_event_id) =
                             write_map.insert(read_event.clone(), current_event_id)
                         {
@@ -82,6 +81,23 @@ where
         }
     }
 
+    // Pass 2: map version-default reads to root IF no explicit writer exists.
+    // This handles `x==0` (where 0 is Version::default()) as reading the initial state.
+    let version_default = Version::default();
+    for session in histories {
+        for transaction in session {
+            for event in &transaction.events {
+                if let Event::Read {
+                    version: Some(v), ..
+                } = event
+                {
+                    if v == &version_default {
+                        write_map.entry(event.clone()).or_insert(root_event_id);
+                    }
+                }
+            }
+        }
+    }
     Ok(write_map)
 }
 
@@ -131,7 +147,7 @@ pub fn consistent_local_reads<Variable, Version>(
 ) -> Result<(), Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     let all_write_map = get_all_writes(histories)?;
 
@@ -187,7 +203,7 @@ pub fn committed_external_reads<Variable, Version>(
 ) -> Result<(), Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     let all_writes = get_all_writes(histories)?;
     let committed_writes = get_committed_writes(histories);
@@ -209,6 +225,10 @@ where
                                 event: event.clone(),
                                 id: current_event_id,
                             })?;
+                    // Reads from root (initial state) are always valid
+                    if write_event_id.session_id == 0 {
+                        continue;
+                    }
                     if let Some(&(ref committed_version, committed_event_id)) =
                         committed_writes.get(&(write_event_id.transaction_id(), variable.clone()))
                     {
@@ -248,7 +268,7 @@ pub fn is_valid_history<Variable, Version>(
 ) -> Result<(), Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     // checks consistency of within transactions
     consistent_local_reads(histories)?;
@@ -401,6 +421,78 @@ mod tests {
                 })
             ),
             "consistent local reads check failed: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_version_zero_maps_to_root() {
+        let histories = vec![
+            vec![Transaction::committed(vec![
+                Event::read("x", 0),
+                Event::write("x", 1),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 0),
+                Event::write("x", 2),
+            ])],
+        ];
+        let result = is_valid_history(&histories);
+        assert!(result.is_ok(), "x==0 should map to root: {result:?}");
+    }
+
+    #[test]
+    fn test_version_zero_explicit_writer_takes_precedence() {
+        // x:=0 is committed -> x==0 should use that explicit writer, not root.
+        // This exercises the two-pass logic: pass 1 inserts the explicit write;
+        // pass 2 tries or_insert(root) but finds the slot already occupied.
+        let histories = vec![
+            vec![Transaction::committed(vec![Event::write("x", 0u64)])],
+            vec![Transaction::committed(vec![Event::read("x", 0u64)])],
+        ];
+        let result = is_valid_history(&histories);
+        assert!(
+            result.is_ok(),
+            "x==0 with explicit committed x:=0 writer should be valid: {result:?}",
+        );
+    }
+
+    #[test]
+    fn test_version_zero_uncommitted_writer_rejected() {
+        // x:=0 is uncommitted -> the explicit write takes precedence over root
+        // in the write_map, so the read points to an uncommitted writer -> UncommittedWrite.
+        let histories = vec![
+            vec![Transaction::uncommitted(vec![Event::write("x", 0u64)])],
+            vec![Transaction::committed(vec![Event::read("x", 0u64)])],
+        ];
+        let result = is_valid_history(&histories);
+        assert!(
+            matches!(result, Err(Error::UncommittedWrite { .. })),
+            "x==0 with only an uncommitted x:=0 writer should fail with UncommittedWrite: {result:?}",
+        );
+    }
+
+    #[test]
+    fn test_version_zero_multiple_sessions_read_initial() {
+        // Three sessions all read x==0 (initial) and each write a different version.
+        // No explicit x:=0 writer -- all map to root.
+        let histories = vec![
+            vec![Transaction::committed(vec![
+                Event::read("x", 0u64),
+                Event::write("x", 1u64),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 0u64),
+                Event::write("x", 2u64),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 0u64),
+                Event::write("x", 3u64),
+            ])],
+        ];
+        let result = is_valid_history(&histories);
+        assert!(
+            result.is_ok(),
+            "three sessions reading x==0 (initial state) should be valid: {result:?}",
         );
     }
 }

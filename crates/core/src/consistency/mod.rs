@@ -89,7 +89,7 @@ pub fn check<Variable, Version>(
 ) -> Result<Witness, Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone + Ord,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     tracing::debug!(sessions = sessions.len(), ?level, "checking consistency");
 
@@ -168,7 +168,7 @@ fn check_npc<Variable, Version>(
 ) -> Result<Witness, Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone + Ord,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     let po = check_causal_read(sessions)?;
 

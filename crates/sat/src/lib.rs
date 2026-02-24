@@ -239,7 +239,7 @@ pub fn check_serializable<Variable, Version>(
 ) -> Result<(), Error<Variable, Version>>
 where
     Variable: Clone + Eq + Hash + Ord,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     let po = check_causal_read(sessions)?;
 
@@ -327,7 +327,7 @@ pub fn check_prefix<Variable, Version>(
 ) -> Result<Witness, Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone + Ord,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     let po = check_causal_read(sessions)?;
 
@@ -449,7 +449,7 @@ pub fn check_snapshot_isolation<Variable, Version>(
 ) -> Result<Witness, Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone + Ord,
-    Version: Eq + Hash + Clone,
+    Version: Eq + Hash + Clone + Default,
 {
     let po = check_causal_read(sessions)?;
 
