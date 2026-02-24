@@ -273,9 +273,38 @@ fn check_serializable_from_po<Variable: Eq + Hash + Clone + Ord>(
     //
     // As clauses: NOT before(t_w1, t_w2) OR before(t_w1, t_r)
     //             NOT before(t_w1, t_w2) OR before(t_r, t_w2)
-    for wr_x in po.write_read_relation.values() {
-        // Writers of x are all vertices in wr_x.adj_map
-        let writers: Vec<TransactionId> = wr_x.adj_map.keys().copied().collect();
+    let root = TransactionId::default();
+    for (x, wr_x) in &po.write_read_relation {
+        // wr_x contains reader-only vertices too (as add_edge targets).
+        // Restrict to transactions that actually write x.
+        let writers: Vec<TransactionId> = wr_x
+            .adj_map
+            .keys()
+            .copied()
+            .filter(|tid| {
+                po.history
+                    .0
+                    .get(tid)
+                    .is_some_and(|txn| txn.writes.contains(x))
+            })
+            .collect();
+        let root_readers: Vec<TransactionId> = wr_x
+            .adj_map
+            .get(&root)
+            .map(|s| s.iter().copied().collect())
+            .unwrap_or_default();
+
+        // Root-readers of x must appear before any other writer of x.
+        for &t_r0 in &root_readers {
+            for &t_w in &writers {
+                if t_r0 != t_w {
+                    let r0_before_w = vars.before_lit(t_r0, t_w);
+                    solver
+                        .add_clause(std::iter::once(r0_before_w).collect())
+                        .unwrap();
+                }
+            }
+        }
 
         for &t_w1 in &writers {
             let readers: Vec<TransactionId> = wr_x
@@ -387,8 +416,38 @@ fn check_prefix_from_po<Variable: Eq + Hash + Clone + Ord>(
     // if t_w1's write phase comes before t_w2's write phase,
     // then all readers of t_w1's write on x must have their
     // read phase between t_w1's write phase and t_w2's write phase.
-    for wr_x in po.write_read_relation.values() {
-        let writers: Vec<TransactionId> = wr_x.adj_map.keys().copied().collect();
+    let root = TransactionId::default();
+    for (x, wr_x) in &po.write_read_relation {
+        // wr_x contains reader-only vertices too (as add_edge targets).
+        // Restrict to transactions that actually write x.
+        let writers: Vec<TransactionId> = wr_x
+            .adj_map
+            .keys()
+            .copied()
+            .filter(|tid| {
+                po.history
+                    .0
+                    .get(tid)
+                    .is_some_and(|txn| txn.writes.contains(x))
+            })
+            .collect();
+        let root_readers: Vec<TransactionId> = wr_x
+            .adj_map
+            .get(&root)
+            .map(|s| s.iter().copied().collect())
+            .unwrap_or_default();
+
+        // Root-readers of x must read before other writers of x commit.
+        for &t_r0 in &root_readers {
+            for &t_w in &writers {
+                if t_r0 != t_w {
+                    let r0_before_w = vars.before_lit((t_r0, false), (t_w, true));
+                    solver
+                        .add_clause(std::iter::once(r0_before_w).collect())
+                        .unwrap();
+                }
+            }
+        }
 
         for &t_w1 in &writers {
             let readers: Vec<TransactionId> = wr_x
@@ -507,8 +566,38 @@ fn check_si_from_po<Variable: Eq + Hash + Clone + Ord>(
     let (mut solver, mut vars) = encode_ordering(&vertices, &edges);
 
     // Write-phase constraint (same as prefix/serializable)
-    for wr_x in po.write_read_relation.values() {
-        let writers: Vec<TransactionId> = wr_x.adj_map.keys().copied().collect();
+    let root = TransactionId::default();
+    for (x, wr_x) in &po.write_read_relation {
+        // wr_x contains reader-only vertices too (as add_edge targets).
+        // Restrict to transactions that actually write x.
+        let writers: Vec<TransactionId> = wr_x
+            .adj_map
+            .keys()
+            .copied()
+            .filter(|tid| {
+                po.history
+                    .0
+                    .get(tid)
+                    .is_some_and(|txn| txn.writes.contains(x))
+            })
+            .collect();
+        let root_readers: Vec<TransactionId> = wr_x
+            .adj_map
+            .get(&root)
+            .map(|s| s.iter().copied().collect())
+            .unwrap_or_default();
+
+        // Root-readers of x must read before other writers of x commit.
+        for &t_r0 in &root_readers {
+            for &t_w in &writers {
+                if t_r0 != t_w {
+                    let r0_before_w = vars.before_lit((t_r0, false), (t_w, true));
+                    solver
+                        .add_clause(std::iter::once(r0_before_w).collect())
+                        .unwrap();
+                }
+            }
+        }
 
         for &t_w1 in &writers {
             let readers: Vec<TransactionId> = wr_x

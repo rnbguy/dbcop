@@ -116,15 +116,25 @@ mod tests {
 
     #[test]
     fn test_atomic_read() {
+        // Fractured visibility history:
+        // s1: write x=1,y=1
+        // s2: read y=1, write x=2,z=1
+        // s3: read x=1, read z=1
+        // AtomicRead should detect a cycle after adding ww edges.
         let histories = vec![
-            vec![
-                Transaction::committed(vec![Event::write("x", 1)]),
-                Transaction::committed(vec![Event::write("x", 2)]),
-            ],
-            vec![
-                Transaction::committed(vec![Event::read("x", 2)]),
-                Transaction::committed(vec![Event::read("x", 1)]),
-            ],
+            vec![Transaction::committed(vec![
+                Event::write("x", 1),
+                Event::write("y", 1),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("y", 1),
+                Event::write("x", 2),
+                Event::write("z", 1),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 1),
+                Event::read("z", 1),
+            ])],
         ];
 
         let result = check_atomic_read(&histories);

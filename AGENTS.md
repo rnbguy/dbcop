@@ -94,6 +94,9 @@ All five must pass before merging:
   `CommittedRead`).
 - Do NOT add a `Consistency::RepeatableRead` variant.
 - Do NOT change the `ConstrainedLinearizationSolver` trait API.
+- Raw-history validation must preserve read-your-write semantics within a
+  transaction: a local read is valid only when it matches the latest preceding
+  local write of that variable in the same transaction.
 
 ## Pre-commit Hook (.husky/pre-commit)
 
@@ -336,11 +339,22 @@ notepads, and agent memory.
   an existing closed graph with new edges using BFS ancestor/descendant
   cross-product. Used in causal checker to avoid O(V\*(V+E)) full closure on
   each saturation iteration.
+- Writer-only `ww`/`rw` saturation (`history/atomic/mod.rs`): `causal_ww()` and
+  `causal_rw()` must iterate only over writers of each variable. `wr_x` graphs
+  contain reader vertices too (as `add_edge` targets); including those readers
+  as `t1`/`t2` creates spurious dependencies and false cycles.
 
 ## Testing
 
 - Unit tests: `#[cfg(test)] mod tests` blocks inside `src/` files.
 - Integration tests: `tests/` directories under each crate.
+- `history::atomic` includes regression tests
+  `causal_ww_ignores_non_writer_vertices` and
+  `causal_rw_ignores_non_writer_vertices` to prevent reader-only vertices from
+  generating invalid `ww`/`rw` edges.
+- `history::raw` includes local read ordering tests:
+  `test_consistent_local_read_after_write` and
+  `test_inconsistent_local_read_before_write`.
 - `crates/core/tests/paper_polynomial.rs` -- 13 tests verifying polynomial-time
   checker correctness against known histories.
 - `crates/core/tests/decomposition_check.rs` -- 3 tests verifying communication

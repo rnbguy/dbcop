@@ -258,7 +258,6 @@ fn boundary_snapshot_isolation_to_serializable() {
 ///   S2: r(y,2) from S1, r(x,2) from S1.
 ///   S3: r(z,2) from S2, r(x,2) from S1, r(y,3) from S2.
 /// No cycles, no anti-dependencies -- passes Serializable.
-#[ignore = "history design needs rework: current history causes a causal cycle"]
 #[test]
 fn passes_serializable() {
     let h: Vec<Session<&str, u64>> = vec![
