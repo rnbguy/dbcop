@@ -855,7 +855,7 @@ pre,
 }
 
 .tx-slot {
-  height: 76px;
+  min-height: 76px;
   margin-bottom: 12px;
   position: relative;
 }
@@ -872,9 +872,7 @@ pre,
   font-family: monospace;
   font-size: 11px;
   color: var(--gh-text-primary);
-  height: 100%;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 .tx-committed {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type {
   SessionTransaction,
   TraceResult,
@@ -108,40 +108,43 @@ export function GraphPanel({ result, onHighlightReady }: Props) {
   );
 
   // Build edge definitions
-  const edges: EdgeDef[] = [];
-  if (result?.sessions) {
-    // SO edges (intra-session consecutive)
-    for (const session of sessions) {
-      for (let i = 0; i < session.length - 1; i++) {
-        edges.push({
-          key: `${txId(session[i].id)}->${txId(session[i + 1].id)}`,
-          src: session[i].id,
-          tgt: session[i + 1].id,
-          kind: "so",
+  const edges = useMemo<EdgeDef[]>(() => {
+    const result_edges: EdgeDef[] = [];
+    if (result?.sessions) {
+      // SO edges (intra-session consecutive)
+      for (const session of sessions) {
+        for (let i = 0; i < session.length - 1; i++) {
+          result_edges.push({
+            key: `${txId(session[i].id)}->${txId(session[i + 1].id)}`,
+            src: session[i].id,
+            tgt: session[i + 1].id,
+            kind: "so",
+          });
+        }
+      }
+      // WR edges
+      for (const [src, tgt] of result.wr_edges ?? []) {
+        if (src.session_id === 0 || tgt.session_id === 0) continue;
+        result_edges.push({
+          key: `${txId(src)}->${txId(tgt)}`,
+          src,
+          tgt,
+          kind: "wr",
+        });
+      }
+      // CO/witness edges
+      for (const [src, tgt] of result.witness_edges ?? []) {
+        if (src.session_id === 0 || tgt.session_id === 0) continue;
+        result_edges.push({
+          key: `${txId(src)}->${txId(tgt)}`,
+          src,
+          tgt,
+          kind: "co",
         });
       }
     }
-    // WR edges
-    for (const [src, tgt] of result.wr_edges ?? []) {
-      if (src.session_id === 0 || tgt.session_id === 0) continue;
-      edges.push({
-        key: `${txId(src)}->${txId(tgt)}`,
-        src,
-        tgt,
-        kind: "wr",
-      });
-    }
-    // CO/witness edges
-    for (const [src, tgt] of result.witness_edges ?? []) {
-      if (src.session_id === 0 || tgt.session_id === 0) continue;
-      edges.push({
-        key: `${txId(src)}->${txId(tgt)}`,
-        src,
-        tgt,
-        kind: "co",
-      });
-    }
-  }
+    return result_edges;
+  }, [result]);
 
   // Compute SVG paths after layout
   const computePaths = () => {
@@ -234,7 +237,7 @@ export function GraphPanel({ result, onHighlightReady }: Props) {
       observer.disconnect();
       themeObs.disconnect();
     };
-  }, [result]);
+  }, [result, edges]);
 
   // Register highlight handler
   useEffect(() => {
