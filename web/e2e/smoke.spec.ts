@@ -388,3 +388,21 @@ test("TxCard renders read before write for R-then-W transaction", async ({ page 
   const secondEvent = firstCard.locator(".tx-event").nth(1);
   await expect(secondEvent).toHaveClass(/tx-write/);
 });
+
+// -- Format switch conversion -----------------------------------------------
+
+test("format switch converts custom text to JSON without resetting", async ({ page }) => {
+  await page.goto("/");
+  // Custom text: 2 sessions, 1 transaction each.
+  // Default write-read example has 2 txns in session 1: [x:=1] [x==1].
+  await page.locator(".editor-textarea").fill("[x:=1]\n---\n[x==1]\n");
+  // Switch to JSON format
+  await page.locator(".format-toggle button", { hasText: "JSON" }).click();
+  await page.waitForTimeout(500);
+  const content = await page.locator(".editor-textarea").inputValue();
+  // Must be valid JSON
+  const sessions = JSON.parse(content);
+  expect(sessions).toHaveLength(2);
+  // Custom text has 1 tx per session; default write-read has 2 txns in session 1
+  expect(sessions[0]).toHaveLength(1);
+});

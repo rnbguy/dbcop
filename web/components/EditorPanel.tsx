@@ -85,24 +85,54 @@ export function EditorPanel(
       setFormat(f);
       const ex = TEXT_EXAMPLES[example];
       if (!ex) return;
-      if (f === "text") {
-        setTextareaValue(ex.text);
-        setLevel(ex.level);
+      if (f === "json") {
+        // Switching to JSON
+        if (text === ex.text) {
+          // User hasn't modified the example -- convert example text to JSON
+          try {
+            const wasm = await import("../wasm.ts");
+            const normalized = ex.text.endsWith("\n")
+              ? ex.text
+              : ex.text + "\n";
+            const jsonStr = wasm.text_to_json_sessions(normalized);
+            setTextareaValue(jsonStr);
+            setLevel(ex.level);
+          } catch {
+            setTextareaValue(ex.text);
+            setLevel(ex.level);
+          }
+        } else {
+          // User has custom text -- try to convert it
+          try {
+            const wasm = await import("../wasm.ts");
+            const normalized = text.endsWith("\n") ? text : text + "\n";
+            const jsonStr = wasm.text_to_json_sessions(normalized);
+            if (!jsonStr.startsWith('{"error"')) {
+              setTextareaValue(jsonStr);
+            }
+          } catch {
+            // Keep text as-is
+          }
+        }
       } else {
-        // Derive JSON from text dynamically
+        // Switching to Text -- no json-to-text conversion exists
+        // If current content matches example's JSON, restore example text
         try {
           const wasm = await import("../wasm.ts");
           const normalized = ex.text.endsWith("\n") ? ex.text : ex.text + "\n";
-          const jsonStr = wasm.text_to_json_sessions(normalized);
-          setTextareaValue(jsonStr);
-          setLevel(ex.level);
+          const exampleJson = wasm.text_to_json_sessions(normalized);
+          if (text === exampleJson) {
+            setTextareaValue(ex.text);
+            setLevel(ex.level);
+            return;
+          }
         } catch {
-          setTextareaValue(ex.text);
-          setLevel(ex.level);
+          // Fall through
         }
+        // Custom content -- keep as-is
       }
     },
-    [example, setTextareaValue],
+    [example, text, setTextareaValue],
   );
 
   // Apply imported data
