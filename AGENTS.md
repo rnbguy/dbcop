@@ -62,10 +62,13 @@ Examples:
 - Security linting: `zizmor .github/workflows/` checks for security issues.
   Config: `.github/zizmor.yml` suppresses hash-pin warnings (we use tag-pinned
   refs, not SHA hashes). Fix all other zizmor lints.
+- Coverage:
+  `cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info`.
+  Requires `llvm-tools-preview` component and `cargo-llvm-cov` installed.
 
 ## CI Checks
 
-All four must pass before merging:
+All five must pass before merging:
 
 1. `build` (rust.yaml) -- cargo build, clippy, test, end-to-end checks
 2. `format` (rust.yaml) -- uses `actions-rust-lang/rustfmt@v1` (nightly rustfmt,
@@ -74,6 +77,8 @@ All four must pass before merging:
    files, typos spell check
 4. `Deno` (deno.yaml) -- builds WASM, runs deno fmt/lint/check, runs WASM
    integration tests
+5. `coverage` (coverage.yaml) -- cargo-llvm-cov + Codecov upload (requires
+   `CODECOV_TOKEN` secret)
 
 ## Code Constraints
 

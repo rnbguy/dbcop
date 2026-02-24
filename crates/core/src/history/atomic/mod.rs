@@ -51,13 +51,13 @@ where
             // topology. Each session is a chain: root -> t_0 -> t_1 -> ... -> t_k.
             //
             //              ┌────────┐  ┌────────┐
-            //        ┌────▶│ (1, 0) │─▶│ (1, 1) │─▶...
+            //        ┌────>│ (1, 0) │─>│ (1, 1) │─>...
             //        │     └────────┘  └────────┘
             // ┌──────┴─┐   ┌────────┐  ┌────────┐
-            // │ (0, 0) ├──▶│ (2, 0) │─▶│ (2, 1) │─▶...
+            // │ (0, 0) ├──>│ (2, 0) │─>│ (2, 1) │─>...
             // └──────┬─┘   └────────┘  └────────┘
             //        │     ┌────────┐  ┌────────┐
-            //        └────▶│ (3, 0) │─▶│ (3, 1) │─▶...
+            //        └────>│ (3, 0) │─>│ (3, 1) │─>...
             //              └────────┘  └────────┘
             //
             // The transitive closure of a chain is all pairs (i, j) where i < j,
@@ -243,5 +243,190 @@ where
     #[must_use]
     pub fn has_valid_visibility(&self) -> bool {
         self.visibility_relation.is_acyclic()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec;
+
+    use super::*;
+    use crate::history::raw::types::{Event, Session, Transaction};
+
+    type History = Vec<Session<&'static str, u64>>;
+
+    fn build_po(history: &History) -> AtomicTransactionPO<&'static str> {
+        let atomic_history = AtomicTransactionHistory::try_from(history.as_slice()).unwrap();
+        AtomicTransactionPO::from(atomic_history)
+    }
+
+    #[test]
+    fn session_order_chain_closure() {
+        // Session with 3 transactions: root -> t(1,0) -> t(1,1) -> t(1,2)
+        // Session order closure should have edges from every earlier to every later.
+        let history: History = vec![vec![
+            Transaction::committed(vec![Event::write("x", 1)]),
+            Transaction::committed(vec![Event::write("x", 2)]),
+            Transaction::committed(vec![Event::write("x", 3)]),
+        ]];
+        let po = build_po(&history);
+        let root = TransactionId::default();
+        let t0 = TransactionId {
+            session_id: 1,
+            session_height: 0,
+        };
+        let t1 = TransactionId {
+            session_id: 1,
+            session_height: 1,
+        };
+        let t2 = TransactionId {
+            session_id: 1,
+            session_height: 2,
+        };
+        // Root connects to all
+        assert!(po.session_order.has_edge(&root, &t0));
+        assert!(po.session_order.has_edge(&root, &t1));
+        assert!(po.session_order.has_edge(&root, &t2));
+        // Transitive closure within chain
+        assert!(po.session_order.has_edge(&t0, &t1));
+        assert!(po.session_order.has_edge(&t0, &t2));
+        assert!(po.session_order.has_edge(&t1, &t2));
+    }
+
+    #[test]
+    fn write_read_relation_built_correctly() {
+        // s1: write(x, 1), s2: read(x, 1) -- produces wr_x edge from s1 to s2
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![Event::read("x", 1)])],
+        ];
+        let po = build_po(&history);
+        let t1 = TransactionId {
+            session_id: 1,
+            session_height: 0,
+        };
+        let t2 = TransactionId {
+            session_id: 2,
+            session_height: 0,
+        };
+        let wr_x = po.write_read_relation.get("x").unwrap();
+        assert!(wr_x.adj_map.get(&t1).unwrap().contains(&t2));
+        // wr_union should also have this edge
+        assert!(po.wr_union.adj_map.get(&t1).unwrap().contains(&t2));
+    }
+
+    #[test]
+    fn causal_ww_detects_write_write_dependency() {
+        // s1: write(x, 1)
+        // s2: read(x, 1), write(x, 2)
+        // s3: read(x, 2)
+        // After including wr in vis:
+        //   vis(s1, s2) via wr_x, vis(s2, s3) via wr_x
+        //   ww should find that s1's write on x is overwritten by s2
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 1),
+                Event::write("x", 2),
+            ])],
+            vec![Transaction::committed(vec![Event::read("x", 2)])],
+        ];
+        let mut po = build_po(&history);
+        // Include wr edges into visibility
+        po.vis_includes(&po.get_wr());
+        po.vis_is_trans();
+
+        let ww = po.causal_ww();
+        let ww_x = ww.get("x");
+        // There should be a ww edge: s2 overwrites s1 on x (visible via s3 reading from s2)
+        assert!(ww_x.is_some(), "expected ww relation for x");
+    }
+
+    #[test]
+    fn causal_rw_detects_anti_dependency() {
+        // s1: write(x, 1)
+        // s2: read(x, 1), write(x, 2)
+        // s3: read(x, 2)
+        // rw(s3, s1) or similar anti-dependency patterns
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 1),
+                Event::write("x", 2),
+            ])],
+            vec![Transaction::committed(vec![Event::read("x", 2)])],
+        ];
+        let mut po = build_po(&history);
+        po.vis_includes(&po.get_wr());
+        po.vis_is_trans();
+
+        let rw = po.causal_rw();
+        // rw should have entries for variable "x"
+        assert!(rw.contains_key("x"), "expected rw relation for x");
+    }
+
+    #[test]
+    fn has_valid_visibility_acyclic() {
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![Event::read("x", 1)])],
+        ];
+        let po = build_po(&history);
+        assert!(po.has_valid_visibility(), "simple chain should be acyclic");
+    }
+
+    #[test]
+    fn vis_includes_returns_true_on_change() {
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![Event::read("x", 1)])],
+        ];
+        let mut po = build_po(&history);
+        let wr = po.get_wr();
+        // First inclusion should add new edges
+        let changed = po.vis_includes(&wr);
+        assert!(
+            changed,
+            "vis_includes should return true when new edges are added"
+        );
+        // Second inclusion of the same graph should not change anything
+        let changed_again = po.vis_includes(&wr);
+        assert!(
+            !changed_again,
+            "vis_includes should return false when no new edges"
+        );
+    }
+
+    #[test]
+    fn vis_is_trans_computes_closure() {
+        // s1: write(x, 1)
+        // s2: read(x, 1), write(y, 1)
+        // s3: read(y, 1)
+        // After wr: vis(s1, s2), vis(s2, s3)
+        // After closure: vis(s1, s3) should exist
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 1),
+                Event::write("y", 1),
+            ])],
+            vec![Transaction::committed(vec![Event::read("y", 1)])],
+        ];
+        let mut po = build_po(&history);
+        po.vis_includes(&po.get_wr());
+        let changed = po.vis_is_trans();
+        assert!(changed, "closure should add new transitive edges");
+        let t1 = TransactionId {
+            session_id: 1,
+            session_height: 0,
+        };
+        let t3 = TransactionId {
+            session_id: 3,
+            session_height: 0,
+        };
+        assert!(
+            po.visibility_relation.has_edge(&t1, &t3),
+            "transitive vis(s1, s3) should exist after closure"
+        );
     }
 }

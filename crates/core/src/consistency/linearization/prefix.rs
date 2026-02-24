@@ -181,3 +181,176 @@ where
             .collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec;
+
+    use super::*;
+    use crate::consistency::saturation::causal::check_causal_read;
+    use crate::history::raw::types::{Event, Session, Transaction};
+
+    type History = Vec<Session<&'static str, u64>>;
+
+    fn build_prefix_solver(history: &History) -> PrefixConsistencySolver<&'static str> {
+        let po = check_causal_read(history).unwrap();
+        PrefixConsistencySolver::from(po)
+    }
+
+    #[test]
+    fn simple_prefix_consistent_history() {
+        // s1: write(x, 1)
+        // s2: read(x, 1)
+        // This is trivially prefix-consistent.
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![Event::read("x", 1)])],
+        ];
+        let mut solver = build_prefix_solver(&history);
+        let result = solver.get_linearization();
+        assert!(result.is_some(), "expected a valid linearization");
+        let lin = result.unwrap();
+        // Should contain both read and write phases for each transaction
+        assert!(!lin.is_empty());
+        // Filter to write-phase vertices only
+        let write_phases: Vec<_> = lin.iter().filter(|(_, is_write)| *is_write).collect();
+        assert_eq!(write_phases.len(), 2, "expected 2 write-phase entries");
+    }
+
+    #[test]
+    fn prefix_consistent_chain() {
+        // s1: write(x, 1)
+        // s2: read(x, 1), write(y, 1)
+        // s3: read(y, 1)
+        // Linear chain is prefix-consistent.
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 1),
+                Event::write("y", 1),
+            ])],
+            vec![Transaction::committed(vec![Event::read("y", 1)])],
+        ];
+        let mut solver = build_prefix_solver(&history);
+        let result = solver.get_linearization();
+        assert!(result.is_some(), "chain should be prefix-consistent");
+    }
+
+    #[test]
+    fn concurrent_writes_pass_prefix() {
+        // Concurrent writes to the same variable actually pass prefix consistency
+        // (they fail SI/SER but prefix is weaker).
+        // s1: write(x, 1)
+        // s2: read(x, 1), write(x, 2)
+        // s3: read(x, 1), write(x, 3)
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 1),
+                Event::write("x", 2),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 1),
+                Event::write("x", 3),
+            ])],
+        ];
+        let mut solver = build_prefix_solver(&history);
+        let result = solver.get_linearization();
+        assert!(
+            result.is_some(),
+            "concurrent writes should pass prefix consistency"
+        );
+        let lin = result.unwrap();
+        // Write-phase vertices for all 3 transactions should be present
+        let write_phases: Vec<_> = lin.iter().filter(|(_, is_write)| *is_write).collect();
+        assert_eq!(write_phases.len(), 3, "expected 3 write-phase entries");
+    }
+
+    #[test]
+    fn multi_variable_prefix_consistent() {
+        // Multiple variables, each with independent writer-reader pairs.
+        // s1: write(x, 1), write(y, 1)
+        // s2: read(x, 1), write(z, 1)
+        // s3: read(y, 1), read(z, 1)
+        // All reads are from valid committed writes; should be prefix-consistent.
+        let history: History = vec![
+            vec![Transaction::committed(vec![
+                Event::write("x", 1),
+                Event::write("y", 1),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 1),
+                Event::write("z", 1),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("y", 1),
+                Event::read("z", 1),
+            ])],
+        ];
+        let mut solver = build_prefix_solver(&history);
+        let result = solver.get_linearization();
+        assert!(
+            result.is_some(),
+            "multi-variable chain should be prefix-consistent"
+        );
+        let lin = result.unwrap();
+        let write_phases: Vec<_> = lin.iter().filter(|(_, is_write)| *is_write).collect();
+        assert_eq!(write_phases.len(), 3, "expected 3 write-phase entries");
+    }
+
+    #[test]
+    fn allow_next_permits_read_phase() {
+        // allow_next should always return true for read phases (is_write=false)
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![Event::read("x", 1)])],
+        ];
+        let solver = build_prefix_solver(&history);
+        let t1 = TransactionId {
+            session_id: 1,
+            session_height: 0,
+        };
+        // Read phase should always be allowed
+        assert!(solver.allow_next(&[], &(t1, false)));
+    }
+
+    #[test]
+    fn allow_next_write_phase_with_no_active_writes() {
+        // When active_write is empty, write phase should be allowed
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![Event::read("x", 1)])],
+        ];
+        let mut solver = build_prefix_solver(&history);
+        // Clear active_write to simulate state where no readers remain
+        solver.active_write.clear();
+        let t1 = TransactionId {
+            session_id: 1,
+            session_height: 0,
+        };
+        assert!(
+            solver.allow_next(&[], &(t1, true)),
+            "write phase should be allowed with no active writes"
+        );
+    }
+
+    #[test]
+    fn vertices_produces_read_and_write_phases() {
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![Event::read("x", 1)])],
+        ];
+        let solver = build_prefix_solver(&history);
+        let verts = solver.vertices();
+        // Each transaction gets 2 vertices (read phase + write phase)
+        // 2 transactions = 4 vertices
+        assert_eq!(verts.len(), 4, "expected 4 vertices (2 per transaction)");
+        // Check that both phases exist for each transaction
+        let t1 = TransactionId {
+            session_id: 1,
+            session_height: 0,
+        };
+        assert!(verts.contains(&(t1, false)));
+        assert!(verts.contains(&(t1, true)));
+    }
+}

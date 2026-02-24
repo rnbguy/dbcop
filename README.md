@@ -3,6 +3,8 @@
 Runtime monitoring for transactional consistency.
 
 [![Build](https://github.com/rnbguy/dbcop/actions/workflows/rust.yaml/badge.svg)](https://github.com/rnbguy/dbcop/actions/workflows/rust.yaml)
+[![codecov](https://codecov.io/gh/rnbguy/dbcop/branch/main/graph/badge.svg)](https://codecov.io/gh/rnbguy/dbcop)
+[![Deno](https://github.com/rnbguy/dbcop/actions/workflows/deno.yaml/badge.svg)](https://github.com/rnbguy/dbcop/actions/workflows/deno.yaml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## What is dbcop?

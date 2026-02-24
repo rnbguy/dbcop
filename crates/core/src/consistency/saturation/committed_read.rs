@@ -248,4 +248,130 @@ mod tests {
             "result: {result:?}",
         );
     }
+
+    #[test]
+    fn test_valid_committed_read_history() {
+        // Simple valid history: s1 writes x, s2 reads x from s1.
+        let histories = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![Event::read("x", 1)])],
+        ];
+        let result = check_committed_read(&histories);
+        assert!(result.is_ok(), "expected pass, got: {result:?}");
+        let graph = result.unwrap();
+        // The committed order graph should have edges
+        assert!(!graph.adj_map.is_empty());
+    }
+
+    #[test]
+    fn test_committed_read_with_session_order_edges() {
+        // Single session with two transactions in sequence.
+        // Session order should create edges between them.
+        let histories = vec![vec![
+            Transaction::committed(vec![Event::write("x", 1)]),
+            Transaction::committed(vec![Event::write("y", 1)]),
+        ]];
+        let result = check_committed_read(&histories);
+        assert!(result.is_ok(), "expected pass, got: {result:?}");
+        let graph = result.unwrap();
+        let t0 = TransactionId {
+            session_id: 1,
+            session_height: 0,
+        };
+        let t1 = TransactionId {
+            session_id: 1,
+            session_height: 1,
+        };
+        assert!(
+            graph.adj_map.get(&t0).unwrap().contains(&t1),
+            "session order edge (1,0) -> (1,1) should exist"
+        );
+    }
+
+    #[test]
+    fn test_committed_read_cycle_with_committed_order() {
+        // History producing a cycle via committed-order edges:
+        // s1: write(x, 2), write(y, 1)
+        // s2: write(x, 3), read(y, 1)
+        // s3: read(x, 3), read(x, 2)  -- reads x from s2 then from s1
+        //
+        // committed order: s1 < s2 (from the x reads in s3)
+        // but wr_y: s1 -> s2 and committed order: s2 < s1 (contradiction)
+        let histories = vec![
+            vec![Transaction::committed(vec![
+                Event::write("x", 2),
+                Event::write("y", 1),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::write("x", 3),
+                Event::read("y", 1),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 3),
+                Event::read("x", 2),
+            ])],
+        ];
+        let result = check_committed_read(&histories);
+        assert!(
+            matches!(
+                result,
+                Err(Error::Cycle {
+                    level: Consistency::CommittedRead,
+                    ..
+                })
+            ),
+            "expected cycle, got: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_uncommitted_write_read_fails() {
+        // s1: uncommitted write(x, 1)
+        // s2: read(x, 1) -- reads from uncommitted transaction
+        let histories = vec![
+            vec![Transaction::uncommitted(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![Event::read("x", 1)])],
+        ];
+        let result = check_committed_read(&histories);
+        assert!(result.is_err(), "expected error for dirty read");
+        // Should be a NonAtomic error (UncommittedWrite or similar)
+        assert!(
+            matches!(result, Err(Error::NonAtomic(..))),
+            "expected NonAtomic error, got: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_read_from_root_is_valid() {
+        // s1: read(x) -- reads initial/default value (from root)
+        // This should pass as reading from root is always valid.
+        let histories = vec![vec![Transaction::committed(vec![
+            Event::<&str, u64>::read_empty("x"),
+        ])]];
+        let result = check_committed_read(&histories);
+        assert!(result.is_ok(), "reading from root should pass: {result:?}");
+    }
+
+    #[test]
+    fn test_multiple_sessions_valid() {
+        // s1: write(x, 1), write(y, 1)
+        // s2: read(x, 1), write(z, 1)
+        // s3: read(y, 1), read(z, 1)
+        let histories = vec![
+            vec![Transaction::committed(vec![
+                Event::write("x", 1),
+                Event::write("y", 1),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 1),
+                Event::write("z", 1),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("y", 1),
+                Event::read("z", 1),
+            ])],
+        ];
+        let result = check_committed_read(&histories);
+        assert!(result.is_ok(), "expected pass, got: {result:?}");
+    }
 }
