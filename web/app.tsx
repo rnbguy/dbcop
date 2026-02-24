@@ -84,13 +84,6 @@ export function App() {
     return { text: "", level: "serializable", format: "text" };
   });
 
-  // Graph export functions (set by GraphPanel via callback)
-  const [graphExport, setGraphExport] = useState<
-    {
-      exportPng: () => void;
-    } | null
-  >(null);
-
   const [highlightEdges, setHighlightEdges] = useState<
     ((edges: [TransactionId, TransactionId][]) => void) | null
   >(null);
@@ -163,8 +156,6 @@ export function App() {
           onImport={handleImport}
           onShare={handleShare}
           onOpenBuilder={() => setShowBuilder(true)}
-          graphExportPng={graphExport?.exportPng ?? null}
-          graphExportSvg={null}
         />
         <ThemeToggle theme={theme} onToggle={toggleTheme} />
       </header>
@@ -214,7 +205,6 @@ export function App() {
           <div class="content-panels">
             <GraphPanel
               result={displayResult}
-              onExportReady={setGraphExport}
               onHighlightReady={setHighlightEdges}
             />
           </div>

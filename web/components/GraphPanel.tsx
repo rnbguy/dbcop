@@ -8,7 +8,6 @@ import type {
 
 interface Props {
   result: TraceResult | null;
-  onExportReady?: (fns: { exportPng: () => void } | null) => void;
   onHighlightReady?: (
     fn: ((edges: [TransactionId, TransactionId][]) => void) | null,
   ) => void;
@@ -90,7 +89,7 @@ interface EdgeDef {
 
 // -- Main component ---------------------------------------------------------
 
-export function GraphPanel({ result, onExportReady, onHighlightReady }: Props) {
+export function GraphPanel({ result, onHighlightReady }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const slotRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const pathRefs = useRef<Map<string, SVGPathElement>>(new Map());
@@ -98,12 +97,6 @@ export function GraphPanel({ result, onExportReady, onHighlightReady }: Props) {
   const [svgPaths, setSvgPaths] = useState<
     Array<{ key: string; d: string; kind: string }>
   >([]);
-
-  // Always signal no PNG export
-  useEffect(() => {
-    onExportReady?.(null);
-    return () => onExportReady?.(null);
-  }, [onExportReady]);
 
   // Filter sessions: remove root (session_id === 0)
   const sessions = (result?.sessions ?? []).filter(

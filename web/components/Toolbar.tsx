@@ -1,4 +1,4 @@
-import { Download, Grid, Link, Share2, Upload } from "lucide-preact";
+import { Download, Grid, Link, Upload } from "lucide-preact";
 import { useCallback, useRef, useState } from "preact/hooks";
 import type { ConsistencyLevel, InputFormat } from "../types.ts";
 
@@ -7,8 +7,6 @@ interface Props {
   onImport: (text: string, format: InputFormat) => void;
   onShare: () => string;
   onOpenBuilder: () => void;
-  graphExportPng: (() => void) | null;
-  graphExportSvg: (() => void) | null;
 }
 
 export function Toolbar(
@@ -17,8 +15,6 @@ export function Toolbar(
     onImport,
     onShare,
     onOpenBuilder,
-    graphExportPng,
-    graphExportSvg: _graphExportSvg,
   }: Props,
 ) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -125,17 +121,6 @@ export function Toolbar(
       >
         <Grid size={14} />
       </button>
-      {graphExportPng && (
-        <button
-          type="button"
-          class="btn btn-sm btn-icon"
-          onClick={graphExportPng}
-          title="Export graph as PNG"
-          aria-label="Export graph as PNG"
-        >
-          <Share2 size={14} />
-        </button>
-      )}
       <input
         ref={fileRef}
         type="file"
