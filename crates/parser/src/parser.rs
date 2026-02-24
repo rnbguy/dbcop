@@ -198,7 +198,7 @@ fn session_line(input: &mut &str) -> ModalResult<Option<Vec<Transaction<String, 
     let rest: Vec<((), Transaction<String, u64>)> =
         repeat(0.., (opt_inline_ws, transaction)).parse_next(input)?;
     let mut txns = vec![first];
-    for (_, txn) in rest {
+    for ((), txn) in rest {
         txns.push(txn);
     }
     opt_inline_ws.parse_next(input)?;
