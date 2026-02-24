@@ -10,6 +10,19 @@ fn session(txns: Vec<Transaction<&'static str, u64>>) -> Vec<Transaction<&'stati
     txns
 }
 
+fn two_clusters_plus_singleton_history() -> History {
+    vec![
+        // Cluster 1: sessions 1,2 share "x"
+        session(vec![Transaction::committed(vec![Event::write("x", 1)])]),
+        session(vec![Transaction::committed(vec![Event::read("x", 1)])]),
+        // Cluster 2: sessions 3,4 share "y"
+        session(vec![Transaction::committed(vec![Event::write("y", 1)])]),
+        session(vec![Transaction::committed(vec![Event::read("y", 1)])]),
+        // Singleton session 5: accesses only "z"
+        session(vec![Transaction::committed(vec![Event::write("z", 1)])]),
+    ]
+}
+
 #[test]
 fn decomposition_two_independent_clusters_serializable_pass() {
     // Sessions {1,2} share var "x"; sessions {3,4} share var "y".
@@ -88,4 +101,47 @@ fn decomposition_one_failing_cluster_serializable_fail() {
         result.is_err(),
         "expected serializable violation, got: {result:?}"
     );
+}
+
+#[test]
+fn decomposition_preserves_singleton_serializable_witness() {
+    let history = two_clusters_plus_singleton_history();
+    let result = check(&history, Consistency::Serializable);
+    assert!(result.is_ok(), "expected pass, got: {result:?}");
+    let Witness::CommitOrder(order) = result.unwrap() else {
+        panic!("expected CommitOrder witness");
+    };
+    assert_eq!(order.len(), 5, "expected all 5 transactions in witness");
+    let ids: std::collections::HashSet<u64> = order.iter().map(|tid| tid.session_id).collect();
+    assert_eq!(ids, [1, 2, 3, 4, 5].into());
+}
+
+#[test]
+fn decomposition_preserves_singleton_prefix_witness() {
+    let history = two_clusters_plus_singleton_history();
+    let result = check(&history, Consistency::Prefix);
+    assert!(result.is_ok(), "expected pass, got: {result:?}");
+    let Witness::CommitOrder(order) = result.unwrap() else {
+        panic!("expected CommitOrder witness");
+    };
+    assert_eq!(order.len(), 5, "expected all 5 transactions in witness");
+    let ids: std::collections::HashSet<u64> = order.iter().map(|tid| tid.session_id).collect();
+    assert_eq!(ids, [1, 2, 3, 4, 5].into());
+}
+
+#[test]
+fn decomposition_preserves_singleton_snapshot_isolation_witness() {
+    let history = two_clusters_plus_singleton_history();
+    let result = check(&history, Consistency::SnapshotIsolation);
+    assert!(result.is_ok(), "expected pass, got: {result:?}");
+    let Witness::SplitCommitOrder(order) = result.unwrap() else {
+        panic!("expected SplitCommitOrder witness");
+    };
+    assert_eq!(
+        order.len(),
+        10,
+        "expected read/write phases for all 5 transactions",
+    );
+    let ids: std::collections::HashSet<u64> = order.iter().map(|(tid, _)| tid.session_id).collect();
+    assert_eq!(ids, [1, 2, 3, 4, 5].into());
 }

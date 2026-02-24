@@ -175,12 +175,9 @@ where
     let comm_graph = decomposition::communication_graph(&po);
     let all_components = decomposition::connected_components(&comm_graph);
 
-    // Only non-trivial components (>= 2 sessions) require a consistency check.
-    // Singleton sessions are trivially consistent after the causal check.
-    let components_to_check: Vec<BTreeSet<u64>> = all_components
-        .into_iter()
-        .filter(|c| c.len() >= 2)
-        .collect();
+    // Keep every component (including singletons) so the merged witness
+    // always covers all sessions in the original history.
+    let components_to_check: Vec<BTreeSet<u64>> = all_components;
 
     tracing::debug!(
         components = components_to_check.len(),
@@ -189,7 +186,7 @@ where
         "communication graph decomposition"
     );
 
-    // Single (or no) non-trivial component: run DFS directly on the pre-built PO.
+    // Single (or no) component: run DFS directly on the pre-built PO.
     if components_to_check.len() <= 1 {
         return match level {
             Consistency::Prefix => {

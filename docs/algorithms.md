@@ -48,9 +48,8 @@ reads across variables.
 ### Causal (`causal.rs`)
 
 Extends atomic-read with transitivity: the visibility relation must be
-transitively closed. Additionally enforces write-write ordering (`causal_ww`)
-and read-write ordering (`causal_rw`) constraints. Uses incremental transitive
-closure for efficiency.
+transitively closed. It enforces write-write ordering (`causal_ww`) constraints
+to saturation fixed point, using incremental transitive closure for efficiency.
 
 ## Constrained Linearization (NP-Complete Checkers)
 
@@ -69,9 +68,10 @@ defines the DFS framework:
 
 ```
 trait ConstrainedLinearizationSolver {
-    fn allow_next(&self, next: &TransactionId) -> bool;
-    fn forward_book_keeping(&mut self, next: &TransactionId);
-    fn backtrack_book_keeping(&mut self, next: &TransactionId);
+    type Vertex;
+    fn allow_next(&self, linearization: &[Self::Vertex], next: &Self::Vertex) -> bool;
+    fn forward_book_keeping(&mut self, linearization: &[Self::Vertex]);
+    fn backtrack_book_keeping(&mut self, linearization: &[Self::Vertex]);
 }
 ```
 

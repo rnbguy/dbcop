@@ -1,3 +1,4 @@
+use dbcop_core::consistency::Witness;
 use dbcop_core::history::raw::types::{Event, Session, Transaction};
 use dbcop_core::{check, Consistency};
 use dbcop_sat::{check_prefix, check_serializable, check_snapshot_isolation};
@@ -126,6 +127,17 @@ fn pc_violation_history() -> Vec<Session<&'static str, u64>> {
             Event::read("b", 1),
             Event::read_empty("a"), // sees T1 but misses T0
         ])],
+    ]
+}
+
+/// Two independent 2-session clusters plus one singleton session.
+fn two_clusters_plus_singleton_history() -> Vec<Session<&'static str, u64>> {
+    vec![
+        vec![Transaction::committed(vec![Event::write("x", 1)])],
+        vec![Transaction::committed(vec![Event::read("x", 1)])],
+        vec![Transaction::committed(vec![Event::write("y", 1)])],
+        vec![Transaction::committed(vec![Event::read("y", 1)])],
+        vec![Transaction::committed(vec![Event::write("z", 1)])],
     ]
 }
 
@@ -302,4 +314,32 @@ fn cross_check_chain_all_levels() {
     assert_agree_ser(&h, "chain");
     assert_agree_pc(&h, "chain");
     assert_agree_si(&h, "chain");
+}
+
+#[test]
+fn sat_prefix_witness_preserves_singleton_component() {
+    let h = two_clusters_plus_singleton_history();
+    let Witness::CommitOrder(order) = check_prefix(&h).expect("expected SAT-PC pass") else {
+        panic!("expected CommitOrder witness");
+    };
+    assert_eq!(order.len(), 5, "expected all 5 transactions in witness");
+    let ids: std::collections::HashSet<u64> = order.iter().map(|tid| tid.session_id).collect();
+    assert_eq!(ids, [1, 2, 3, 4, 5].into());
+}
+
+#[test]
+fn sat_snapshot_witness_preserves_singleton_component() {
+    let h = two_clusters_plus_singleton_history();
+    let Witness::SplitCommitOrder(order) =
+        check_snapshot_isolation(&h).expect("expected SAT-SI pass")
+    else {
+        panic!("expected SplitCommitOrder witness");
+    };
+    assert_eq!(
+        order.len(),
+        10,
+        "expected read/write phases for all 5 transactions",
+    );
+    let ids: std::collections::HashSet<u64> = order.iter().map(|(tid, _)| tid.session_id).collect();
+    assert_eq!(ids, [1, 2, 3, 4, 5].into());
 }

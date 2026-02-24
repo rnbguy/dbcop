@@ -167,10 +167,10 @@ fn visibility_edges<Variable: Eq + Hash + Clone>(
 
 /// Decompose sessions by connected components of the communication graph.
 ///
-/// Returns `Some(components)` when 2+ non-trivial components exist (each
-/// component is a sorted vec of original 1-based session IDs paired with the
-/// corresponding sub-session slice). Returns `None` when decomposition
-/// provides no benefit (0 or 1 non-trivial components).
+/// Returns `Some(components)` when 2+ components exist (each component is a
+/// sorted vec of original 1-based session IDs paired with the corresponding
+/// sub-session slice). Returns `None` when decomposition provides no benefit
+/// (0 or 1 components).
 #[allow(clippy::type_complexity)]
 fn decompose_sessions<Variable, Version>(
     po: &AtomicTransactionPO<Variable>,
@@ -183,10 +183,7 @@ where
     let comm_graph = communication_graph(po);
     let all_components = connected_components(&comm_graph);
 
-    let components_to_check: Vec<BTreeSet<u64>> = all_components
-        .into_iter()
-        .filter(|c| c.len() >= 2)
-        .collect();
+    let components_to_check: Vec<BTreeSet<u64>> = all_components;
 
     if components_to_check.len() <= 1 {
         return None;
