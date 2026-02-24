@@ -265,7 +265,7 @@ select:hover {
 select:focus {
   outline: none;
   border-color: var(--gh-accent-fg);
-  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.12);
+  box-shadow: 0 0 0 3px var(--gh-accent-bg);
 }
 
 /* -- Button base ---------------------------------------------------------- */
@@ -288,6 +288,12 @@ select:focus {
     color 150ms,
     box-shadow 150ms;
   white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .btn:hover {
@@ -313,7 +319,7 @@ select:focus {
 }
 
 .btn-danger:hover {
-  background: rgba(248, 81, 73, 0.1);
+  background: var(--gh-danger-bg);
   border-color: var(--gh-danger-fg);
 }
 
@@ -545,7 +551,7 @@ pre,
 .editor-textarea:focus {
   outline: none;
   border-color: var(--gh-accent-fg);
-  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.12);
+  box-shadow: 0 0 0 3px var(--gh-accent-bg);
 }
 
 .editor-highlight {
