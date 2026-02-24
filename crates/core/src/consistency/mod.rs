@@ -165,13 +165,11 @@ fn singleton_session_witness<Variable, Version>(
     session: &Session<Variable, Version>,
     level: Consistency,
 ) -> Witness {
-    let commit_order: Vec<TransactionId> = session
-        .iter()
-        .enumerate()
+    let commit_order: Vec<TransactionId> = (0..)
+        .zip(session.iter())
         .map(|(session_height, _)| TransactionId {
             session_id: 1,
-            #[allow(clippy::cast_possible_truncation)]
-            session_height: session_height as u64,
+            session_height,
         })
         .collect();
 

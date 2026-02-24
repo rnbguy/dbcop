@@ -231,13 +231,11 @@ fn singleton_commit_order_witness<Variable, Version>(
     sessions: &[Session<Variable, Version>],
 ) -> Witness {
     debug_assert_eq!(sessions.len(), 1);
-    let commit_order: Vec<TransactionId> = sessions[0]
-        .iter()
-        .enumerate()
+    let commit_order: Vec<TransactionId> = (0..)
+        .zip(sessions[0].iter())
         .map(|(session_height, _)| TransactionId {
             session_id: 1,
-            #[allow(clippy::cast_possible_truncation)]
-            session_height: session_height as u64,
+            session_height,
         })
         .collect();
     Witness::CommitOrder(commit_order)
@@ -249,13 +247,11 @@ fn singleton_split_commit_order_witness<Variable, Version>(
 ) -> Witness {
     debug_assert_eq!(sessions.len(), 1);
     Witness::SplitCommitOrder(
-        sessions[0]
-            .iter()
-            .enumerate()
+        (0..)
+            .zip(sessions[0].iter())
             .map(|(session_height, _)| TransactionId {
                 session_id: 1,
-                #[allow(clippy::cast_possible_truncation)]
-                session_height: session_height as u64,
+                session_height,
             })
             .flat_map(|tid| [(tid, false), (tid, true)])
             .collect(),
