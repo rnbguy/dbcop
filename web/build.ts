@@ -31,7 +31,7 @@ wasmJs = wasmJs.replace(wasmImportLine, browserCompatLines.join("\n"));
 await Deno.writeTextFile(wasmJsPath, wasmJs);
 
 let html = await Deno.readTextFile(`${dist}/index.html`);
-html = html.replace('src="main.ts"', 'src="main.js"');
+html = html.replace('src="main.tsx"', 'src="main.js"');
 await Deno.writeTextFile(`${dist}/index.html`, html);
 
 const esbuild = await import("esbuild");

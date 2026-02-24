@@ -32,13 +32,6 @@ export interface TraceResult {
   error?: unknown;
 }
 
-export interface HighlightToken {
-  kind: string;
-  start: number;
-  end: number;
-  text: string;
-}
-
 export type ConsistencyLevel =
   | "committed-read"
   | "atomic-read"
