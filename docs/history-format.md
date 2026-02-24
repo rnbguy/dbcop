@@ -153,6 +153,93 @@ and writes v0=3, while Session 2 reads v0=1 (the old value) and writes v1=4.
 Each session's second transaction reads a stale value of the variable the other
 concurrently writes -- a write-skew anomaly that violates snapshot isolation.
 
+## Text Format (.hist)
+
+The CLI (`dbcop verify` and `dbcop fmt`) also accepts `.hist` and `.txt` files
+written in a compact text DSL. Unlike JSON, the text format uses named string
+variables (not integer keys) and is designed for human readability and
+hand-authoring.
+
+### Grammar
+
+```text
+history      = session (separator session)*
+separator    = DASH+ NEWLINE
+session      = (comment | blank_line | session_line)*
+comment      = "//" REST_OF_LINE NEWLINE
+session_line = transaction (WHITESPACE? transaction)* NEWLINE
+transaction  = "[" event (WHITESPACE event)* "]" "!"?
+event        = variable ":=" version      -- write
+             | variable "==" version      -- read (versioned)
+             | variable "==?"             -- read (uninitialized)
+variable     = [a-zA-Z_][a-zA-Z0-9_]*
+version      = non-negative integer
+```
+
+### Syntax Reference
+
+| Syntax       | Meaning                                       |
+| ------------ | --------------------------------------------- |
+| `x:=1`       | Write: set variable `x` to version `1`        |
+| `x==1`       | Read: variable `x` was version `1`            |
+| `x==?`       | Read: variable `x` was uninitialized (`null`) |
+| `[...]`      | Transaction (committed by default)            |
+| `[...]!`     | Uncommitted transaction                       |
+| `---`        | Session separator (one or more dashes)        |
+| `// comment` | Line comment (ignored by the parser)          |
+
+### Key Differences from JSON Format
+
+- Variables are named strings (e.g. `x`, `balance`) instead of integers.
+- All sessions are in a single file; the JSON format is one file per history.
+- Versions are still non-negative integers.
+- Produces `Session<String, u64>` in Rust; the JSON format produces
+  `Session<u64, u64>`.
+
+### Example 1: Simple Write-Read
+
+Two sessions: Session 1 writes `x`, Session 2 reads it.
+
+```text
+// Session 1: writes x
+[x:=1]
+---
+// Session 2: reads x
+[x==1]
+```
+
+This is equivalent to JSON Example 1 above, expressed in the text DSL.
+
+### Example 2: Write Skew
+
+Two sessions illustrating a write-skew anomaly.
+
+```text
+// Session 1
+[x:=1 y:=2] [y==2 x:=3]
+---
+// Session 2
+[x==1 y:=4]
+```
+
+Session 1 writes both `x` and `y`, then reads `y` and overwrites `x`. Session 2
+reads the original `x` and writes `y`. This history violates snapshot isolation
+for the same reasons as JSON Example 2.
+
+### Formatting with `dbcop fmt`
+
+`dbcop fmt` reads `.hist` files and canonicalizes formatting: one transaction
+per line, events space-separated, `---` separator between sessions, trailing
+newline.
+
+```bash
+# Reformat in place
+dbcop fmt path/to/history.hist
+
+# Check formatting without modifying (exits 1 if unformatted)
+dbcop fmt --check path/to/history.hist
+```
+
 ## From Raw to Atomic
 
 When `check()` is called, the raw history undergoes validation and conversion:

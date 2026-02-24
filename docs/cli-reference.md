@@ -202,4 +202,4 @@ avoidance rule.
 
 - [History Format](history-format.md) -- JSON schema for input files
 - [Consistency Models](consistency-models.md) -- what each level means
-- [Web and WASM](web-and-wasm.md) -- browser-based alternative
+- [WASM API](wasm-api.md) -- WASM bindings API reference
