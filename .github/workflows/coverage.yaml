@@ -36,9 +36,23 @@ jobs:
       - name: Generate coverage report
         run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
 
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Build WASM
+        run: deno task wasmbuild
+
+      - name: Run Deno tests with coverage
+        run: deno test -A --coverage=coverage/deno crates/wasm/tests/
+
+      - name: Generate Deno LCOV report
+        run: deno coverage coverage/deno --lcov --output=coverage/deno.lcov
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: lcov.info
+          files: lcov.info,coverage/deno.lcov
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}

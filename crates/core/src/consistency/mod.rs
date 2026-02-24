@@ -246,3 +246,267 @@ where
 
     Ok(merged)
 }
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec;
+
+    use super::*;
+    use crate::history::raw::types::{Event, Transaction};
+
+    type History = Vec<Vec<Transaction<&'static str, u64>>>;
+
+    /// Build a two-cluster history: sessions {1,2} share var "x",
+    /// sessions {3,4} share var "y". Completely independent clusters.
+    fn two_cluster_history() -> History {
+        vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![Event::read("x", 1)])],
+            vec![Transaction::committed(vec![Event::write("y", 1)])],
+            vec![Transaction::committed(vec![Event::read("y", 1)])],
+        ]
+    }
+
+    #[test]
+    fn multi_component_prefix_pass() {
+        let history = two_cluster_history();
+        let result = check(&history, Consistency::Prefix);
+        assert!(result.is_ok(), "expected pass, got: {result:?}");
+        let Witness::CommitOrder(order) = result.unwrap() else {
+            panic!("expected CommitOrder witness for Prefix");
+        };
+        // 4 transactions total across 2 independent clusters
+        assert_eq!(
+            order.len(),
+            4,
+            "expected 4 transactions in merged CommitOrder"
+        );
+        let ids: BTreeSet<u64> = order.iter().map(|tid| tid.session_id).collect();
+        assert!(ids.contains(&1));
+        assert!(ids.contains(&2));
+        assert!(ids.contains(&3));
+        assert!(ids.contains(&4));
+    }
+
+    #[test]
+    fn multi_component_snapshot_isolation_pass() {
+        let history = two_cluster_history();
+        let result = check(&history, Consistency::SnapshotIsolation);
+        assert!(result.is_ok(), "expected pass, got: {result:?}");
+        let Witness::SplitCommitOrder(order) = result.unwrap() else {
+            panic!("expected SplitCommitOrder witness for SnapshotIsolation");
+        };
+        // Each transaction has a read phase + write phase = 2 entries per txn,
+        // 4 transactions = 8 entries total
+        assert_eq!(
+            order.len(),
+            8,
+            "expected 8 entries in merged SplitCommitOrder"
+        );
+        let ids: BTreeSet<u64> = order.iter().map(|(tid, _)| tid.session_id).collect();
+        assert!(ids.contains(&1));
+        assert!(ids.contains(&2));
+        assert!(ids.contains(&3));
+        assert!(ids.contains(&4));
+    }
+
+    #[test]
+    fn multi_component_serializable_pass() {
+        let history = two_cluster_history();
+        let result = check(&history, Consistency::Serializable);
+        assert!(result.is_ok(), "expected pass, got: {result:?}");
+        let Witness::CommitOrder(order) = result.unwrap() else {
+            panic!("expected CommitOrder witness for Serializable");
+        };
+        assert_eq!(
+            order.len(),
+            4,
+            "expected 4 transactions in merged CommitOrder"
+        );
+        let ids: BTreeSet<u64> = order.iter().map(|tid| tid.session_id).collect();
+        assert!(ids.contains(&1));
+        assert!(ids.contains(&2));
+        assert!(ids.contains(&3));
+        assert!(ids.contains(&4));
+    }
+
+    #[test]
+    fn multi_component_one_cluster_fails_serializable() {
+        // Cluster 1: {1,2} share "x" (valid)
+        // Cluster 2: {3,4,5} share "a","b" with write-skew (violates serializable)
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![Event::read("x", 1)])],
+            vec![Transaction::committed(vec![
+                Event::write("a", 1),
+                Event::write("b", 1),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("a", 1),
+                Event::write("b", 2),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("b", 1),
+                Event::write("a", 2),
+            ])],
+        ];
+        let result = check(&history, Consistency::Serializable);
+        assert!(
+            result.is_err(),
+            "expected serializable violation, got: {result:?}"
+        );
+    }
+
+    #[test]
+    fn multi_component_one_cluster_fails_snapshot_isolation() {
+        // Cluster 1: {1,2} share "x" (valid)
+        // Cluster 2: {3,4,5} share "a" with concurrent writes (violates SI)
+        let history: History = vec![
+            vec![Transaction::committed(vec![Event::write("x", 1)])],
+            vec![Transaction::committed(vec![Event::read("x", 1)])],
+            vec![Transaction::committed(vec![Event::write("a", 1)])],
+            vec![Transaction::committed(vec![
+                Event::read("a", 1),
+                Event::write("a", 2),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("a", 1),
+                Event::write("a", 3),
+            ])],
+        ];
+        let result = check(&history, Consistency::SnapshotIsolation);
+        assert!(result.is_err(), "expected SI violation, got: {result:?}");
+    }
+
+    #[test]
+    fn remap_witness_commit_order() {
+        let witness = Witness::CommitOrder(vec![
+            TransactionId {
+                session_id: 1,
+                session_height: 0,
+            },
+            TransactionId {
+                session_id: 2,
+                session_height: 0,
+            },
+        ]);
+        // Remap: sub-session 1 -> original 3, sub-session 2 -> original 5
+        let remapped = remap_witness(witness, &[3, 5]);
+        let Witness::CommitOrder(order) = remapped else {
+            panic!("expected CommitOrder");
+        };
+        assert_eq!(order[0].session_id, 3);
+        assert_eq!(order[1].session_id, 5);
+    }
+
+    #[test]
+    fn remap_witness_split_commit_order() {
+        let witness = Witness::SplitCommitOrder(vec![
+            (
+                TransactionId {
+                    session_id: 1,
+                    session_height: 0,
+                },
+                false,
+            ),
+            (
+                TransactionId {
+                    session_id: 1,
+                    session_height: 0,
+                },
+                true,
+            ),
+        ]);
+        let remapped = remap_witness(witness, &[7]);
+        let Witness::SplitCommitOrder(order) = remapped else {
+            panic!("expected SplitCommitOrder");
+        };
+        assert_eq!(order[0].0.session_id, 7);
+        assert_eq!(order[0].1, false);
+        assert_eq!(order[1].0.session_id, 7);
+        assert_eq!(order[1].1, true);
+    }
+
+    #[test]
+    fn remap_witness_preserves_root() {
+        let witness = Witness::CommitOrder(vec![
+            TransactionId {
+                session_id: 0,
+                session_height: 0,
+            },
+            TransactionId {
+                session_id: 1,
+                session_height: 0,
+            },
+        ]);
+        let remapped = remap_witness(witness, &[42]);
+        let Witness::CommitOrder(order) = remapped else {
+            panic!("expected CommitOrder");
+        };
+        // Root (session_id=0) should be preserved
+        assert_eq!(order[0].session_id, 0);
+        assert_eq!(order[1].session_id, 42);
+    }
+
+    #[test]
+    fn merge_witnesses_commit_order() {
+        let a = Witness::CommitOrder(vec![TransactionId {
+            session_id: 1,
+            session_height: 0,
+        }]);
+        let b = Witness::CommitOrder(vec![TransactionId {
+            session_id: 2,
+            session_height: 0,
+        }]);
+        let merged = merge_witnesses(a, b);
+        let Witness::CommitOrder(order) = merged else {
+            panic!("expected CommitOrder");
+        };
+        assert_eq!(order.len(), 2);
+    }
+
+    #[test]
+    fn merge_witnesses_split_commit_order() {
+        let a = Witness::SplitCommitOrder(vec![(
+            TransactionId {
+                session_id: 1,
+                session_height: 0,
+            },
+            false,
+        )]);
+        let b = Witness::SplitCommitOrder(vec![(
+            TransactionId {
+                session_id: 2,
+                session_height: 0,
+            },
+            true,
+        )]);
+        let merged = merge_witnesses(a, b);
+        let Witness::SplitCommitOrder(order) = merged else {
+            panic!("expected SplitCommitOrder");
+        };
+        assert_eq!(order.len(), 2);
+    }
+
+    #[test]
+    fn trivially_consistent_empty_sessions() {
+        let empty: History = vec![];
+        let result = check(&empty, Consistency::Serializable);
+        assert!(result.is_ok());
+        let Witness::CommitOrder(order) = result.unwrap() else {
+            panic!("expected CommitOrder");
+        };
+        assert!(order.is_empty());
+    }
+
+    #[test]
+    fn trivially_consistent_all_empty_sessions() {
+        let history: History = vec![vec![], vec![]];
+        let result = check(&history, Consistency::Prefix);
+        assert!(result.is_ok());
+        let Witness::CommitOrder(order) = result.unwrap() else {
+            panic!("expected CommitOrder");
+        };
+        assert!(order.is_empty());
+    }
+}
