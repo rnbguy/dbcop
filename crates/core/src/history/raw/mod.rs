@@ -153,13 +153,13 @@ where
 
     for (i_node, session) in (1..).zip(histories.iter()) {
         for (i_transaction, transaction) in (0..).zip(session.iter()) {
+            let mut local_writes = HashMap::new();
             for (i_event, event) in (0..).zip(transaction.events.iter()) {
                 let current_event_id = EventId {
                     session_id: i_node,
                     session_height: i_transaction,
                     transaction_height: i_event,
                 };
-                let mut local_writes = HashMap::new();
                 match event {
                     Event::Write { variable, version } => {
                         local_writes.insert(variable.clone(), version.clone());
@@ -421,6 +421,34 @@ mod tests {
                 })
             ),
             "consistent local reads check failed: {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_consistent_local_read_after_write() {
+        let histories = vec![vec![Transaction::committed(vec![
+            Event::write("a", 1),
+            Event::read("a", 1),
+        ])]];
+
+        let result = is_valid_history(&histories);
+        assert!(
+            result.is_ok(),
+            "local read-after-write should be valid: {result:?}",
+        );
+    }
+
+    #[test]
+    fn test_inconsistent_local_read_before_write() {
+        let histories = vec![vec![Transaction::committed(vec![
+            Event::read("a", 1),
+            Event::write("a", 1),
+        ])]];
+
+        let result = is_valid_history(&histories);
+        assert!(
+            matches!(result, Err(Error::InconsistentLocalRead { .. })),
+            "local read-before-write of same version should be invalid: {result:?}",
         );
     }
 

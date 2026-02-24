@@ -159,11 +159,27 @@ where
         let mut ww: HashMap<Variable, DiGraph<TransactionId>> = HashMap::default();
 
         for (x, wr_x) in &self.write_read_relation {
+            // wr_x contains both writers and readers as vertices. The ww rule is
+            // defined only between writers of x, so filter candidate vertices.
+            let writers: Vec<TransactionId> = wr_x
+                .adj_map
+                .keys()
+                .copied()
+                .filter(|tid| {
+                    self.history
+                        .0
+                        .get(tid)
+                        .is_some_and(|txn| txn.writes.contains(x))
+                })
+                .collect();
             let mut ww_x: DiGraph<TransactionId> = DiGraph::default();
-            for (t1, t3s) in &wr_x.adj_map {
+            for t1 in &writers {
+                let Some(t3s) = wr_x.adj_map.get(t1) else {
+                    continue;
+                };
                 // t3s reads x from t1
                 // !t3s.contains(t1) - otherwise, it's a cycle in wr_x
-                for (t2, _) in &wr_x.adj_map {
+                for t2 in &writers {
                     // t1 and t2 both writes on x
                     if t1 != t2 {
                         // Pre-fetch visibility neighbors of t2 to avoid repeated HashMap lookups
@@ -198,13 +214,29 @@ where
         let mut rw: HashMap<Variable, DiGraph<TransactionId>> = HashMap::default();
 
         for (x, wr_x) in &self.write_read_relation {
+            // wr_x contains both writers and readers as vertices. The rw rule
+            // compares writers of x, so filter candidate vertices.
+            let writers: Vec<TransactionId> = wr_x
+                .adj_map
+                .keys()
+                .copied()
+                .filter(|tid| {
+                    self.history
+                        .0
+                        .get(tid)
+                        .is_some_and(|txn| txn.writes.contains(x))
+                })
+                .collect();
             let mut rw_x: DiGraph<TransactionId> = DiGraph::default();
-            for (t1, t3s) in &wr_x.adj_map {
+            for t1 in &writers {
+                let Some(t3s) = wr_x.adj_map.get(t1) else {
+                    continue;
+                };
                 // t3s reads x from t1
                 // !t3s.contains(t1) - otherwise, it's a cycle in wr_x
                 // Pre-fetch visibility neighbors of t1 to avoid repeated HashMap lookups
                 let vis_neighbors_t1 = self.visibility_relation.adj_map.get(t1);
-                for (t2, _) in &wr_x.adj_map {
+                for t2 in &writers {
                     // t1 and t2 both writes on x
                     if t1 != t2 {
                         if vis_neighbors_t1.is_some_and(|neighbors| neighbors.contains(t2)) {
@@ -363,6 +395,95 @@ mod tests {
         let rw = po.causal_rw();
         // rw should have entries for variable "x"
         assert!(rw.contains_key("x"), "expected rw relation for x");
+    }
+
+    #[test]
+    fn causal_ww_ignores_non_writer_vertices() {
+        // x writers: s1 and s2.
+        // s3 and s4 both read x=2, but s3 does not write x.
+        // Even if vis(s3, s4), ww_x must not include s3 -> s2 because s3 is not an x-writer.
+        let history: History = vec![
+            vec![Transaction::committed(vec![
+                Event::write("x", 1),
+                Event::write("y", 1),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 1),
+                Event::write("x", 2),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 2),
+                Event::write("y", 2),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 2),
+                Event::read("y", 2),
+            ])],
+        ];
+        let mut po = build_po(&history);
+        po.vis_includes(&po.get_wr());
+        po.vis_is_trans();
+
+        let ww = po.causal_ww();
+        let ww_x = ww.get("x").expect("expected ww relation for x");
+
+        let s2 = TransactionId {
+            session_id: 2,
+            session_height: 0,
+        };
+        let s3 = TransactionId {
+            session_id: 3,
+            session_height: 0,
+        };
+
+        assert!(
+            !ww_x.has_edge(&s3, &s2),
+            "non-writer s3 must not induce ww edge on x"
+        );
+    }
+
+    #[test]
+    fn causal_rw_ignores_non_writer_vertices() {
+        // Same history as above: s3 is not an x-writer.
+        // rw_x must not include edges ending at s3.
+        let history: History = vec![
+            vec![Transaction::committed(vec![
+                Event::write("x", 1),
+                Event::write("y", 1),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 1),
+                Event::write("x", 2),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 2),
+                Event::write("y", 2),
+            ])],
+            vec![Transaction::committed(vec![
+                Event::read("x", 2),
+                Event::read("y", 2),
+            ])],
+        ];
+        let mut po = build_po(&history);
+        po.vis_includes(&po.get_wr());
+        po.vis_is_trans();
+
+        let rw = po.causal_rw();
+        let rw_x = rw.get("x").expect("expected rw relation for x");
+
+        let s3 = TransactionId {
+            session_id: 3,
+            session_height: 0,
+        };
+        let s4 = TransactionId {
+            session_id: 4,
+            session_height: 0,
+        };
+
+        assert!(
+            !rw_x.has_edge(&s4, &s3),
+            "non-writer s3 must not appear as rw target on x"
+        );
     }
 
     #[test]
