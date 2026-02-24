@@ -22,6 +22,8 @@ pub enum Command {
     Verify(VerifyArgs),
     /// Format compact history (.hist) files
     Fmt(FmtArgs),
+    /// Print the JSON Schema for the history input format to stdout
+    Schema,
 }
 
 #[derive(Debug, Parser)]

@@ -4,7 +4,7 @@
 
 - **Rust** (edition 2021, MSRV 1.73.0) with nightly toolchain (required for
   formatting)
-- **Deno** (for web app, WASM builds, and TypeScript tooling)
+- **Deno** (for WASM builds and TypeScript tooling)
 - **taplo** (TOML formatter)
 - **typos** (spell checker)
 
@@ -48,19 +48,6 @@ taplo format *.toml
 deno task deno:ci
 ```
 
-## WASM and Web
-
-```bash
-# Build WASM bindings
-deno task wasmbuild
-
-# Start development server
-deno task serve-web
-
-# Build static site for deployment
-deno task build
-```
-
 ## Contributor Guide
 
 For full contributor guidelines, including workflow, branch naming conventions,
@@ -82,4 +69,4 @@ AGENTS.md covers:
 
 - [Architecture](architecture.md) -- crate structure and data flow
 - [CLI Reference](cli-reference.md) -- using the `dbcop` binary
-- [Web and WASM](web-and-wasm.md) -- browser-based interface
+- [WASM API](wasm-api.md) -- WASM bindings API reference

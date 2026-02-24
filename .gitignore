@@ -21,14 +21,5 @@ wasmlib/
 .omc/
 .claude/
 
-# Static site build output
-dist/
-
-# Node modules (Deno nodeModulesDir)
+# npm/node artifacts (husky install)
 node_modules/
-
-# Playwright test artifacts
-test-results/
-
-# Screenshots
-*.png

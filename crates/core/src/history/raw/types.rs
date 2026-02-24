@@ -16,6 +16,7 @@ use crate::history::atomic::types::TransactionId;
     all(feature = "serde", not(feature = "compact-serde")),
     derive(::serde::Serialize)
 )]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Event<Variable, Version> {
     Read {
@@ -283,6 +284,7 @@ where
 
 /// A sequence of events executed atomically, either committed or aborted.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
 #[derive(Clone)]
 pub struct Transaction<Variable, Version> {
     pub events: Vec<Event<Variable, Version>>,

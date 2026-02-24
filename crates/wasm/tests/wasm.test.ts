@@ -2,7 +2,7 @@ import {
   check_consistency,
   check_consistency_trace,
   check_consistency_trace_text,
-} from "../wasmlib/dbcop_wasm.js";
+} from "../../../wasmlib/dbcop_wasm.js";
 import { assertEquals } from "@std/assert";
 
 // -- Test histories ----------------------------------------------------------
