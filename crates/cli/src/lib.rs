@@ -98,3 +98,50 @@ impl From<ConsistencyLevel> for dbcop_core::Consistency {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use clap::ValueEnum;
+
+    use super::ConsistencyLevel;
+
+    #[test]
+    fn consistency_levels_map_to_core_levels() {
+        assert!(matches!(
+            dbcop_core::Consistency::from(ConsistencyLevel::CommittedRead),
+            dbcop_core::Consistency::CommittedRead
+        ));
+        assert!(matches!(
+            dbcop_core::Consistency::from(ConsistencyLevel::RepeatableRead),
+            dbcop_core::Consistency::RepeatableRead
+        ));
+        assert!(matches!(
+            dbcop_core::Consistency::from(ConsistencyLevel::AtomicRead),
+            dbcop_core::Consistency::AtomicRead
+        ));
+        assert!(matches!(
+            dbcop_core::Consistency::from(ConsistencyLevel::Causal),
+            dbcop_core::Consistency::Causal
+        ));
+        assert!(matches!(
+            dbcop_core::Consistency::from(ConsistencyLevel::Prefix),
+            dbcop_core::Consistency::Prefix
+        ));
+        assert!(matches!(
+            dbcop_core::Consistency::from(ConsistencyLevel::SnapshotIsolation),
+            dbcop_core::Consistency::SnapshotIsolation
+        ));
+        assert!(matches!(
+            dbcop_core::Consistency::from(ConsistencyLevel::Serializable),
+            dbcop_core::Consistency::Serializable
+        ));
+    }
+
+    #[test]
+    fn repeatable_read_cli_value_is_exposed() {
+        let value = ConsistencyLevel::RepeatableRead
+            .to_possible_value()
+            .expect("RepeatableRead should be exposed as a clap value");
+        assert_eq!(value.get_name(), "repeatable-read");
+    }
+}

@@ -641,6 +641,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn parse_level_supports_repeatable_read() {
+        assert!(matches!(
+            parse_level("repeatable-read"),
+            Some(Consistency::RepeatableRead)
+        ));
+    }
+
+    #[test]
     fn test_version_zero_causal_json() {
         // Verify the core check passes for version-zero causal histories.
         let input = r#"[[{"events":[{"Read":{"variable":0,"version":0}},{"Write":{"variable":0,"version":1}}],"committed":true}],[{"events":[{"Read":{"variable":0,"version":0}},{"Write":{"variable":0,"version":2}}],"committed":true}]]"#;
