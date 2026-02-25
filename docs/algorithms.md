@@ -62,9 +62,19 @@ prerequisite), then searches for a valid linearization using depth-first search
 over topological orderings.
 
 Complexity note: Worst-case complexity is NP-complete when the number of
-sessions is unbounded. However, with a bounded number of sessions,
-frontier-memoized search is polynomial in history size because the number of
-distinct frontier states is polynomially bounded by per-session progress states.
+sessions is unbounded.
+
+For bounded session count `k`, let `n` be the history size. A frontier state is
+determined by per-session progress (and phase bits for split solvers), so the
+number of distinct frontier states is polynomial:
+
+- non-split solvers: `O(n^k)`
+- split solvers: `O((2n)^k) = O(n^k)` for fixed `k`
+
+The bounded-session check can be viewed as reachability in this frontier-state
+transition graph. Reachability (ST-REACH) is the canonical NL problem on the
+explicit graph, so this gives an NL-style formulation; with fixed `k` this is
+also polynomial-time in `n`.
 
 ### The Solver Trait
 
