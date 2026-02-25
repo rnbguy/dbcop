@@ -254,10 +254,10 @@ present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
   lexicographically by (session_id, session_height).
 
 - `DiGraph<T>` -- directed graph with adjacency map. Key methods:
-  `add_edge(from, to)`, `add_vertex(v)`, `closure()`, `topological_sort()`,
-  `union(other)`, `is_acyclic()`, `to_edge_list()`,
-  `find_cycle_edge() -> Option<(T, T)>` (returns an edge on a cycle via Kahn's
-  algorithm).
+  `add_edge(from, to)`, `add_edges(&from, targets)`, `add_vertex(v)`,
+  `closure()`, `topological_sort()`, `union(other)`, `is_acyclic()`,
+  `to_edge_list()`, `find_cycle_edge() -> Option<(T, T)>` (returns an edge on a
+  cycle via Kahn's algorithm).
 
 - `AtomicTransactionPO` -- per-history partial order. Holds:
   `session_order: DiGraph<TransactionId>`,
@@ -405,9 +405,22 @@ notepads, and agent memory.
   SAT solving for singleton components.
 
 - Incremental transitive closure (`digraph.rs`): `incremental_closure()` extends
-  an existing closed graph with new edges using BFS ancestor/descendant
-  cross-product. Used in causal checker to avoid O(V\*(V+E)) full closure on
-  each saturation iteration.
+  an existing closed graph with new edges using ancestor/descendant
+  cross-product. Ancestor traversal now uses a reverse adjacency index (updated
+  as closure edges are inserted) to avoid repeated O(V\*E) reverse scans. Used
+  in causal checker to avoid O(V\*(V+E)) full closure on each saturation
+  iteration.
+- Iterative reachability closure (`digraph.rs`): closure computation now uses an
+  explicit stack instead of recursive DFS to avoid stack overflow on deep
+  graphs.
+- Single-pass closure-change detection (`digraph.rs`, `history/atomic/mod.rs`):
+  `DiGraph::closure_with_change()` computes transitive closure and its
+  change-flag together; `vis_is_trans()` now uses this directly instead of a
+  separate post-closure diff scan.
+- WASM text mapping deduplication (`wasm/src/lib.rs`): variable-name-to-u64
+  conversion is centralized in shared helpers
+  (`map_sessions_to_u64`/`parse_text_sessions_as_u64`) used by both step-init
+  and text-to-json paths to prevent behavior drift.
 - Writer-only `ww`/`rw` saturation (`history/atomic/mod.rs`): `causal_ww()` and
   `causal_rw()` must iterate only over writers of each variable. `wr_x` graphs
   contain reader vertices too (as `add_edge` targets); including those readers
@@ -436,11 +449,17 @@ notepads, and agent memory.
   Prefix/SnapshotIsolation/Serializable, plus a bounded differential fuzz test
   against core NPC solvers (`DBCOP_DIFF_FUZZ_SAMPLES`, default 256).
 - `crates/core/benches/consistency.rs` -- 18 Criterion benchmarks (6 consistency
-  levels x 3 history sizes).
+  levels x 3 history sizes). Benchmark history generation now ensures reads
+  always reference existing versions (or root version 0), so runs measure
+  checker/solver behavior instead of early invalid-history rejection.
 - `crates/sat/benches/npc_vs_sat.rs` -- Criterion comparison benchmark for
   Prefix/SnapshotIsolation/Serializable using randomly sampled valid histories;
   reports prebench SAT/Core average latency ratio and benchmarks both solver
   paths.
+- `graph::digraph` includes regression tests for incremental closure ancestor
+  propagation across batched new edges and deep-chain iterative closure.
+- `wasm` includes a regression test ensuring `text_to_json_sessions` shares the
+  same variable-mapping behavior as the internal text-to-u64 parser helper.
 - Always add tests when adding new functionality.
 
 ## AGENTS.md Update Protocol
