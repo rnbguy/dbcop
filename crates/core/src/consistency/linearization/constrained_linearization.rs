@@ -316,7 +316,7 @@ impl<Vertex> DfsRuntime<Vertex>
 where
     Vertex: Eq + Hash + Clone,
 {
-    fn next_random(&mut self) -> u64 {
+    const fn next_random(&mut self) -> u64 {
         self.rng.next_u64()
     }
 
@@ -381,7 +381,7 @@ impl XorShift64 {
         Self { state: initial }
     }
 
-    fn next_u64(&mut self) -> u64 {
+    const fn next_u64(&mut self) -> u64 {
         let mut x = self.state;
         x ^= x << 13;
         x ^= x >> 7;
