@@ -1,18 +1,18 @@
 # Consistency Models
 
-dbcop checks six transactional consistency levels, based on the formal framework
-from
+dbcop checks seven transactional consistency levels, based on the formal
+framework from
 ["On the Complexity of Checking Transactional Consistency"](https://arxiv.org/abs/1908.04509)
 by Ranadeep Biswas and Constantin Enea (OOPSLA 2019).
 
 ## Hierarchy
 
-The six levels form a strict hierarchy (each level implies all weaker ones):
+The seven levels form a strict hierarchy (each level implies all weaker ones):
 
 ```
-Read Committed  <  Atomic Read  <  Causal  <  Prefix  <  Snapshot Isolation  <  Serializable
-      RC               RA           CC          PC             SI                  SER
-  (polynomial)    (polynomial)  (polynomial) (NP-complete) (NP-complete)      (NP-complete)
+Read Committed  <  Repeatable Read  <  Atomic Read  <  Causal  <  Prefix  <  Snapshot Isolation  <  Serializable
+      RC                 RR                RA           CC          PC             SI                  SER
+  (polynomial)      (polynomial)     (polynomial)  (polynomial) (NP-complete) (NP-complete)      (NP-complete)
 ```
 
 ## Summary Table
@@ -20,6 +20,7 @@ Read Committed  <  Atomic Read  <  Causal  <  Prefix  <  Snapshot Isolation  <  
 | Level              | CLI Flag             | Complexity  | Algorithm                       | Witness Type                                   |
 | ------------------ | -------------------- | ----------- | ------------------------------- | ---------------------------------------------- |
 | Read Committed     | `committed-read`     | Polynomial  | Saturation                      | `SaturationOrder(DiGraph)`                     |
+| Repeatable Read    | `repeatable-read`    | Polynomial  | Saturation                      | `SaturationOrder(DiGraph)`                     |
 | Atomic Read        | `atomic-read`        | Polynomial  | Saturation                      | `SaturationOrder(DiGraph)`                     |
 | Causal             | `causal`             | Polynomial  | Saturation                      | `SaturationOrder(DiGraph)`                     |
 | Prefix             | `prefix`             | NP-complete | Constrained linearization (DFS) | `CommitOrder(Vec<TransactionId>)`              |

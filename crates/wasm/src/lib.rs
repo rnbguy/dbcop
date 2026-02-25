@@ -39,6 +39,7 @@ fn parse_level(level: &str) -> Option<Consistency> {
     match level {
         "committed-read" => Some(Consistency::CommittedRead),
         "atomic-read" => Some(Consistency::AtomicRead),
+        "repeatable-read" => Some(Consistency::RepeatableRead),
         "causal" => Some(Consistency::Causal),
         "prefix" => Some(Consistency::Prefix),
         "snapshot-isolation" => Some(Consistency::SnapshotIsolation),

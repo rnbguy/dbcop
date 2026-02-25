@@ -33,6 +33,7 @@ The original implementation remains at the
 | Level              | Complexity  | Algorithm                 |
 | ------------------ | ----------- | ------------------------- |
 | Read Committed     | Polynomial  | Saturation                |
+| Repeatable Read    | Polynomial  | Saturation                |
 | Atomic Read        | Polynomial  | Saturation                |
 | Causal             | Polynomial  | Saturation                |
 | Prefix             | NP-complete | Constrained linearization |

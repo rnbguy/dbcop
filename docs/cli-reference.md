@@ -72,8 +72,8 @@ dbcop verify [OPTIONS]
 | `--verbose`             | `bool`    | Print witness on PASS, full error on FAIL             |
 | `--json`                | `bool`    | Output one JSON object per file to stdout             |
 
-**Consistency level values:** `committed-read`, `atomic-read`, `causal`,
-`prefix`, `snapshot-isolation`, `serializable`
+**Consistency level values:** `committed-read`, `repeatable-read`,
+`atomic-read`, `causal`, `prefix`, `snapshot-isolation`, `serializable`
 
 **Output Formats:**
 

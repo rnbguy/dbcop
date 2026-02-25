@@ -21,7 +21,7 @@ src/
       committed_read.rs     Read Committed checker -- builds committed order graph (377 lines)
       atomic_read.rs        Atomic Read checker -- single-pass saturation with ww edges
       causal.rs             Causal checker -- iterated saturation + incremental closure
-      repeatable_read.rs    Internal checker -- NOT exposed via Consistency enum
+      repeatable_read.rs    Repeatable Read checker -- validates same-variable read consistency
     linearization/
       constrained_linearization.rs  DFS engine + ConstrainedLinearizationSolver trait (1141 lines)
       prefix.rs             Prefix solver -- split-vertex with active_write (430 lines)
@@ -93,9 +93,7 @@ Tests and `schemars` feature both pull in std. Everything else must be
    `tests/common/mod.rs`.
 5. Add benchmark group in `benches/consistency.rs`.
 
-**Frozen API**: Do NOT change `ConstrainedLinearizationSolver` trait. Do NOT add
-`Consistency::RepeatableRead` (internal checker exists but is intentionally not
-exposed).
+**Frozen API**: Do NOT change `ConstrainedLinearizationSolver` trait.
 
 ## DFS Engine Key Concepts
 

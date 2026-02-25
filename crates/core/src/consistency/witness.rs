@@ -14,6 +14,6 @@ pub enum Witness {
     /// Each transaction is split: `(TransactionId, bool)` where `bool` indicates the write half.
     SplitCommitOrder(Vec<(TransactionId, bool)>),
     /// Saturation-based visibility order.
-    /// Returned by Read Committed, Read Atomic, and Causal checkers.
+    /// Returned by Read Committed, Repeatable Read, Read Atomic, and Causal checkers.
     SaturationOrder(DiGraph<TransactionId>),
 }

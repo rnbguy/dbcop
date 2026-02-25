@@ -1,4 +1,4 @@
-//! Checks if a valid history is a atomic read history.
+//! Checks if a valid history maintains repeatable read.
 
 use core::hash::Hash;
 
@@ -6,25 +6,30 @@ use hashbrown::HashMap;
 
 use super::committed_read::check_committed_read;
 use crate::consistency::error::Error;
+use crate::graph::digraph::DiGraph;
+use crate::history::atomic::types::TransactionId;
 use crate::history::raw::error::Error as NonAtomicError;
 use crate::history::raw::types::{Event, EventId, Session};
 use crate::history::raw::{get_all_writes, is_valid_history};
 
 /// Checks if a valid history maintains repeatable read.
 ///
+/// On success, returns the committed-order graph (from the underlying
+/// [`check_committed_read`] pre-check) as a saturation witness.
+///
 /// # Errors
 ///
 /// Returns [`NonAtomicError::NonRepeatableRead`] if the history does not maintain repeatable read.
 pub fn check_repeatable_read<Variable, Version>(
     histories: &[Session<Variable, Version>],
-) -> Result<(), Error<Variable, Version>>
+) -> Result<DiGraph<TransactionId>, Error<Variable, Version>>
 where
     Variable: Eq + Hash + Clone,
     Version: Eq + Hash + Clone + Default,
 {
     is_valid_history(histories)?;
 
-    check_committed_read(histories)?;
+    let committed_order = check_committed_read(histories)?;
 
     let all_writes = get_all_writes(histories)?;
 
@@ -68,7 +73,7 @@ where
             }
         }
     }
-    Ok(())
+    Ok(committed_order)
 }
 
 #[cfg(test)]

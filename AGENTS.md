@@ -94,7 +94,6 @@ All five must pass before merging:
   `#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]`
 - Do NOT rename existing public types (e.g. `CommittedRead` stays
   `CommittedRead`).
-- Do NOT add a `Consistency::RepeatableRead` variant.
 - Do NOT change the `ConstrainedLinearizationSolver` trait API.
 - Raw-history validation must preserve read-your-write semantics within a
   transaction: a local read is valid only when it matches the latest preceding
@@ -181,8 +180,8 @@ The `dbcop` binary has four subcommands: `generate`, `verify`, `fmt`, and
 
 - `--input-dir <DIR>` -- directory containing history JSON files (required)
 - `--consistency <LEVEL>` -- consistency level to check (required). Values:
-  `committed-read`, `atomic-read`, `causal`, `prefix`, `snapshot-isolation`,
-  `serializable`.
+  `committed-read`, `repeatable-read`, `atomic-read`, `causal`, `prefix`,
+  `snapshot-isolation`, `serializable`.
 - `--verbose` -- on PASS prints witness details (Debug format), on FAIL prints
   full error details. Output: `{filename}: PASS\n  witness: {witness:?}` or
   `{filename}: FAIL\n  error: {error:?}`.
@@ -298,8 +297,8 @@ present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
   `wr_union: DiGraph<TransactionId>`,
   `visibility_relation: DiGraph<TransactionId>`.
 
-- `Consistency` enum: `CommittedRead`, `AtomicRead`, `Causal`, `Prefix`,
-  `SnapshotIsolation`, `Serializable`.
+- `Consistency` enum: `CommittedRead`, `RepeatableRead`, `AtomicRead`, `Causal`,
+  `Prefix`, `SnapshotIsolation`, `Serializable`.
 
 - `DfsSearchOptions` / `BranchOrdering`
   (`consistency/linearization/constrained_linearization.rs`): trait-level DFS
@@ -313,6 +312,8 @@ present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
   Each consistency level produces a specific `Witness` variant on success:
   - Committed Read: `SaturationOrder(DiGraph<TransactionId>)` (committed order
     graph)
+  - Repeatable Read: `SaturationOrder(DiGraph<TransactionId>)` (committed order
+    graph)
   - Atomic Read: `SaturationOrder(DiGraph<TransactionId>)` (visibility relation)
   - Causal: `SaturationOrder(DiGraph<TransactionId>)` (visibility relation)
   - Prefix: `CommitOrder(Vec<TransactionId>)` (transaction commit order)
@@ -324,8 +325,8 @@ present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
 - `Witness` enum: returned by `check()` on success. Variants:
   `CommitOrder(Vec<TransactionId>)` (Prefix, Serializable),
   `SplitCommitOrder(Vec<(TransactionId, bool)>)` (SnapshotIsolation),
-  `SaturationOrder(DiGraph<TransactionId>)` (Committed Read, Atomic Read,
-  Causal).
+  `SaturationOrder(DiGraph<TransactionId>)` (Committed Read, Repeatable Read,
+  Atomic Read, Causal).
 
 - `Error<Variable, Version>` enum: returned by `check()` on failure. Variants:
   `NonAtomic(NonAtomicError)` (structural issue like uncommitted writes),
