@@ -48,7 +48,7 @@ use hashbrown::{HashMap, HashSet};
 
 use crate::consistency::constrained_linearization::{
     seeded_hash_u128, BranchOrdering, ConstrainedLinearizationSolver, DfsSearchOptions,
-    NogoodLearning,
+    DominancePruning, NogoodLearning,
 };
 use crate::history::atomic::types::TransactionId;
 use crate::history::atomic::AtomicTransactionPO;
@@ -102,6 +102,7 @@ where
             memoize_frontier: true,
             nogood_learning: NogoodLearning::Enabled,
             enable_killer_history: true,
+            dominance_pruning: DominancePruning::Enabled,
             prefer_allowed_first: true,
             branch_ordering: BranchOrdering::HighScoreFirst,
         }

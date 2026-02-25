@@ -83,6 +83,13 @@ pub enum NogoodLearning {
     Enabled,
 }
 
+/// Dominance-pruning mode for DFS search.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DominancePruning {
+    Disabled,
+    Enabled,
+}
+
 /// DFS engine options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DfsSearchOptions {
@@ -92,6 +99,8 @@ pub struct DfsSearchOptions {
     pub nogood_learning: NogoodLearning,
     /// Enable killer/history move ordering augmentation.
     pub enable_killer_history: bool,
+    /// Enable/disable frontier dominance pruning.
+    pub dominance_pruning: DominancePruning,
     /// Prioritize currently-legal candidates before illegal ones.
     ///
     /// This keeps branch ordering focused on feasible moves and reduces
@@ -107,6 +116,7 @@ impl Default for DfsSearchOptions {
             memoize_frontier: true,
             nogood_learning: NogoodLearning::Enabled,
             enable_killer_history: true,
+            dominance_pruning: DominancePruning::Enabled,
             prefer_allowed_first: true,
             branch_ordering: BranchOrdering::AsProvided,
         }
@@ -220,12 +230,43 @@ where
     heuristics: SearchHeuristics<Vertex>,
     nogood_signatures: HashSet<u128>,
     conflict_jump_depth: HashMap<u128, usize>,
+    failed_frontiers_by_state: HashMap<u128, Vec<HashSet<Vertex>>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum DfsStepResult {
     Found,
     Fail { jump_depth: usize },
+}
+
+impl<Vertex> DfsRuntime<Vertex>
+where
+    Vertex: Eq + Hash + Clone,
+{
+    fn is_dominated(&self, state_signature: u128, frontier: &HashSet<Vertex>) -> bool {
+        self.failed_frontiers_by_state
+            .get(&state_signature)
+            .is_some_and(|failed_frontiers| {
+                failed_frontiers
+                    .iter()
+                    .any(|failed| frontier.is_subset(failed))
+            })
+    }
+
+    fn record_failed_frontier(&mut self, state_signature: u128, frontier: HashSet<Vertex>) {
+        let entry = self
+            .failed_frontiers_by_state
+            .entry(state_signature)
+            .or_default();
+        if entry.iter().any(|existing| existing.is_superset(&frontier)) {
+            return;
+        }
+        entry.retain(|existing| !existing.is_subset(&frontier));
+        entry.push(frontier);
+        if entry.len() > 32 {
+            entry.remove(0);
+        }
+    }
 }
 
 fn order_frontier_with_heuristics<S: ConstrainedLinearizationSolver + ?Sized>(
@@ -278,10 +319,25 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
 ) -> DfsStepResult {
     let depth = linearization.len();
     let options = runtime.options;
+    let state_signature = solver.frontier_signature(0, linearization);
+    let mut frontier_set_for_dominance: Option<HashSet<S::Vertex>> = None;
     if solver.should_prune(linearization, non_det_choices.len()) {
         return DfsStepResult::Fail {
             jump_depth: depth.saturating_sub(1),
         };
+    }
+    if matches!(options.dominance_pruning, DominancePruning::Enabled) {
+        let frontier_set: HashSet<S::Vertex> = non_det_choices.iter().cloned().collect();
+        if runtime.is_dominated(state_signature, &frontier_set) {
+            return DfsStepResult::Fail {
+                jump_depth: runtime
+                    .conflict_jump_depth
+                    .get(&state_signature)
+                    .copied()
+                    .unwrap_or_else(|| depth.saturating_sub(1)),
+            };
+        }
+        frontier_set_for_dominance = Some(frontier_set);
     }
     let signature = solver.frontier_signature(*frontier_hash, linearization);
     if matches!(options.nogood_learning, NogoodLearning::Enabled)
@@ -378,6 +434,11 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
     }
     if matches!(options.nogood_learning, NogoodLearning::Enabled) {
         runtime.nogood_signatures.insert(signature);
+    }
+    if matches!(options.dominance_pruning, DominancePruning::Enabled) {
+        let frontier_set =
+            frontier_set_for_dominance.unwrap_or_else(|| non_det_choices.iter().cloned().collect());
+        runtime.record_failed_frontier(state_signature, frontier_set);
     }
     let jump_depth = depth.saturating_sub(1);
     runtime.conflict_jump_depth.insert(signature, jump_depth);
@@ -558,6 +619,7 @@ pub trait ConstrainedLinearizationSolver {
             heuristics: SearchHeuristics::default(),
             nogood_signatures: HashSet::default(),
             conflict_jump_depth: HashMap::default(),
+            failed_frontiers_by_state: HashMap::default(),
         };
         matches!(
             do_dfs_impl(
@@ -645,6 +707,7 @@ mod tests {
                 memoize_frontier: true,
                 nogood_learning: NogoodLearning::Enabled,
                 enable_killer_history: true,
+                dominance_pruning: DominancePruning::Enabled,
                 prefer_allowed_first: true,
                 branch_ordering: BranchOrdering::HighScoreFirst,
             }
