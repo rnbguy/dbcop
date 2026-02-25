@@ -87,6 +87,7 @@ trait ConstrainedLinearizationSolver {
     fn search_options(&self) -> DfsSearchOptions;
     fn branch_score(&self, linearization: &[Self::Vertex], next: &Self::Vertex) -> i64;
     fn zobrist_value(&self, next: &Self::Vertex) -> u128;
+    fn frontier_signature(&self, frontier_hash: u128, linearization: &[Self::Vertex]) -> u128;
     fn should_prune(&self, linearization: &[Self::Vertex], frontier_len: usize) -> bool;
     fn allow_next(&self, linearization: &[Self::Vertex], next: &Self::Vertex) -> bool;
     fn forward_book_keeping(&mut self, linearization: &[Self::Vertex]);
@@ -102,13 +103,17 @@ trait ConstrainedLinearizationSolver {
   high-score/low-score modes).
 - `zobrist_value()` -- Solver-provided Zobrist token source for frontier-state
   signatures.
+- `frontier_signature()` -- Optional solver-state fingerprint mixed into
+  memoization keys (e.g., active-write sets).
 - `should_prune()` -- Optional branch-and-bound style pruning hook.
 - `forward_book_keeping()` -- Update solver state after appending a transaction.
 - `backtrack_book_keeping()` -- Undo state changes when backtracking.
 
 The DFS engine (`get_linearization()`) explores topological orderings of the
 partial order, calling these methods at each step. Zobrist hashing memoizes
-visited frontier states to prune the search.
+visited frontier states to prune the search. Candidate ordering first
+prioritizes currently legal moves (`allow_next = true`), then applies
+`branch_score()` according to `search_options()`.
 
 ### Prefix (`prefix.rs`)
 
@@ -213,6 +218,11 @@ seed into the hash, removing it XORs again.
 
 This replaces the naive approach of hashing `HashSet<BTreeSet<TransactionId>>`
 which had O(T log T) cost per state.
+
+Prefix, Snapshot Isolation, and Serializable solvers strengthen this with
+state-aware signatures: memo keys include active solver state (`active_write`
+and, for SI, `active_variable`) in addition to frontier hash. This reduces state
+aliasing in the transposition table.
 
 ### Chain Closure
 

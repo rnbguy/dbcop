@@ -67,8 +67,9 @@ Result<Witness, Error>         ── crates/core/src/consistency/mod.rs
 - `saturation/` -- Polynomial-time checkers: `committed_read.rs`,
   `atomic_read.rs`, `causal.rs`, `repeatable_read.rs`.
 - `linearization/` -- NP-complete checkers: `constrained_linearization.rs` (DFS
-  solver trait + solver-provided DFS options + Zobrist hashing hooks),
-  `prefix.rs`, `snapshot_isolation.rs`, `serializable.rs`.
+  solver trait + solver-provided DFS options + legal-first move ordering +
+  Zobrist/state-signature memoization hooks), `prefix.rs`,
+  `snapshot_isolation.rs`, `serializable.rs`.
 - `decomposition.rs` -- Communication graph construction and biconnected
   component extraction (Theorem 5.2 from Biswas & Enea 2019).
 - `witness.rs` -- `Witness` enum: `CommitOrder`, `SplitCommitOrder`,

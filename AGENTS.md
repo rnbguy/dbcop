@@ -270,8 +270,9 @@ present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
 
 - `DfsSearchOptions` / `BranchOrdering`
   (`consistency/linearization/constrained_linearization.rs`): trait-level DFS
-  policy for NPC solvers. Options currently include frontier memoization toggle
-  and branch ordering mode (`AsProvided`, `HighScoreFirst`, `LowScoreFirst`).
+  policy for NPC solvers. Options currently include frontier memoization toggle,
+  legal-first frontier ordering toggle (`prefer_allowed_first`), and branch
+  ordering mode (`AsProvided`, `HighScoreFirst`, `LowScoreFirst`).
 
 - `check()` entry point: returns `Result<Witness, Error<Variable, Version>>`.
   Each consistency level produces a specific `Witness` variant on success:
@@ -328,9 +329,26 @@ notepads, and agent memory.
   `zobrist_value()`.
 
 - DFS policy hooks (`constrained_linearization.rs`): the solver trait now
-  exposes `search_options()`, `branch_score()`, and `should_prune()` so each NPC
-  checker can provide branch ordering and pruning behavior without changing the
-  shared DFS engine.
+  exposes `search_options()`, `branch_score()`, `frontier_signature()`, and
+  `should_prune()` so each NPC checker can provide branch ordering, state-aware
+  memoization keys, and pruning behavior without changing the shared DFS engine.
+
+- Legal-first move ordering (`constrained_linearization.rs`): DFS now computes
+  `allow_next` once per frontier candidate and prioritizes legal moves before
+  illegal ones (then applies score ordering). This is a chess-style move
+  ordering optimization that reduces failed branch expansions.
+
+- Conflict-driven branching
+  (`linearization/{prefix,snapshot_isolation,serializable}.rs`): NPC solvers
+  bias branch scores toward candidates that reduce outstanding dependency
+  pressure (e.g., unresolved readers and active-variable releases), not just raw
+  out-degree.
+
+- State-aware memo signatures
+  (`linearization/{prefix,snapshot_isolation,serializable}.rs`): memo keys now
+  mix frontier hash with solver state (`active_write`, and for SI also
+  `active_variable`) to reduce transposition aliasing between distinct search
+  states.
 
 - Chain closure (`atomic/mod.rs`): computes session-order transitive closure
   with an O(S * T^2) forward scan grouped by session. Replaces general
