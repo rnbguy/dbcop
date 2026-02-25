@@ -118,11 +118,13 @@ prioritizes currently legal moves (`allow_next = true`), then applies
 The current DFS search stack also includes:
 
 - killer/history move ordering (learned move boosts),
+- counter-move ordering (learned parent->response replies),
 - nogood learning on failed signatures,
 - conflict-directed backjumping with learned jump depths,
 - frontier-dominance pruning at fixed solver-state signature,
 - randomized, budgeted restarts with final exhaustive fallback,
-- adaptive attempt-level heuristic portfolio selection.
+- adaptive attempt-level heuristic portfolio selection,
+- principal variation (PV) ordering across restart attempts.
 
 ### Prefix (`prefix.rs`)
 

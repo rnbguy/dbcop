@@ -69,8 +69,9 @@ Result<Witness, Error>         ── crates/core/src/consistency/mod.rs
 - `linearization/` -- NP-complete checkers: `constrained_linearization.rs` (DFS
   solver trait + solver-provided DFS options + legal-first move ordering +
   Zobrist/state-signature memoization hooks + killer/history + nogood/backjump
-  - dominance pruning + randomized restarts + adaptive portfolio), `prefix.rs`,
-    `snapshot_isolation.rs`, `serializable.rs`.
+  - dominance pruning + randomized restarts + adaptive portfolio + principal
+    variation/counter-move ordering), `prefix.rs`, `snapshot_isolation.rs`,
+    `serializable.rs`.
 - `decomposition.rs` -- Communication graph construction and biconnected
   component extraction (Theorem 5.2 from Biswas & Enea 2019).
 - `witness.rs` -- `Witness` enum: `CommitOrder`, `SplitCommitOrder`,

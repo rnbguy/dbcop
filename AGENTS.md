@@ -273,8 +273,8 @@ present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
   policy for NPC solvers. Options include memoization/nogood toggles,
   legal-first frontier ordering (`prefer_allowed_first`), dominance pruning
   mode, tie-breaking mode, restart policy (`restart_max_attempts`,
-  `restart_node_budget`), adaptive portfolio mode, and branch ordering
-  (`AsProvided`, `HighScoreFirst`, `LowScoreFirst`).
+  `restart_node_budget`), adaptive portfolio mode, principal variation mode, and
+  branch ordering (`AsProvided`, `HighScoreFirst`, `LowScoreFirst`).
 
 - `check()` entry point: returns `Result<Witness, Error<Variable, Version>>`.
   Each consistency level produces a specific `Witness` variant on success:
@@ -374,6 +374,14 @@ notepads, and agent memory.
 - Adaptive heuristic portfolio (`constrained_linearization.rs`): restart
   attempts choose among multiple ordering modes (solver-biased, frontier-heavy,
   diverse) using online per-mode stats.
+
+- Principal variation ordering (`constrained_linearization.rs`): restart
+  attempts carry forward the deepest path reached so far and prioritize that PV
+  move at each depth on subsequent attempts.
+
+- Counter-move heuristic (`constrained_linearization.rs`): DFS learns
+  parent→response move pairs from successful recursion paths and boosts the
+  learned reply when the same parent move appears again.
 
 - Chain closure (`atomic/mod.rs`): computes session-order transitive closure
   with an O(S * T^2) forward scan grouped by session. Replaces general
