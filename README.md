@@ -59,7 +59,7 @@ dbcop verify --input-dir /tmp/histories --consistency serializable
 
 - [Architecture](docs/architecture.md) -- crate structure, data flow, key types
 - [Consistency Models](docs/consistency-models.md) -- formal definitions of all
-  six levels
+  seven levels
 - [CLI Reference](docs/cli-reference.md) -- generate and verify commands, flags,
   output formats
 - [History Format](docs/history-format.md) -- JSON schema with annotated

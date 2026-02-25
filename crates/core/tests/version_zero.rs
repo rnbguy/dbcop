@@ -59,6 +59,7 @@ fn version_zero_single_session_passes_all_levels() {
     };
     for level in [
         Consistency::CommittedRead,
+        Consistency::RepeatableRead,
         Consistency::AtomicRead,
         Consistency::Causal,
         Consistency::Prefix,
@@ -103,6 +104,7 @@ fn version_zero_and_none_are_equivalent_for_initial_state() {
 
     for level in [
         Consistency::CommittedRead,
+        Consistency::RepeatableRead,
         Consistency::AtomicRead,
         Consistency::Causal,
     ] {

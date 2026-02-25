@@ -1,7 +1,7 @@
 #![allow(clippy::doc_markdown, clippy::missing_const_for_fn)]
 
 //! Tests enforcing the strict consistency hierarchy:
-//!   CommittedRead < AtomicRead < Causal < Prefix < SnapshotIsolation < Serializable
+//!   CommittedRead < RepeatableRead < AtomicRead < Causal < Prefix < SnapshotIsolation < Serializable
 //!
 //! Each test constructs a concrete history that passes the weaker level
 //! but fails the stronger one, documenting the exact boundary.
@@ -51,7 +51,34 @@ fn below_committed_read() {
     );
 }
 
-// -- Boundary 1: CommittedRead pass, AtomicRead fail --------------------------
+// -- Boundary 1: CommittedRead pass, RepeatableRead fail -----------------------
+
+/// Non-repeatable read within one transaction:
+/// a transaction reads x=1, then x=2 later in the same transaction.
+///
+/// RC: all reads come from committed writes -- pass.
+/// RR: repeated reads of x observe different writers/versions -- fail.
+#[test]
+fn boundary_committed_read_to_repeatable_read() {
+    let h: Vec<Session<&str, u64>> = vec![
+        vec![committed(vec![w("x", 1)])],
+        vec![committed(vec![w("x", 2)])],
+        vec![committed(vec![r("x", 1), r("x", 2)])],
+    ];
+
+    // Weaker level passes
+    assert!(
+        check(&h, Consistency::CommittedRead).is_ok(),
+        "should pass CommittedRead (all reads come from committed writes)",
+    );
+    // Stronger level fails
+    assert!(
+        check(&h, Consistency::RepeatableRead).is_err(),
+        "should fail RepeatableRead (same transaction reads x from two different writers)",
+    );
+}
+
+// -- Boundary 2: RepeatableRead pass, AtomicRead fail --------------------------
 
 /// Fractured visibility: T1 writes both x and y atomically. T2 sees T1's
 /// write to x (via y) but reads the initial value of x from T1's co-write.
@@ -65,7 +92,7 @@ fn below_committed_read() {
 /// RC: all reads from committed writes, committed order acyclic -- pass.
 /// AR: causal_ww on x yields ww(T2,T1) but WR(y) gives vis(T1->T2) -- cycle -- fail.
 #[test]
-fn boundary_committed_read_to_atomic_read() {
+fn boundary_repeatable_read_to_atomic_read() {
     let h: Vec<Session<&str, u64>> = vec![
         vec![committed(vec![w("x", 1), w("y", 1)])],
         vec![committed(vec![r("y", 1), w("x", 2), w("z", 1)])],
@@ -77,6 +104,10 @@ fn boundary_committed_read_to_atomic_read() {
         check(&h, Consistency::CommittedRead).is_ok(),
         "should pass CommittedRead (all reads from committed writes, acyclic CO)",
     );
+    assert!(
+        check(&h, Consistency::RepeatableRead).is_ok(),
+        "should pass RepeatableRead (no transaction re-reads the same variable with a different value)",
+    );
     // Stronger level fails
     assert!(
         check(&h, Consistency::AtomicRead).is_err(),
@@ -84,7 +115,7 @@ fn boundary_committed_read_to_atomic_read() {
     );
 }
 
-// -- Boundary 2: AtomicRead pass, Causal fail ---------------------------------
+// -- Boundary 3: AtomicRead pass, Causal fail ---------------------------------
 
 /// A 7-session causal visibility cycle that only manifests after transitive
 /// closure of ww edges -- invisible to AtomicRead's one-shot ww check.
@@ -125,7 +156,7 @@ fn boundary_atomic_read_to_causal() {
     );
 }
 
-// -- Boundary 3: Causal pass, Prefix fail ------------------------------------
+// -- Boundary 4: Causal pass, Prefix fail ------------------------------------
 
 /// Two-variable stale-read crossover: each reader sees one updated variable
 /// and one stale variable, creating contradictory prefix ordering constraints.
@@ -177,7 +208,7 @@ fn boundary_causal_to_prefix() {
     );
 }
 
-// -- Boundary 4: Prefix pass, SnapshotIsolation fail --------------------------
+// -- Boundary 5: Prefix pass, SnapshotIsolation fail --------------------------
 
 /// Lost update / concurrent writes to the same variable.
 ///
@@ -209,7 +240,7 @@ fn boundary_prefix_to_snapshot_isolation() {
     );
 }
 
-// -- Boundary 5: SnapshotIsolation pass, Serializable fail --------------------
+// -- Boundary 6: SnapshotIsolation pass, Serializable fail --------------------
 
 /// Classic write skew: two sessions each read a variable written by the other
 /// (from initial state) and write to a different variable.
@@ -244,7 +275,7 @@ fn boundary_snapshot_isolation_to_serializable() {
     );
 }
 
-// -- Boundary 6: Serializable pass (max interleaved reads and writes) --------
+// -- Boundary 7: Serializable pass (max interleaved reads and writes) --------
 
 /// A serializable history with maximum interleaving of reads and writes.
 /// Four sessions, each a single transaction that alternates reads and writes

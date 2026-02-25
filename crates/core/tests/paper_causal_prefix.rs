@@ -11,7 +11,7 @@
 //!   PC -- Section 4.2 (causal + prefix-closed visibility under some total order)
 //!
 //! Hierarchy in this implementation (weakest to strongest):
-//!   CommittedRead < AtomicRead < Causal == Prefix < SnapshotIsolation < Serializable
+//!   CommittedRead < RepeatableRead < AtomicRead < Causal == Prefix < SnapshotIsolation < Serializable
 //!
 //! Empirical observation: in this model all CC-valid histories are also PC-valid.
 //! The CC saturation algorithm's ww-edge derivation enforces the same ordering

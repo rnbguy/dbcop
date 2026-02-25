@@ -109,8 +109,8 @@ Two sessions: Session 1 writes variable 0, Session 2 reads it.
 ]
 ```
 
-This history is consistent at all six levels. Session 2's transaction reads the
-value written by Session 1's transaction, establishing a clear write-read
+This history is consistent at all seven levels. Session 2's transaction reads
+the value written by Session 1's transaction, establishing a clear write-read
 dependency with no conflicts.
 
 ## Example 2: Write Skew (Fails Snapshot Isolation)

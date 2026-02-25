@@ -127,15 +127,15 @@ dbcop/                          workspace root
           decomposition.rs          communication graph + biconnected decomposition
           witness.rs                Witness enum (CommitOrder, SplitCommitOrder, SaturationOrder)
           error.rs                  Error enum (NonAtomic, Cycle, Invalid)
-          saturation/              saturation-based checkers (CommittedRead, AtomicRead, Causal)
-            repeatable_read.rs     internal checker (not exposed via Consistency enum)
+          saturation/              saturation-based checkers (CommittedRead, RepeatableRead, AtomicRead, Causal)
+            repeatable_read.rs     Repeatable Read checker
           linearization/           linearization-based checkers (Prefix, SnapshotIsolation, Serializable)
             constrained_linearization.rs  DFS engine + solver trait (1141 lines)
         history/
           raw/                     raw history types (Session, Transaction, Event)
           atomic/                  AtomicTransactionPO and AtomicTransactionHistory
       tests/                      7 integration tests + common/ helper macros
-      benches/                    18 Criterion benchmarks (6 levels x 3 sizes)
+      benches/                    21 Criterion benchmarks (7 levels x 3 sizes)
     cli/                         CLI binary -- dbcop_cli
     wasm/                        WASM bindings -- dbcop_wasm
       tests/
@@ -151,7 +151,7 @@ dbcop/                          workspace root
   docs/
     architecture.md               crate structure, data flow, key types
     algorithms.md                 saturation, linearization, decomposition, SAT encoding
-    consistency-models.md         formal definitions of all six levels
+    consistency-models.md         formal definitions of all seven levels
     cli-reference.md              generate and verify commands, flags, output formats
     history-format.md             JSON schema with annotated examples
     wasm-api.md                   WASM bindings API reference
@@ -228,8 +228,8 @@ The `dbcop_wasm` crate exposes two functions via `wasm_bindgen`:
 
 - `history_json`: JSON-encoded array of sessions (same format as CLI input
   files).
-- `level`: one of `committed-read`, `atomic-read`, `causal`, `prefix`,
-  `snapshot-isolation`, `serializable`.
+- `level`: one of `committed-read`, `repeatable-read`, `atomic-read`, `causal`,
+  `prefix`, `snapshot-isolation`, `serializable`.
 
 Returns a JSON string with the following schema:
 
@@ -482,7 +482,7 @@ notepads, and agent memory.
   singleton-component preservation and single-session fast-path coverage in
   Prefix/SnapshotIsolation/Serializable, plus a bounded differential fuzz test
   against core NPC solvers (`DBCOP_DIFF_FUZZ_SAMPLES`, default 256).
-- `crates/core/benches/consistency.rs` -- 18 Criterion benchmarks (6 consistency
+- `crates/core/benches/consistency.rs` -- 21 Criterion benchmarks (7 consistency
   levels x 3 history sizes). Benchmark history generation now ensures reads
   always reference existing versions (or root version 0), so runs measure
   checker/solver behavior instead of early invalid-history rejection.

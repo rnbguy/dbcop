@@ -45,15 +45,16 @@ Raw sessions ──> is_valid_history() ──> AtomicTransactionPO ──> chec
                                                                   │
                      ┌──── Polynomial ────┐          ┌── NP-complete ──┐
                      │ CommittedRead      │          │ check_npc()     │
-                     │ AtomicRead         │          │   causal pre    │
-                     │ Causal             │          │   decompose?    │
-                     │   saturation loop  │          │   solve per     │
-                     │   acyclicity check │          │   component     │
+                     │ RepeatableRead     │          │   causal pre    │
+                     │ AtomicRead         │          │   decompose?    │
+                     │ Causal             │          │   solve per     │
+                     │   saturation loop  │          │   component     │
+                     │   acyclicity check │          │   merge witness │
                      └─── Witness ────────┘          └── Witness ──────┘
 ```
 
-**Polynomial path** (CommittedRead/AtomicRead/Causal): Build partial order, add
-edges iteratively until fixpoint, check acyclicity. Returns
+**Polynomial path** (CommittedRead/RepeatableRead/AtomicRead/Causal): Build
+partial order, add edges iteratively until fixpoint, check acyclicity. Returns
 `Witness::SaturationOrder(DiGraph)`.
 
 **NP-complete path** (Prefix/SI/Serializable):
@@ -115,7 +116,7 @@ the search mechanics.
   `txn_uncommitted!`, `ev!` macros for DSL-style test construction
 - 7 integration test files covering polynomial, NP-complete, hierarchy,
   decomposition, and version-0 edge cases
-- 18 Criterion benchmarks (6 levels x 3 sizes)
+- 21 Criterion benchmarks (7 levels x 3 sizes)
 - Unit test modules (`#[cfg(test)]`) in most source files
 
 ## Inter-Crate Dependents

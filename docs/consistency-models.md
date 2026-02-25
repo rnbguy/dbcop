@@ -63,13 +63,30 @@ is acyclic, the history is RC-consistent.
 
 **Source:** `crates/core/src/consistency/saturation/committed_read.rs`
 
+### Repeatable Read (RR)
+
+**Informal:** Within a single transaction, repeated reads of the same variable
+must observe the same writer/version.
+
+**Axiom:** Extends RC with an intra-transaction constraint: if transaction t
+reads variable x multiple times, all those reads must map to the same write
+event for x (unless a local write to x occurs in between, in which case later
+reads must observe that local write).
+
+**Checker:** Validates local repeated-read consistency per transaction, after
+the committed-read pre-check. Returns the committed-order graph as the
+saturation witness.
+
+**Source:** `crates/core/src/consistency/saturation/repeatable_read.rs`
+
 ### Atomic Read (RA)
 
 **Informal:** All reads within a single transaction are atomic -- a transaction
 cannot observe partial effects of another transaction. No fractured reads.
 
-**Axiom:** Extends RC with the constraint that if transaction t1 is visible to
-t2 (t2 reads any value from t1), then all of t1's writes are visible to t2.
+**Axiom:** Extends RR with the cross-variable atomicity constraint that if
+transaction t1 is visible to t2 (t2 reads any value from t1), then all of t1's
+writes are visible to t2.
 
 **Checker:** Saturation algorithm extends committed-read visibility with
 atomic-read constraints. Builds visibility relation to a fixed point; cycle

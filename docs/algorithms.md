@@ -15,7 +15,7 @@ consistency. For theoretical background, see
 
 ## Saturation (Polynomial Checkers)
 
-**Used by:** Read Committed, Atomic Read, Causal Consistency
+**Used by:** Read Committed, Repeatable Read, Atomic Read, Causal Consistency
 
 **Source:** `crates/core/src/consistency/saturation/`
 
@@ -39,9 +39,16 @@ point is reached (consistent) or a cycle is detected (violation).
 The simplest checker. Builds a committed order from write-read relations and
 checks for cycles. Ensures no transaction reads an overwritten value.
 
+### Repeatable Read (`repeatable_read.rs`)
+
+Extends committed-read with intra-transaction read stability checks: repeated
+reads of the same variable in one transaction must resolve to the same writer
+(or to the latest local write when present). On success, returns the
+committed-order graph as the saturation witness.
+
 ### Atomic Read (`atomic_read.rs`)
 
-Extends committed-read: if transaction t2 reads any value from t1, then all of
+Extends repeatable-read: if transaction t2 reads any value from t1, then all of
 t1's writes must be visible to t2. Adds visibility edges to enforce atomicity of
 reads across variables.
 

@@ -67,8 +67,8 @@ pub struct VerifyArgs {
 #[derive(Debug, Clone, ValueEnum)]
 pub enum ConsistencyLevel {
     CommittedRead,
-    AtomicRead,
     RepeatableRead,
+    AtomicRead,
     Causal,
     Prefix,
     SnapshotIsolation,
@@ -89,8 +89,8 @@ impl From<ConsistencyLevel> for dbcop_core::Consistency {
     fn from(level: ConsistencyLevel) -> Self {
         match level {
             ConsistencyLevel::CommittedRead => Self::CommittedRead,
-            ConsistencyLevel::AtomicRead => Self::AtomicRead,
             ConsistencyLevel::RepeatableRead => Self::RepeatableRead,
+            ConsistencyLevel::AtomicRead => Self::AtomicRead,
             ConsistencyLevel::Causal => Self::Causal,
             ConsistencyLevel::Prefix => Self::Prefix,
             ConsistencyLevel::SnapshotIsolation => Self::SnapshotIsolation,

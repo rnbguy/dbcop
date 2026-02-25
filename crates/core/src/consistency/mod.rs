@@ -38,11 +38,11 @@ pub use witness::Witness;
 pub enum Consistency {
     /// Read Committed: no dirty reads, transactions see only committed writes.
     CommittedRead,
-    /// Atomic Read: reads are atomic across variables (no fractured reads).
-    AtomicRead,
     /// Repeatable Read: re-reading the same variable within a transaction always
     ///   returns the same writer.
     RepeatableRead,
+    /// Atomic Read: reads are atomic across variables (no fractured reads).
+    AtomicRead,
     /// Causal Consistency: causally related operations are ordered.
     Causal,
     /// Prefix Consistency: reads always see a consistent prefix of the write history.
@@ -79,8 +79,8 @@ pub enum Consistency {
 /// structural issues (e.g. a read observes an uncommitted write).
 ///
 /// Returns [`Error::Cycle`](error::Error::Cycle) if a saturation checker
-/// (Read Committed, Atomic Read, Causal) detects a cycle in the visibility
-/// relation, with the two conflicting transaction IDs.
+/// (Read Committed, Repeatable Read, Atomic Read, Causal) detects a cycle in
+/// the visibility relation, with the two conflicting transaction IDs.
 ///
 /// Returns [`Error::Invalid`](error::Error::Invalid) if a linearization
 /// checker (Prefix, Snapshot Isolation, Serializability) cannot find a valid

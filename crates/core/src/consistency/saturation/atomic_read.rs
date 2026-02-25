@@ -1,8 +1,8 @@
 //! Atomic Read consistency checker using saturation.
 //!
-//! Atomic Read (also called "repeatable read" in some literature) strengthens
-//! Read Committed by requiring that all reads within a single transaction
-//! observe a consistent snapshot -- no fractured reads are allowed. If
+//! Atomic Read strengthens Repeatable Read by requiring that all reads within a
+//! single transaction observe a consistent snapshot across variables -- no
+//! fractured reads are allowed. If
 //! transaction T reads variable x from T1 and variable y from T2, then the
 //! visibility relation must be consistent with a single point-in-time view.
 //!
