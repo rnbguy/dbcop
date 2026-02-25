@@ -50,7 +50,7 @@ use hashbrown::{HashMap, HashSet};
 
 use crate::consistency::constrained_linearization::{
     seeded_hash_u128, BranchOrdering, ConstrainedLinearizationSolver, DfsSearchOptions,
-    DominancePruning, HeuristicPortfolio, NogoodLearning, TieBreaking,
+    DominancePruning, HeuristicPortfolio, NogoodLearning, PrincipalVariationOrdering, TieBreaking,
 };
 use crate::history::atomic::types::TransactionId;
 use crate::history::atomic::AtomicTransactionPO;
@@ -117,6 +117,7 @@ where
             restart_max_attempts: 2,
             restart_node_budget: Some(20_000),
             heuristic_portfolio: HeuristicPortfolio::Enabled,
+            principal_variation_ordering: PrincipalVariationOrdering::Enabled,
             prefer_allowed_first: true,
             branch_ordering: BranchOrdering::HighScoreFirst,
         }

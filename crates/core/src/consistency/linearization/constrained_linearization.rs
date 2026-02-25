@@ -104,6 +104,13 @@ pub enum HeuristicPortfolio {
     Enabled,
 }
 
+/// Principal variation ordering mode.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PrincipalVariationOrdering {
+    Disabled,
+    Enabled,
+}
+
 /// DFS engine options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DfsSearchOptions {
@@ -125,6 +132,8 @@ pub struct DfsSearchOptions {
     pub restart_node_budget: Option<usize>,
     /// Enable/disable attempt-level adaptive heuristic portfolio.
     pub heuristic_portfolio: HeuristicPortfolio,
+    /// Enable/disable chess-style principal variation ordering.
+    pub principal_variation_ordering: PrincipalVariationOrdering,
     /// Prioritize currently-legal candidates before illegal ones.
     ///
     /// This keeps branch ordering focused on feasible moves and reduces
@@ -145,6 +154,7 @@ impl Default for DfsSearchOptions {
             restart_max_attempts: 0,
             restart_node_budget: None,
             heuristic_portfolio: HeuristicPortfolio::Disabled,
+            principal_variation_ordering: PrincipalVariationOrdering::Enabled,
             prefer_allowed_first: true,
             branch_ordering: BranchOrdering::AsProvided,
         }
@@ -264,6 +274,9 @@ where
     node_budget: Option<usize>,
     budget_hit: bool,
     portfolio_mode: PortfolioMode,
+    pv_hint: Vec<Vertex>,
+    best_path: Vec<Vertex>,
+    best_depth: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -304,6 +317,14 @@ where
             return false;
         }
         true
+    }
+
+    fn maybe_record_best_path(&mut self, linearization: &[Vertex]) {
+        let depth = linearization.len();
+        if depth > self.best_depth {
+            self.best_depth = depth;
+            self.best_path = linearization.to_vec();
+        }
     }
 
     fn is_dominated(&self, state_signature: u128, frontier: &HashSet<Vertex>) -> bool {
@@ -417,7 +438,21 @@ fn order_frontier_with_heuristics<S: ConstrainedLinearizationSolver + ?Sized>(
             let base_bonus = runtime.heuristics.candidate_bonus(depth, &v);
             let portfolio_bonus =
                 portfolio_bonus(solver, linearization, &v, runtime.portfolio_mode);
-            let bonus = base_bonus.saturating_add(portfolio_bonus);
+            let pv_bonus = if matches!(
+                options.principal_variation_ordering,
+                PrincipalVariationOrdering::Enabled
+            ) && runtime
+                .pv_hint
+                .get(depth)
+                .is_some_and(|candidate| candidate == &v)
+            {
+                1_u64 << 30
+            } else {
+                0
+            };
+            let bonus = base_bonus
+                .saturating_add(portfolio_bonus)
+                .saturating_add(pv_bonus);
             let random_tie = if matches!(options.tie_breaking, TieBreaking::Randomized) {
                 runtime.next_random()
             } else {
@@ -482,6 +517,7 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
 ) -> DfsStepResult {
     let depth = linearization.len();
     let options = runtime.options;
+    runtime.maybe_record_best_path(linearization);
     let state_signature = solver.frontier_signature(0, linearization);
     let mut frontier_set_for_dominance: Option<HashSet<S::Vertex>> = None;
     if !runtime.consume_node_budget() {
@@ -798,6 +834,9 @@ pub trait ConstrainedLinearizationSolver {
             node_budget: None,
             budget_hit: false,
             portfolio_mode: PortfolioMode::SolverBiased,
+            pv_hint: Vec::default(),
+            best_path: Vec::default(),
+            best_depth: 0,
         };
         matches!(
             do_dfs_impl(
@@ -827,6 +866,7 @@ pub trait ConstrainedLinearizationSolver {
         let options = self.search_options();
         let attempts = options.restart_max_attempts.saturating_add(1);
         let mut portfolio_stats = [PortfolioStats::default(); 3];
+        let mut pv_hint: Vec<Self::Vertex> = Vec::default();
         for attempt in 0..attempts {
             let is_final_attempt = attempt.saturating_add(1) == attempts;
             let portfolio_mode =
@@ -873,6 +913,16 @@ pub trait ConstrainedLinearizationSolver {
                 },
                 budget_hit: false,
                 portfolio_mode,
+                pv_hint: if matches!(
+                    options.principal_variation_ordering,
+                    PrincipalVariationOrdering::Enabled
+                ) {
+                    pv_hint.clone()
+                } else {
+                    Vec::default()
+                },
+                best_path: Vec::default(),
+                best_depth: 0,
             };
 
             let found = matches!(
@@ -895,6 +945,12 @@ pub trait ConstrainedLinearizationSolver {
             if found {
                 stat.successes = stat.successes.saturating_add(1);
                 return Some(linearization);
+            }
+            if matches!(
+                options.principal_variation_ordering,
+                PrincipalVariationOrdering::Enabled
+            ) {
+                pv_hint = runtime.best_path;
             }
             if !runtime.budget_hit {
                 break;
@@ -927,6 +983,7 @@ mod tests {
                 restart_max_attempts: 0,
                 restart_node_budget: None,
                 heuristic_portfolio: HeuristicPortfolio::Disabled,
+                principal_variation_ordering: PrincipalVariationOrdering::Enabled,
                 prefer_allowed_first: true,
                 branch_ordering: BranchOrdering::HighScoreFirst,
             }
@@ -983,5 +1040,44 @@ mod tests {
         };
         let lin = solver.get_linearization().expect("expected linearization");
         assert_eq!(lin.len(), 2);
+    }
+
+    #[test]
+    fn principal_variation_hint_is_prioritized() {
+        let solver = ToySolver {
+            scores: HashMap::default(),
+            use_custom_zobrist: false,
+        };
+        let frontier = VecDeque::from([2_u64, 1_u64]);
+        let mut runtime = DfsRuntime {
+            options: DfsSearchOptions {
+                memoize_frontier: true,
+                nogood_learning: NogoodLearning::Enabled,
+                enable_killer_history: true,
+                dominance_pruning: DominancePruning::Enabled,
+                tie_breaking: TieBreaking::Deterministic,
+                restart_max_attempts: 0,
+                restart_node_budget: None,
+                heuristic_portfolio: HeuristicPortfolio::Disabled,
+                principal_variation_ordering: PrincipalVariationOrdering::Enabled,
+                prefer_allowed_first: true,
+                branch_ordering: BranchOrdering::AsProvided,
+            },
+            heuristics: SearchHeuristics::default(),
+            nogood_signatures: HashSet::default(),
+            conflict_jump_depth: HashMap::default(),
+            failed_frontiers_by_state: HashMap::default(),
+            rng: XorShift64::new(1),
+            nodes_expanded: 0,
+            node_budget: None,
+            budget_hit: false,
+            portfolio_mode: PortfolioMode::SolverBiased,
+            pv_hint: vec![1],
+            best_path: Vec::default(),
+            best_depth: 0,
+        };
+
+        let ordered = order_frontier_with_heuristics(&solver, &frontier, &[], &mut runtime);
+        assert_eq!(ordered[0].0, 1);
     }
 }
