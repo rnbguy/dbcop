@@ -81,6 +81,11 @@ pub enum BranchOrdering {
 pub struct DfsSearchOptions {
     /// Enable frontier-signature memoization.
     pub memoize_frontier: bool,
+    /// Prioritize currently-legal candidates before illegal ones.
+    ///
+    /// This keeps branch ordering focused on feasible moves and reduces
+    /// `allow_next` misses in dense frontiers.
+    pub prefer_allowed_first: bool,
     /// Candidate ordering strategy.
     pub branch_ordering: BranchOrdering,
 }
@@ -89,6 +94,7 @@ impl Default for DfsSearchOptions {
     fn default() -> Self {
         Self {
             memoize_frontier: true,
+            prefer_allowed_first: true,
             branch_ordering: BranchOrdering::AsProvided,
         }
     }
@@ -183,6 +189,58 @@ pub trait ConstrainedLinearizationSolver {
         false
     }
 
+    /// Build the frontier candidate list with legality and ordering metadata.
+    fn ordered_frontier_candidates(
+        &self,
+        non_det_choices: &VecDeque<Self::Vertex>,
+        linearization: &[Self::Vertex],
+        options: DfsSearchOptions,
+    ) -> Vec<(Self::Vertex, bool)> {
+        let mut candidates: Vec<(Self::Vertex, bool, i64)> = non_det_choices
+            .iter()
+            .map(|v| {
+                (
+                    v.clone(),
+                    self.allow_next(linearization, v),
+                    self.branch_score(linearization, v),
+                )
+            })
+            .collect();
+
+        match options.branch_ordering {
+            BranchOrdering::AsProvided => {}
+            BranchOrdering::HighScoreFirst => {
+                candidates.sort_by(|a, b| {
+                    if options.prefer_allowed_first {
+                        b.1.cmp(&a.1).then_with(|| b.2.cmp(&a.2))
+                    } else {
+                        b.2.cmp(&a.2)
+                    }
+                });
+            }
+            BranchOrdering::LowScoreFirst => {
+                candidates.sort_by(|a, b| {
+                    if options.prefer_allowed_first {
+                        b.1.cmp(&a.1).then_with(|| a.2.cmp(&b.2))
+                    } else {
+                        a.2.cmp(&b.2)
+                    }
+                });
+            }
+        }
+
+        if matches!(options.branch_ordering, BranchOrdering::AsProvided)
+            && options.prefer_allowed_first
+        {
+            candidates.sort_by(|a, b| b.1.cmp(&a.1));
+        }
+
+        candidates
+            .into_iter()
+            .map(|(v, allow_next, _)| (v, allow_next))
+            .collect()
+    }
+
     /// Return the root vertex of the visibility graph.
     ///
     /// This is the starting point of the linearization, typically
@@ -261,25 +319,10 @@ pub trait ConstrainedLinearizationSolver {
         if non_det_choices.is_empty() {
             true
         } else {
-            let curr_non_det_choices = non_det_choices.len();
-            let mut candidates: Vec<Self::Vertex> = non_det_choices
-                .iter()
-                .take(curr_non_det_choices)
-                .cloned()
-                .collect();
+            let candidates =
+                self.ordered_frontier_candidates(non_det_choices, linearization, options);
 
-            match options.branch_ordering {
-                BranchOrdering::AsProvided => {}
-                BranchOrdering::HighScoreFirst => {
-                    use core::cmp::Reverse;
-                    candidates.sort_by_key(|v| Reverse(self.branch_score(linearization, v)));
-                }
-                BranchOrdering::LowScoreFirst => {
-                    candidates.sort_by_key(|v| self.branch_score(linearization, v));
-                }
-            }
-
-            for candidate in candidates {
+            for (candidate, allow_next) in candidates {
                 let Some(pos) = non_det_choices.iter().position(|v| v == &candidate) else {
                     continue;
                 };
@@ -287,7 +330,7 @@ pub trait ConstrainedLinearizationSolver {
                     continue;
                 };
 
-                if self.allow_next(linearization, &u) {
+                if allow_next {
                     let mut newly_activated: Vec<Self::Vertex> = Vec::new();
                     if let Some(vs) = self.children_of(&u) {
                         for v in vs {
@@ -417,6 +460,7 @@ mod tests {
         fn search_options(&self) -> DfsSearchOptions {
             DfsSearchOptions {
                 memoize_frontier: true,
+                prefer_allowed_first: true,
                 branch_ordering: BranchOrdering::HighScoreFirst,
             }
         }
