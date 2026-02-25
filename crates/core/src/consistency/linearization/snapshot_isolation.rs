@@ -50,6 +50,7 @@ use hashbrown::{HashMap, HashSet};
 
 use crate::consistency::constrained_linearization::{
     seeded_hash_u128, BranchOrdering, ConstrainedLinearizationSolver, DfsSearchOptions,
+    NogoodLearning,
 };
 use crate::history::atomic::types::TransactionId;
 use crate::history::atomic::AtomicTransactionPO;
@@ -109,6 +110,7 @@ where
     fn search_options(&self) -> DfsSearchOptions {
         DfsSearchOptions {
             memoize_frontier: true,
+            nogood_learning: NogoodLearning::Enabled,
             enable_killer_history: true,
             prefer_allowed_first: true,
             branch_ordering: BranchOrdering::HighScoreFirst,

@@ -76,11 +76,20 @@ pub enum BranchOrdering {
     LowScoreFirst,
 }
 
+/// Nogood-learning mode for DFS search.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NogoodLearning {
+    Disabled,
+    Enabled,
+}
+
 /// DFS engine options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DfsSearchOptions {
     /// Enable frontier-signature memoization.
     pub memoize_frontier: bool,
+    /// Enable/disable nogood learning on failed state signatures.
+    pub nogood_learning: NogoodLearning,
     /// Enable killer/history move ordering augmentation.
     pub enable_killer_history: bool,
     /// Prioritize currently-legal candidates before illegal ones.
@@ -96,6 +105,7 @@ impl Default for DfsSearchOptions {
     fn default() -> Self {
         Self {
             memoize_frontier: true,
+            nogood_learning: NogoodLearning::Enabled,
             enable_killer_history: true,
             prefer_allowed_first: true,
             branch_ordering: BranchOrdering::AsProvided,
@@ -208,6 +218,7 @@ where
 {
     options: DfsSearchOptions,
     heuristics: SearchHeuristics<Vertex>,
+    nogood_signatures: HashSet<u128>,
 }
 
 fn order_frontier_with_heuristics<S: ConstrainedLinearizationSolver + ?Sized>(
@@ -262,11 +273,15 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
         return false;
     }
 
-    if options.memoize_frontier {
-        let signature = solver.frontier_signature(*frontier_hash, linearization);
-        if !seen.insert(signature) {
-            return false;
-        }
+    let signature = solver.frontier_signature(*frontier_hash, linearization);
+    if matches!(options.nogood_learning, NogoodLearning::Enabled)
+        && runtime.nogood_signatures.contains(&signature)
+    {
+        return false;
+    }
+
+    if options.memoize_frontier && !seen.insert(signature) {
+        return false;
     }
 
     if non_det_choices.is_empty() {
@@ -343,6 +358,9 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
         }
 
         non_det_choices.push_back(u);
+    }
+    if matches!(options.nogood_learning, NogoodLearning::Enabled) {
+        runtime.nogood_signatures.insert(signature);
     }
     false
 }
@@ -519,6 +537,7 @@ pub trait ConstrainedLinearizationSolver {
         let mut runtime = DfsRuntime {
             options: self.search_options(),
             heuristics: SearchHeuristics::default(),
+            nogood_signatures: HashSet::default(),
         };
         do_dfs_impl(
             self,
@@ -601,6 +620,7 @@ mod tests {
         fn search_options(&self) -> DfsSearchOptions {
             DfsSearchOptions {
                 memoize_frontier: true,
+                nogood_learning: NogoodLearning::Enabled,
                 enable_killer_history: true,
                 prefer_allowed_first: true,
                 branch_ordering: BranchOrdering::HighScoreFirst,
