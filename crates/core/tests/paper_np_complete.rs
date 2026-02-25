@@ -6,7 +6,7 @@ use dbcop_core::{check, Consistency};
 // Snapshot Isolation tests
 // ---------------------------------------------------------------------------
 
-/// Two sessions writing different variables — no conflict, SI should pass.
+/// Two sessions writing different variables -- no conflict, SI should pass.
 #[test]
 fn si_pass_non_conflicting() {
     let h: Vec<Session<&str, u64>> = vec![
@@ -20,7 +20,7 @@ fn si_pass_non_conflicting() {
 }
 
 /// Write skew: T1 reads x (init), writes y=1; T2 reads y (init), writes x=1.
-/// Disjoint write sets — SI ALLOWS write skew.
+/// Disjoint write sets -- SI ALLOWS write skew.
 #[test]
 fn si_pass_write_skew() {
     // T0 initialises x and y.
@@ -43,11 +43,11 @@ fn si_pass_write_skew() {
     ];
     assert!(
         check(&h, Consistency::SnapshotIsolation).is_ok(),
-        "write skew has disjoint write sets — SI should allow it",
+        "write skew has disjoint write sets -- SI should allow it",
     );
 }
 
-/// Two concurrent transactions both write x — SI forbids overlapping write sets.
+/// Two concurrent transactions both write x -- SI forbids overlapping write sets.
 #[test]
 fn si_violation_concurrent_writes() {
     // T0: w(x,1)
@@ -100,7 +100,7 @@ fn si_violation_lost_update() {
 // Serializability tests
 // ---------------------------------------------------------------------------
 
-/// Simple sequential history — one writer then one reader.
+/// Simple sequential history -- one writer then one reader.
 #[test]
 fn ser_pass_serial() {
     let h: Vec<Session<&str, u64>> = vec![
@@ -120,7 +120,7 @@ fn ser_pass_serial() {
 }
 
 /// Write skew: T1 r(x,init) w(y,1); T2 r(y,init) w(x,1).
-/// Both read each other's pre-image — creates an anti-dependency cycle → SER violation.
+/// Both read each other's pre-image -- creates an anti-dependency cycle → SER violation.
 #[test]
 fn ser_violation_write_skew() {
     let h: Vec<Session<&str, u64>> = vec![
@@ -150,7 +150,7 @@ fn ser_pass_multi_session() {
     // T0: w(x,1)
     // T1: r(x,1), w(y,1)
     // T2: r(y,1)
-    // Each variable has exactly one writer and one reader — clean chain.
+    // Each variable has exactly one writer and one reader -- clean chain.
     let h: Vec<Session<&str, u64>> = vec![
         vec![Transaction::committed(vec![Event::write("x", 1)])],
         vec![Transaction::committed(vec![
@@ -217,6 +217,7 @@ fn hierarchy_ser_implies_all() {
     ];
     for level in [
         Consistency::CommittedRead,
+        Consistency::RepeatableRead,
         Consistency::AtomicRead,
         Consistency::Causal,
         Consistency::Prefix,

@@ -38,6 +38,7 @@ struct CausalStepSession {
 fn parse_level(level: &str) -> Option<Consistency> {
     match level {
         "committed-read" => Some(Consistency::CommittedRead),
+        "repeatable-read" => Some(Consistency::RepeatableRead),
         "atomic-read" => Some(Consistency::AtomicRead),
         "causal" => Some(Consistency::Causal),
         "prefix" => Some(Consistency::Prefix),
@@ -638,6 +639,14 @@ pub fn text_to_json_sessions(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_level_supports_repeatable_read() {
+        assert!(matches!(
+            parse_level("repeatable-read"),
+            Some(Consistency::RepeatableRead)
+        ));
+    }
 
     #[test]
     fn test_version_zero_causal_json() {

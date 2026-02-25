@@ -85,7 +85,7 @@ Result<Witness, Error>         ── crates/core/src/consistency/mod.rs
 | `TransactionId`       | `history/atomic/types.rs` | `{ session_id: u64, session_height: u64 }`. Default `(0,0)` is the root node. Ordered lexicographically.                                                   |
 | `DiGraph<T>`          | `graph/digraph.rs`        | Directed graph backed by `HashMap<T, HashSet<T>>`. Core data structure for all relation graphs.                                                            |
 | `AtomicTransactionPO` | `history/atomic/mod.rs`   | Per-history partial order. Holds `session_order`, `write_read_relation` (per variable), `wr_union`, and `visibility_relation` as `DiGraph<TransactionId>`. |
-| `Consistency`         | `consistency/mod.rs`      | Enum: `CommittedRead`, `AtomicRead`, `Causal`, `Prefix`, `SnapshotIsolation`, `Serializable`.                                                              |
+| `Consistency`         | `consistency/mod.rs`      | Enum: `CommittedRead`, `RepeatableRead`, `AtomicRead`, `Causal`, `Prefix`, `SnapshotIsolation`, `Serializable`.                                            |
 | `Witness`             | `consistency/witness.rs`  | Proof of consistency. `CommitOrder(Vec<TransactionId>)`, `SplitCommitOrder(Vec<(TransactionId, bool)>)`, `SaturationOrder(DiGraph<TransactionId>)`.        |
 | `Error<V, Ver>`       | `consistency/error.rs`    | `NonAtomic(NonAtomicError)`, `Invalid(Consistency)`, `Cycle { level, a, b }`.                                                                              |
 
@@ -119,8 +119,8 @@ implementations exist:
 
 ## See Also
 
-- [Consistency Models](consistency-models.md) -- the six levels and their formal
-  definitions
+- [Consistency Models](consistency-models.md) -- the seven levels and their
+  formal definitions
 - [Algorithms](algorithms.md) -- how the checkers work
 - [History Format](history-format.md) -- JSON schema for transaction histories
 - [CLI Reference](cli-reference.md) -- command-line usage

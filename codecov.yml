@@ -48,3 +48,4 @@ flags:
 ignore:
   - target/**
   - wasmlib/**
+  - crates/**/benches/**

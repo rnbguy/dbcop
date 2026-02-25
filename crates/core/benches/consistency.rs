@@ -95,6 +95,34 @@ fn bench_consistency(c: &mut Criterion) {
         });
     });
 
+    // RepeatableRead benchmarks
+    group.bench_function("repeatable_read_small", |b| {
+        b.iter(|| {
+            let _ = dbcop_core::consistency::check(
+                black_box(&history_small),
+                black_box(Consistency::RepeatableRead),
+            );
+        });
+    });
+
+    group.bench_function("repeatable_read_medium", |b| {
+        b.iter(|| {
+            let _ = dbcop_core::consistency::check(
+                black_box(&history_medium),
+                black_box(Consistency::RepeatableRead),
+            );
+        });
+    });
+
+    group.bench_function("repeatable_read_large", |b| {
+        b.iter(|| {
+            let _ = dbcop_core::consistency::check(
+                black_box(&history_large),
+                black_box(Consistency::RepeatableRead),
+            );
+        });
+    });
+
     // AtomicRead benchmarks
     group.bench_function("atomic_read_small", |b| {
         b.iter(|| {

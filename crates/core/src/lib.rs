@@ -1,22 +1,24 @@
 //! Consistency checking for transactional histories.
 //!
 //! `dbcop_core` verifies whether a recorded database history satisfies a given
-//! transactional consistency level. It supports six levels, ordered from weakest
+//! transactional consistency level. It supports seven levels, ordered from weakest
 //! to strongest:
 //!
 //! 1. **Read Committed** -- no transaction reads uncommitted writes.
-//! 2. **Atomic Read** -- reads within a transaction are atomic across variables
+//! 2. **Repeatable Read** -- re-reading the same variable within a transaction
+//!    returns the same writer.
+//! 3. **Atomic Read** -- reads within a transaction are atomic across variables
 //!    (no fractured reads).
-//! 3. **Causal Consistency** -- causally related operations appear in a
+//! 4. **Causal Consistency** -- causally related operations appear in a
 //!    consistent order to all participants.
-//! 4. **Prefix Consistency** -- every transaction observes a consistent prefix
+//! 5. **Prefix Consistency** -- every transaction observes a consistent prefix
 //!    of the global write history.
-//! 5. **Snapshot Isolation** -- each transaction reads from a point-in-time
+//! 6. **Snapshot Isolation** -- each transaction reads from a point-in-time
 //!    snapshot and concurrent writers touch disjoint key sets.
-//! 6. **Serializability** -- the history is equivalent to some serial execution
+//! 7. **Serializability** -- the history is equivalent to some serial execution
 //!    of all transactions.
 //!
-//! The first three levels (Read Committed through Causal) are checked using
+//! The first four levels (Read Committed through Causal) are checked using
 //! polynomial-time saturation algorithms that incrementally build a visibility
 //! relation until a fixed point or a cycle is found. The last three (Prefix
 //! through Serializability) first run the Causal checker, then attempt to find

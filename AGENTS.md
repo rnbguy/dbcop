@@ -48,6 +48,8 @@ Examples:
 - Rust nightly is required for formatting. Always use
   `cargo +nightly fmt --all`. Never use `cargo fmt` (stable) -- `rustfmt.toml`
   uses nightly-only options.
+- MSRV: Rust 1.93.1 (set in Cargo.toml and .clippy.toml). Do not use features
+  requiring a newer minimum version.
 - Linting: `cargo clippy -p <crate> -- -D warnings`
 - TOML formatting: run `taplo format <file>` before committing any .toml change.
   Verify with `taplo format --check <file>`. CI enforces this on all .toml
@@ -92,7 +94,6 @@ All five must pass before merging:
   `#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]`
 - Do NOT rename existing public types (e.g. `CommittedRead` stays
   `CommittedRead`).
-- Do NOT add a `Consistency::RepeatableRead` variant.
 - Do NOT change the `ConstrainedLinearizationSolver` trait API.
 - Raw-history validation must preserve read-your-write semantics within a
   transaction: a local read is valid only when it matches the latest preceding
@@ -120,14 +121,41 @@ dbcop/                          workspace root
     core/                        main library (no_std) -- dbcop_core
       src/
         graph/digraph.rs           DiGraph<T> -- core graph type
+          ugraph.rs               UGraph<T> -- undirected graph for decomposition
+          biconnected_component.rs  biconnected component extraction
         consistency/               check() entry point, consistency algorithms
-          saturation/              saturation-based checkers (CommittedRead, Causal, etc.)
+          decomposition.rs          communication graph + biconnected decomposition
+          witness.rs                Witness enum (CommitOrder, SplitCommitOrder, SaturationOrder)
+          error.rs                  Error enum (NonAtomic, Cycle, Invalid)
+          saturation/              saturation-based checkers (CommittedRead, RepeatableRead, AtomicRead, Causal)
+            repeatable_read.rs     Repeatable Read checker
           linearization/           linearization-based checkers (Prefix, SnapshotIsolation, Serializable)
-        history/atomic/            AtomicTransactionPO and AtomicTransactionHistory
+            constrained_linearization.rs  DFS engine + solver trait (1141 lines)
+        history/
+          raw/                     raw history types (Session, Transaction, Event)
+          atomic/                  AtomicTransactionPO and AtomicTransactionHistory
+      tests/                      7 integration tests + common/ helper macros
+      benches/                    21 Criterion benchmarks (7 levels x 3 sizes)
     cli/                         CLI binary -- dbcop_cli
     wasm/                        WASM bindings -- dbcop_wasm
       tests/
         wasm.test.ts             WASM integration tests (deno test)
+    sat/                         SAT-based NPC solvers -- dbcop_sat (rustsat + batsat)
+      tests/
+        cross_check.rs           DFS vs SAT agreement + differential fuzz test
+      benches/
+        npc_vs_sat.rs            Criterion comparison: core DFS vs SAT solvers
+    parser/                      text history parser -- dbcop_parser (winnow + logos)
+    testgen/                     random history generator -- dbcop_testgen
+    drivers/                     database drivers -- dbcop_drivers (antidotedb, cockroachdb, galera)
+  docs/
+    architecture.md               crate structure, data flow, key types
+    algorithms.md                 saturation, linearization, decomposition, SAT encoding
+    consistency-models.md         formal definitions of all seven levels
+    cli-reference.md              generate and verify commands, flags, output formats
+    history-format.md             JSON schema with annotated examples
+    wasm-api.md                   WASM bindings API reference
+    development.md                building, testing, contributing
   .github/workflows/
     rust.yaml                    build + format CI
     code-quality.yaml            taplo + typos CI
@@ -139,6 +167,8 @@ dbcop/                          workspace root
   taplo.toml                     TOML formatter config
   deno.json                      deno tasks: prepare, wasmbuild, deno:fmt/lint/check/ci
   rustfmt.toml                   nightly rustfmt config
+  typos.toml                     spell checker config (project-specific word list)
+  wasmlib/                       pre-built WASM artifacts (.wasm, .d.ts, .js)
 ```
 
 ## CLI Usage
@@ -150,8 +180,8 @@ The `dbcop` binary has four subcommands: `generate`, `verify`, `fmt`, and
 
 - `--input-dir <DIR>` -- directory containing history JSON files (required)
 - `--consistency <LEVEL>` -- consistency level to check (required). Values:
-  `committed-read`, `atomic-read`, `causal`, `prefix`, `snapshot-isolation`,
-  `serializable`.
+  `committed-read`, `repeatable-read`, `atomic-read`, `causal`, `prefix`,
+  `snapshot-isolation`, `serializable`.
 - `--verbose` -- on PASS prints witness details (Debug format), on FAIL prints
   full error details. Output: `{filename}: PASS\n  witness: {witness:?}` or
   `{filename}: FAIL\n  error: {error:?}`.
@@ -198,8 +228,8 @@ The `dbcop_wasm` crate exposes two functions via `wasm_bindgen`:
 
 - `history_json`: JSON-encoded array of sessions (same format as CLI input
   files).
-- `level`: one of `committed-read`, `atomic-read`, `causal`, `prefix`,
-  `snapshot-isolation`, `serializable`.
+- `level`: one of `committed-read`, `repeatable-read`, `atomic-read`, `causal`,
+  `prefix`, `snapshot-isolation`, `serializable`.
 
 Returns a JSON string with the following schema:
 
@@ -267,8 +297,8 @@ present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
   `wr_union: DiGraph<TransactionId>`,
   `visibility_relation: DiGraph<TransactionId>`.
 
-- `Consistency` enum: `CommittedRead`, `AtomicRead`, `Causal`, `Prefix`,
-  `SnapshotIsolation`, `Serializable`.
+- `Consistency` enum: `CommittedRead`, `RepeatableRead`, `AtomicRead`, `Causal`,
+  `Prefix`, `SnapshotIsolation`, `Serializable`.
 
 - `DfsSearchOptions` / `BranchOrdering`
   (`consistency/linearization/constrained_linearization.rs`): trait-level DFS
@@ -282,6 +312,8 @@ present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
   Each consistency level produces a specific `Witness` variant on success:
   - Committed Read: `SaturationOrder(DiGraph<TransactionId>)` (committed order
     graph)
+  - Repeatable Read: `SaturationOrder(DiGraph<TransactionId>)` (committed order
+    graph)
   - Atomic Read: `SaturationOrder(DiGraph<TransactionId>)` (visibility relation)
   - Causal: `SaturationOrder(DiGraph<TransactionId>)` (visibility relation)
   - Prefix: `CommitOrder(Vec<TransactionId>)` (transaction commit order)
@@ -293,8 +325,8 @@ present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
 - `Witness` enum: returned by `check()` on success. Variants:
   `CommitOrder(Vec<TransactionId>)` (Prefix, Serializable),
   `SplitCommitOrder(Vec<(TransactionId, bool)>)` (SnapshotIsolation),
-  `SaturationOrder(DiGraph<TransactionId>)` (Committed Read, Atomic Read,
-  Causal).
+  `SaturationOrder(DiGraph<TransactionId>)` (Committed Read, Repeatable Read,
+  Atomic Read, Causal).
 
 - `Error<Variable, Version>` enum: returned by `check()` on failure. Variants:
   `NonAtomic(NonAtomicError)` (structural issue like uncommitted writes),
@@ -450,7 +482,7 @@ notepads, and agent memory.
   singleton-component preservation and single-session fast-path coverage in
   Prefix/SnapshotIsolation/Serializable, plus a bounded differential fuzz test
   against core NPC solvers (`DBCOP_DIFF_FUZZ_SAMPLES`, default 256).
-- `crates/core/benches/consistency.rs` -- 18 Criterion benchmarks (6 consistency
+- `crates/core/benches/consistency.rs` -- 21 Criterion benchmarks (7 consistency
   levels x 3 history sizes). Benchmark history generation now ensures reads
   always reference existing versions (or root version 0), so runs measure
   checker/solver behavior instead of early invalid-history rejection.

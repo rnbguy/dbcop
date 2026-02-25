@@ -4,7 +4,8 @@
     ".omc",
     ".claude",
     "wasmlib",
-    "target"
+    "target",
+    "coverage"
   ],
   "tasks": {
     "wasmbuild": "deno run -A jsr:@deno/wasmbuild@0.21.0 --project dbcop_wasm --out wasmlib",

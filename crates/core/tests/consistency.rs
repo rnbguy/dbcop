@@ -290,6 +290,7 @@ fn check_dispatch_all_pass() {
     let h = simple_valid_history();
     for level in [
         Consistency::CommittedRead,
+        Consistency::RepeatableRead,
         Consistency::AtomicRead,
         Consistency::Causal,
         Consistency::Prefix,
@@ -379,6 +380,7 @@ fn test_empty_history_is_valid() {
     let empty: Vec<Session<&str, u64>> = vec![];
     for level in [
         Consistency::CommittedRead,
+        Consistency::RepeatableRead,
         Consistency::AtomicRead,
         Consistency::Causal,
         Consistency::Prefix,
@@ -397,6 +399,7 @@ fn test_all_empty_sessions_is_valid() {
     let all_empty: Vec<Session<&str, u64>> = vec![vec![], vec![], vec![]];
     for level in [
         Consistency::CommittedRead,
+        Consistency::RepeatableRead,
         Consistency::AtomicRead,
         Consistency::Causal,
         Consistency::Prefix,

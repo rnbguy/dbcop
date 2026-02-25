@@ -1,18 +1,18 @@
 # Consistency Models
 
-dbcop checks six transactional consistency levels, based on the formal framework
-from
+dbcop checks seven transactional consistency levels, based on the formal
+framework from
 ["On the Complexity of Checking Transactional Consistency"](https://arxiv.org/abs/1908.04509)
 by Ranadeep Biswas and Constantin Enea (OOPSLA 2019).
 
 ## Hierarchy
 
-The six levels form a strict hierarchy (each level implies all weaker ones):
+The seven levels form a strict hierarchy (each level implies all weaker ones):
 
 ```
-Read Committed  <  Atomic Read  <  Causal  <  Prefix  <  Snapshot Isolation  <  Serializable
-      RC               RA           CC          PC             SI                  SER
-  (polynomial)    (polynomial)  (polynomial) (NP-complete) (NP-complete)      (NP-complete)
+Read Committed  <  Repeatable Read  <  Atomic Read  <  Causal  <  Prefix  <  Snapshot Isolation  <  Serializable
+      RC                 RR                RA           CC          PC             SI                  SER
+  (polynomial)      (polynomial)     (polynomial)  (polynomial) (NP-complete) (NP-complete)      (NP-complete)
 ```
 
 ## Summary Table
@@ -20,6 +20,7 @@ Read Committed  <  Atomic Read  <  Causal  <  Prefix  <  Snapshot Isolation  <  
 | Level              | CLI Flag             | Complexity  | Algorithm                       | Witness Type                                   |
 | ------------------ | -------------------- | ----------- | ------------------------------- | ---------------------------------------------- |
 | Read Committed     | `committed-read`     | Polynomial  | Saturation                      | `SaturationOrder(DiGraph)`                     |
+| Repeatable Read    | `repeatable-read`    | Polynomial  | Saturation                      | `SaturationOrder(DiGraph)`                     |
 | Atomic Read        | `atomic-read`        | Polynomial  | Saturation                      | `SaturationOrder(DiGraph)`                     |
 | Causal             | `causal`             | Polynomial  | Saturation                      | `SaturationOrder(DiGraph)`                     |
 | Prefix             | `prefix`             | NP-complete | Constrained linearization (DFS) | `CommitOrder(Vec<TransactionId>)`              |
@@ -62,13 +63,30 @@ is acyclic, the history is RC-consistent.
 
 **Source:** `crates/core/src/consistency/saturation/committed_read.rs`
 
+### Repeatable Read (RR)
+
+**Informal:** Within a single transaction, repeated reads of the same variable
+must observe the same writer/version.
+
+**Axiom:** Extends RC with an intra-transaction constraint: if transaction t
+reads variable x multiple times, all those reads must map to the same write
+event for x (unless a local write to x occurs in between, in which case later
+reads must observe that local write).
+
+**Checker:** Validates local repeated-read consistency per transaction, after
+the committed-read pre-check. Returns the committed-order graph as the
+saturation witness.
+
+**Source:** `crates/core/src/consistency/saturation/repeatable_read.rs`
+
 ### Atomic Read (RA)
 
 **Informal:** All reads within a single transaction are atomic -- a transaction
 cannot observe partial effects of another transaction. No fractured reads.
 
-**Axiom:** Extends RC with the constraint that if transaction t1 is visible to
-t2 (t2 reads any value from t1), then all of t1's writes are visible to t2.
+**Axiom:** Extends RR with the cross-variable atomicity constraint that if
+transaction t1 is visible to t2 (t2 reads any value from t1), then all of t1's
+writes are visible to t2.
 
 **Checker:** Saturation algorithm extends committed-read visibility with
 atomic-read constraints. Builds visibility relation to a fixed point; cycle

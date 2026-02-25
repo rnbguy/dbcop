@@ -11,8 +11,8 @@ Simple consistency check.
 
 - `history_json` -- JSON-encoded array of sessions (raw format, without the
   metadata wrapper)
-- `level` -- one of: `committed-read`, `atomic-read`, `causal`, `prefix`,
-  `snapshot-isolation`, `serializable`
+- `level` -- one of: `committed-read`, `repeatable-read`, `atomic-read`,
+  `causal`, `prefix`, `snapshot-isolation`, `serializable`
 
 **Returns** a JSON string:
 

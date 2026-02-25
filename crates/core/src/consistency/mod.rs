@@ -10,6 +10,7 @@ use self::linearization::snapshot_isolation::SnapshotIsolationSolver;
 use self::saturation::atomic_read::check_atomic_read;
 use self::saturation::causal::check_causal_read;
 use self::saturation::committed_read::check_committed_read;
+use self::saturation::repeatable_read::check_repeatable_read;
 use crate::history::atomic::types::TransactionId;
 use crate::history::raw::types::Session;
 
@@ -27,9 +28,9 @@ pub use witness::Witness;
 /// Consistency levels supported by dbcop, ordered from weakest to strongest.
 ///
 /// Each level strictly includes all weaker levels:
-/// Read Committed < Atomic Read < Causal < Prefix < Snapshot Isolation < Serializability.
+/// Read Committed < Repeatable Read < Atomic Read < Causal < Prefix < Snapshot Isolation < Serializability.
 ///
-/// The first three are checked in polynomial time via saturation (building a
+/// The first four are checked in polynomial time via saturation (building a
 /// visibility relation to a fixed point). The last three additionally require
 /// finding a valid linearization and are NP-complete in the worst case.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -37,6 +38,9 @@ pub use witness::Witness;
 pub enum Consistency {
     /// Read Committed: no dirty reads, transactions see only committed writes.
     CommittedRead,
+    /// Repeatable Read: re-reading the same variable within a transaction always
+    ///   returns the same writer.
+    RepeatableRead,
     /// Atomic Read: reads are atomic across variables (no fractured reads).
     AtomicRead,
     /// Causal Consistency: causally related operations are ordered.
@@ -57,9 +61,9 @@ pub enum Consistency {
 ///
 /// On success, returns a [`Witness`] proving the history is consistent:
 ///
-/// - [`Witness::SaturationOrder`] -- for Read Committed, Atomic Read, and
-///   Causal. Contains the visibility relation (a [`DiGraph`]) computed by
-///   the saturation algorithm.
+/// - [`Witness::SaturationOrder`] -- for Read Committed, Repeatable Read,
+///   Atomic Read, and Causal. Contains the visibility relation (a [`DiGraph`])
+///   computed by the saturation algorithm.
 /// - [`Witness::CommitOrder`] -- for Prefix and Serializability. Contains
 ///   a linearization of transactions as `Vec<TransactionId>`.
 /// - [`Witness::SplitCommitOrder`] -- for Snapshot Isolation. Contains a
@@ -75,8 +79,8 @@ pub enum Consistency {
 /// structural issues (e.g. a read observes an uncommitted write).
 ///
 /// Returns [`Error::Cycle`](error::Error::Cycle) if a saturation checker
-/// (Read Committed, Atomic Read, Causal) detects a cycle in the visibility
-/// relation, with the two conflicting transaction IDs.
+/// (Read Committed, Repeatable Read, Atomic Read, Causal) detects a cycle in
+/// the visibility relation, with the two conflicting transaction IDs.
 ///
 /// Returns [`Error::Invalid`](error::Error::Invalid) if a linearization
 /// checker (Prefix, Snapshot Isolation, Serializability) cannot find a valid
@@ -102,6 +106,9 @@ where
 
     match level {
         Consistency::CommittedRead => check_committed_read(sessions).map(Witness::SaturationOrder),
+        Consistency::RepeatableRead => {
+            check_repeatable_read(sessions).map(Witness::SaturationOrder)
+        }
         Consistency::AtomicRead => {
             check_atomic_read(sessions).map(|po| Witness::SaturationOrder(po.visibility_relation))
         }
