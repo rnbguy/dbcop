@@ -456,9 +456,9 @@ mod tests {
             panic!("expected SplitCommitOrder");
         };
         assert_eq!(order[0].0.session_id, 7);
-        assert_eq!(order[0].1, false);
+        assert!(!order[0].1);
         assert_eq!(order[1].0.session_id, 7);
-        assert_eq!(order[1].1, true);
+        assert!(order[1].1);
     }
 
     #[test]

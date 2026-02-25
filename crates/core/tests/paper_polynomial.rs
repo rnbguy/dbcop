@@ -1,3 +1,5 @@
+#![allow(clippy::doc_markdown)]
+
 /// Tests for polynomial-time consistency checkers: RC, RR, RA.
 /// Uses the `history!` DSL macro defined in tests/common/mod.rs.
 mod common;

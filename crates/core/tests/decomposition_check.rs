@@ -1,3 +1,5 @@
+#![allow(clippy::missing_const_for_fn)]
+
 //! Tests for communication graph decomposition in consistency checkers.
 
 use dbcop_core::consistency::Witness;

@@ -1,11 +1,13 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
+
+use criterion::{criterion_group, criterion_main, Criterion};
 use dbcop_core::consistency::Consistency;
 use dbcop_core::history::raw::types::{Event, Session, Transaction};
 
 /// Build a history with given dimensions.
 /// sessions: number of sessions
-/// txns_per_session: transactions per session
-/// events_per_txn: events per transaction
+/// `txns_per_session`: transactions per session
+/// `events_per_txn`: events per transaction
 fn build_history(
     sessions: usize,
     txns_per_session: usize,
@@ -48,6 +50,7 @@ fn build_history(
     result
 }
 
+#[allow(clippy::too_many_lines)]
 fn bench_consistency(c: &mut Criterion) {
     // Small: 2 sessions, 3 txns each, 3 events per txn
     let history_small = build_history(2, 3, 3);
@@ -63,169 +66,169 @@ fn bench_consistency(c: &mut Criterion) {
     // CommittedRead benchmarks
     group.bench_function("committed_read_small", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_small),
                 black_box(Consistency::CommittedRead),
-            )
-        })
+            );
+        });
     });
 
     group.bench_function("committed_read_medium", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_medium),
                 black_box(Consistency::CommittedRead),
-            )
-        })
+            );
+        });
     });
 
     group.bench_function("committed_read_large", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_large),
                 black_box(Consistency::CommittedRead),
-            )
-        })
+            );
+        });
     });
 
     // AtomicRead benchmarks
     group.bench_function("atomic_read_small", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_small),
                 black_box(Consistency::AtomicRead),
-            )
-        })
+            );
+        });
     });
 
     group.bench_function("atomic_read_medium", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_medium),
                 black_box(Consistency::AtomicRead),
-            )
-        })
+            );
+        });
     });
 
     group.bench_function("atomic_read_large", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_large),
                 black_box(Consistency::AtomicRead),
-            )
-        })
+            );
+        });
     });
 
     // Causal benchmarks
     group.bench_function("causal_small", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_small),
                 black_box(Consistency::Causal),
-            )
-        })
+            );
+        });
     });
 
     group.bench_function("causal_medium", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_medium),
                 black_box(Consistency::Causal),
-            )
-        })
+            );
+        });
     });
 
     group.bench_function("causal_large", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_large),
                 black_box(Consistency::Causal),
-            )
-        })
+            );
+        });
     });
 
     // Prefix benchmarks
     group.bench_function("prefix_small", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_small),
                 black_box(Consistency::Prefix),
-            )
-        })
+            );
+        });
     });
 
     group.bench_function("prefix_medium", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_medium),
                 black_box(Consistency::Prefix),
-            )
-        })
+            );
+        });
     });
 
     group.bench_function("prefix_large", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_large),
                 black_box(Consistency::Prefix),
-            )
-        })
+            );
+        });
     });
 
     // SnapshotIsolation benchmarks
     group.bench_function("snapshot_isolation_small", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_small),
                 black_box(Consistency::SnapshotIsolation),
-            )
-        })
+            );
+        });
     });
 
     group.bench_function("snapshot_isolation_medium", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_medium),
                 black_box(Consistency::SnapshotIsolation),
-            )
-        })
+            );
+        });
     });
 
     group.bench_function("snapshot_isolation_large", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_large),
                 black_box(Consistency::SnapshotIsolation),
-            )
-        })
+            );
+        });
     });
 
     // Serializable benchmarks
     group.bench_function("serializable_small", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_small),
                 black_box(Consistency::Serializable),
-            )
-        })
+            );
+        });
     });
 
     group.bench_function("serializable_medium", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_medium),
                 black_box(Consistency::Serializable),
-            )
-        })
+            );
+        });
     });
 
     group.bench_function("serializable_large", |b| {
         b.iter(|| {
-            dbcop_core::consistency::check(
+            let _ = dbcop_core::consistency::check(
                 black_box(&history_large),
                 black_box(Consistency::Serializable),
-            )
-        })
+            );
+        });
     });
 
     group.finish();

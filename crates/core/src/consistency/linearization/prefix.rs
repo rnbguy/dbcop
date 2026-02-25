@@ -213,8 +213,11 @@ mod tests {
         // Should contain both read and write phases for each transaction
         assert!(!lin.is_empty());
         // Filter to write-phase vertices only
-        let write_phases: Vec<_> = lin.iter().filter(|(_, is_write)| *is_write).collect();
-        assert_eq!(write_phases.len(), 2, "expected 2 write-phase entries");
+        assert_eq!(
+            lin.iter().filter(|(_, is_write)| *is_write).count(),
+            2,
+            "expected 2 write-phase entries",
+        );
     }
 
     #[test]
@@ -262,8 +265,11 @@ mod tests {
         );
         let lin = result.unwrap();
         // Write-phase vertices for all 3 transactions should be present
-        let write_phases: Vec<_> = lin.iter().filter(|(_, is_write)| *is_write).collect();
-        assert_eq!(write_phases.len(), 3, "expected 3 write-phase entries");
+        assert_eq!(
+            lin.iter().filter(|(_, is_write)| *is_write).count(),
+            3,
+            "expected 3 write-phase entries",
+        );
     }
 
     #[test]
@@ -294,8 +300,11 @@ mod tests {
             "multi-variable chain should be prefix-consistent"
         );
         let lin = result.unwrap();
-        let write_phases: Vec<_> = lin.iter().filter(|(_, is_write)| *is_write).collect();
-        assert_eq!(write_phases.len(), 3, "expected 3 write-phase entries");
+        assert_eq!(
+            lin.iter().filter(|(_, is_write)| *is_write).count(),
+            3,
+            "expected 3 write-phase entries",
+        );
     }
 
     #[test]
