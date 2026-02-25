@@ -101,19 +101,28 @@ impl Default for DfsSearchOptions {
 /// XOR-ing in a vertex when it enters the frontier and XOR-ing it out
 /// when it leaves.
 fn default_zobrist_value<T: Hash>(v: &T) -> u128 {
+    seeded_hash_u128(0, v)
+}
+
+/// Compute a seeded `u128` hash for an arbitrary value.
+///
+/// Uses two independent 64-bit hashes and combines them into one `u128`.
+pub(crate) fn seeded_hash_u128<T: Hash>(seed: u64, value: &T) -> u128 {
     use core::hash::{BuildHasher, Hasher};
 
     use hashbrown::DefaultHashBuilder;
 
     let builder = DefaultHashBuilder::default();
     let mut h1 = builder.build_hasher();
+    seed.hash(&mut h1);
     0u64.hash(&mut h1);
-    v.hash(&mut h1);
+    value.hash(&mut h1);
     let lo = h1.finish();
 
     let mut h2 = builder.build_hasher();
+    seed.hash(&mut h2);
     1u64.hash(&mut h2);
-    v.hash(&mut h2);
+    value.hash(&mut h2);
     let hi = h2.finish();
 
     (u128::from(hi) << 64) | u128::from(lo)

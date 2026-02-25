@@ -47,7 +47,7 @@ use core::hash::Hash;
 use hashbrown::{HashMap, HashSet};
 
 use crate::consistency::constrained_linearization::{
-    BranchOrdering, ConstrainedLinearizationSolver, DfsSearchOptions,
+    seeded_hash_u128, BranchOrdering, ConstrainedLinearizationSolver, DfsSearchOptions,
 };
 use crate::history::atomic::types::TransactionId;
 use crate::history::atomic::AtomicTransactionPO;
@@ -108,6 +108,21 @@ where
         let child_score = i64::try_from(child_count).expect("child count fits i64");
         let write_bias = i64::from(u8::from(v.1));
         (child_score * 2) + write_bias
+    }
+
+    fn frontier_signature(&self, frontier_hash: u128, _linearization: &[Self::Vertex]) -> u128 {
+        let mut signature = frontier_hash;
+        for (var, readers) in &self.active_write {
+            let mut readers_mix = 0_u128;
+            for reader in readers {
+                readers_mix ^= seeded_hash_u128(0x501, reader);
+            }
+            let var_mix = seeded_hash_u128(0x502, var);
+            let reader_count = u64::try_from(readers.len()).expect("reader count fits u64");
+            let count_mix = seeded_hash_u128(0x503, &reader_count);
+            signature ^= var_mix ^ readers_mix ^ count_mix;
+        }
+        signature
     }
 
     fn get_root(&self) -> Self::Vertex {
