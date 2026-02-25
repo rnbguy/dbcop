@@ -202,6 +202,7 @@ where
 {
     killer_moves: HashMap<usize, Vec<Vertex>>,
     history_scores: HashMap<Vertex, u64>,
+    counter_moves: HashMap<Vertex, Vertex>,
 }
 
 impl<Vertex> SearchHeuristics<Vertex>
@@ -220,14 +221,20 @@ where
         *entry = entry.saturating_add(reward);
     }
 
-    fn candidate_bonus(&self, depth: usize, v: &Vertex) -> u64 {
+    fn candidate_bonus(&self, depth: usize, previous: Option<&Vertex>, v: &Vertex) -> u64 {
         let history_bonus = self.history_scores.get(v).copied().unwrap_or(0);
         let killer_bonus = self
             .killer_moves
             .get(&depth)
             .and_then(|moves| moves.iter().position(|k| k == v))
             .map_or(0, |idx| if idx == 0 { 1_u64 << 20 } else { 1_u64 << 19 });
-        history_bonus.saturating_add(killer_bonus)
+        let counter_bonus = previous
+            .and_then(|parent| self.counter_moves.get(parent))
+            .filter(|reply| *reply == v)
+            .map_or(0, |_| 1_u64 << 22);
+        history_bonus
+            .saturating_add(killer_bonus)
+            .saturating_add(counter_bonus)
     }
 
     fn record_failed_move(&mut self, depth: usize, v: &Vertex) {
@@ -245,6 +252,11 @@ where
     fn record_success_move(&mut self, depth: usize, v: &Vertex) {
         self.add_history_reward(v, depth.saturating_add(1));
     }
+
+    fn record_counter_move(&mut self, previous: &Vertex, response: &Vertex) {
+        self.counter_moves
+            .insert(previous.clone(), response.clone());
+    }
 }
 
 impl<Vertex> Default for SearchHeuristics<Vertex>
@@ -255,6 +267,7 @@ where
         Self {
             killer_moves: HashMap::default(),
             history_scores: HashMap::default(),
+            counter_moves: HashMap::default(),
         }
     }
 }
@@ -435,7 +448,8 @@ fn order_frontier_with_heuristics<S: ConstrainedLinearizationSolver + ?Sized>(
         .into_iter()
         .enumerate()
         .map(|(idx, (v, allow_next))| {
-            let base_bonus = runtime.heuristics.candidate_bonus(depth, &v);
+            let previous = linearization.last();
+            let base_bonus = runtime.heuristics.candidate_bonus(depth, previous, &v);
             let portfolio_bonus =
                 portfolio_bonus(solver, linearization, &v, runtime.portfolio_mode);
             let pv_bonus = if matches!(
@@ -605,6 +619,9 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
             );
             if matches!(recurse, DfsStepResult::Found) {
                 runtime.heuristics.record_success_move(depth, &u);
+                if let Some(previous) = linearization.get(depth.saturating_sub(1)) {
+                    runtime.heuristics.record_counter_move(previous, &u);
+                }
                 return DfsStepResult::Found;
             }
             runtime.heuristics.record_failed_move(depth, &u);
@@ -1078,6 +1095,47 @@ mod tests {
         };
 
         let ordered = order_frontier_with_heuristics(&solver, &frontier, &[], &mut runtime);
+        assert_eq!(ordered[0].0, 1);
+    }
+
+    #[test]
+    fn counter_move_hint_is_prioritized() {
+        let solver = ToySolver {
+            scores: HashMap::default(),
+            use_custom_zobrist: false,
+        };
+        let frontier = VecDeque::from([2_u64, 1_u64]);
+        let mut heuristics = SearchHeuristics::default();
+        heuristics.record_counter_move(&9_u64, &1_u64);
+        let mut runtime = DfsRuntime {
+            options: DfsSearchOptions {
+                memoize_frontier: true,
+                nogood_learning: NogoodLearning::Enabled,
+                enable_killer_history: true,
+                dominance_pruning: DominancePruning::Enabled,
+                tie_breaking: TieBreaking::Deterministic,
+                restart_max_attempts: 0,
+                restart_node_budget: None,
+                heuristic_portfolio: HeuristicPortfolio::Disabled,
+                principal_variation_ordering: PrincipalVariationOrdering::Disabled,
+                prefer_allowed_first: true,
+                branch_ordering: BranchOrdering::AsProvided,
+            },
+            heuristics,
+            nogood_signatures: HashSet::default(),
+            conflict_jump_depth: HashMap::default(),
+            failed_frontiers_by_state: HashMap::default(),
+            rng: XorShift64::new(1),
+            nodes_expanded: 0,
+            node_budget: None,
+            budget_hit: false,
+            portfolio_mode: PortfolioMode::SolverBiased,
+            pv_hint: Vec::default(),
+            best_path: Vec::default(),
+            best_depth: 0,
+        };
+
+        let ordered = order_frontier_with_heuristics(&solver, &frontier, &[9], &mut runtime);
         assert_eq!(ordered[0].0, 1);
     }
 }
