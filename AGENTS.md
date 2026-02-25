@@ -48,6 +48,8 @@ Examples:
 - Rust nightly is required for formatting. Always use
   `cargo +nightly fmt --all`. Never use `cargo fmt` (stable) -- `rustfmt.toml`
   uses nightly-only options.
+- MSRV: Rust 1.93.1 (set in Cargo.toml and .clippy.toml). Do not use features
+  requiring a newer minimum version.
 - Linting: `cargo clippy -p <crate> -- -D warnings`
 - TOML formatting: run `taplo format <file>` before committing any .toml change.
   Verify with `taplo format --check <file>`. CI enforces this on all .toml
@@ -120,14 +122,41 @@ dbcop/                          workspace root
     core/                        main library (no_std) -- dbcop_core
       src/
         graph/digraph.rs           DiGraph<T> -- core graph type
+          ugraph.rs               UGraph<T> -- undirected graph for decomposition
+          biconnected_component.rs  biconnected component extraction
         consistency/               check() entry point, consistency algorithms
-          saturation/              saturation-based checkers (CommittedRead, Causal, etc.)
+          decomposition.rs          communication graph + biconnected decomposition
+          witness.rs                Witness enum (CommitOrder, SplitCommitOrder, SaturationOrder)
+          error.rs                  Error enum (NonAtomic, Cycle, Invalid)
+          saturation/              saturation-based checkers (CommittedRead, AtomicRead, Causal)
+            repeatable_read.rs     internal checker (not exposed via Consistency enum)
           linearization/           linearization-based checkers (Prefix, SnapshotIsolation, Serializable)
-        history/atomic/            AtomicTransactionPO and AtomicTransactionHistory
+            constrained_linearization.rs  DFS engine + solver trait (1141 lines)
+        history/
+          raw/                     raw history types (Session, Transaction, Event)
+          atomic/                  AtomicTransactionPO and AtomicTransactionHistory
+      tests/                      7 integration tests + common/ helper macros
+      benches/                    18 Criterion benchmarks (6 levels x 3 sizes)
     cli/                         CLI binary -- dbcop_cli
     wasm/                        WASM bindings -- dbcop_wasm
       tests/
         wasm.test.ts             WASM integration tests (deno test)
+    sat/                         SAT-based NPC solvers -- dbcop_sat (rustsat + batsat)
+      tests/
+        cross_check.rs           DFS vs SAT agreement + differential fuzz test
+      benches/
+        npc_vs_sat.rs            Criterion comparison: core DFS vs SAT solvers
+    parser/                      text history parser -- dbcop_parser (winnow + logos)
+    testgen/                     random history generator -- dbcop_testgen
+    drivers/                     database drivers -- dbcop_drivers (antidotedb, cockroachdb, galera)
+  docs/
+    architecture.md               crate structure, data flow, key types
+    algorithms.md                 saturation, linearization, decomposition, SAT encoding
+    consistency-models.md         formal definitions of all six levels
+    cli-reference.md              generate and verify commands, flags, output formats
+    history-format.md             JSON schema with annotated examples
+    wasm-api.md                   WASM bindings API reference
+    development.md                building, testing, contributing
   .github/workflows/
     rust.yaml                    build + format CI
     code-quality.yaml            taplo + typos CI
@@ -139,6 +168,8 @@ dbcop/                          workspace root
   taplo.toml                     TOML formatter config
   deno.json                      deno tasks: prepare, wasmbuild, deno:fmt/lint/check/ci
   rustfmt.toml                   nightly rustfmt config
+  typos.toml                     spell checker config (project-specific word list)
+  wasmlib/                       pre-built WASM artifacts (.wasm, .d.ts, .js)
 ```
 
 ## CLI Usage
