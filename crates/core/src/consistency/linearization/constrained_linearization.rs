@@ -97,6 +97,13 @@ pub enum TieBreaking {
     Randomized,
 }
 
+/// Adaptive portfolio mode for attempt-level ordering policy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HeuristicPortfolio {
+    Disabled,
+    Enabled,
+}
+
 /// DFS engine options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DfsSearchOptions {
@@ -116,6 +123,8 @@ pub struct DfsSearchOptions {
     ///
     /// The final attempt is always exhaustive (`None`) to preserve completeness.
     pub restart_node_budget: Option<usize>,
+    /// Enable/disable attempt-level adaptive heuristic portfolio.
+    pub heuristic_portfolio: HeuristicPortfolio,
     /// Prioritize currently-legal candidates before illegal ones.
     ///
     /// This keeps branch ordering focused on feasible moves and reduces
@@ -135,6 +144,7 @@ impl Default for DfsSearchOptions {
             tie_breaking: TieBreaking::Deterministic,
             restart_max_attempts: 0,
             restart_node_budget: None,
+            heuristic_portfolio: HeuristicPortfolio::Disabled,
             prefer_allowed_first: true,
             branch_ordering: BranchOrdering::AsProvided,
         }
@@ -253,12 +263,27 @@ where
     nodes_expanded: usize,
     node_budget: Option<usize>,
     budget_hit: bool,
+    portfolio_mode: PortfolioMode,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum DfsStepResult {
     Found,
     Fail { jump_depth: usize },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PortfolioMode {
+    SolverBiased,
+    FrontierHeavy,
+    Diverse,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct PortfolioStats {
+    attempts: u64,
+    successes: u64,
+    total_nodes: u64,
 }
 
 impl<Vertex> DfsRuntime<Vertex>
@@ -332,6 +357,46 @@ impl XorShift64 {
     }
 }
 
+const PORTFOLIO_MODES: [PortfolioMode; 3] = [
+    PortfolioMode::SolverBiased,
+    PortfolioMode::FrontierHeavy,
+    PortfolioMode::Diverse,
+];
+
+const fn portfolio_index(mode: PortfolioMode) -> usize {
+    match mode {
+        PortfolioMode::SolverBiased => 0,
+        PortfolioMode::FrontierHeavy => 1,
+        PortfolioMode::Diverse => 2,
+    }
+}
+
+fn choose_portfolio_mode(stats: &[PortfolioStats; 3]) -> PortfolioMode {
+    for mode in PORTFOLIO_MODES {
+        if stats[portfolio_index(mode)].attempts == 0 {
+            return mode;
+        }
+    }
+    let mut best_mode = PortfolioMode::SolverBiased;
+    let mut best_score = 0_u128;
+    for mode in PORTFOLIO_MODES {
+        let stat = stats[portfolio_index(mode)];
+        let attempts = u128::from(stat.attempts).saturating_add(1);
+        let success_term = u128::from(stat.successes).saturating_mul(1_000_000) / attempts;
+        let explore_term = 100_000 / attempts;
+        let avg_nodes = u128::from(stat.total_nodes) / attempts;
+        let cost_term = 10_000 / avg_nodes.saturating_add(1);
+        let score = success_term
+            .saturating_add(explore_term)
+            .saturating_add(cost_term);
+        if score > best_score {
+            best_score = score;
+            best_mode = mode;
+        }
+    }
+    best_mode
+}
+
 fn order_frontier_with_heuristics<S: ConstrainedLinearizationSolver + ?Sized>(
     solver: &S,
     non_det_choices: &VecDeque<S::Vertex>,
@@ -349,7 +414,10 @@ fn order_frontier_with_heuristics<S: ConstrainedLinearizationSolver + ?Sized>(
         .into_iter()
         .enumerate()
         .map(|(idx, (v, allow_next))| {
-            let bonus = runtime.heuristics.candidate_bonus(depth, &v);
+            let base_bonus = runtime.heuristics.candidate_bonus(depth, &v);
+            let portfolio_bonus =
+                portfolio_bonus(solver, linearization, &v, runtime.portfolio_mode);
+            let bonus = base_bonus.saturating_add(portfolio_bonus);
             let random_tie = if matches!(options.tie_breaking, TieBreaking::Randomized) {
                 runtime.next_random()
             } else {
@@ -376,6 +444,30 @@ fn order_frontier_with_heuristics<S: ConstrainedLinearizationSolver + ?Sized>(
         .into_iter()
         .map(|(_, v, allow_next, _, _)| (v, allow_next))
         .collect()
+}
+
+fn portfolio_bonus<S: ConstrainedLinearizationSolver + ?Sized>(
+    solver: &S,
+    linearization: &[S::Vertex],
+    v: &S::Vertex,
+    mode: PortfolioMode,
+) -> u64 {
+    match mode {
+        PortfolioMode::SolverBiased => 0,
+        PortfolioMode::FrontierHeavy => {
+            let children = solver.children_of(v).map_or(0, |vs| vs.len());
+            let child_score = u64::try_from(children).expect("child count fits u64");
+            let solver_score = solver.branch_score(linearization, v).unsigned_abs();
+            child_score
+                .saturating_mul(512)
+                .saturating_add(solver_score.saturating_mul(64))
+        }
+        PortfolioMode::Diverse => {
+            let mixed = seeded_hash_u128(0x0D15_EA5E, v);
+            let low = mixed & u128::from(u64::MAX);
+            u64::try_from(low).expect("masked hash fits u64")
+        }
+    }
 }
 
 #[allow(clippy::too_many_lines)]
@@ -705,6 +797,7 @@ pub trait ConstrainedLinearizationSolver {
             nodes_expanded: 0,
             node_budget: None,
             budget_hit: false,
+            portfolio_mode: PortfolioMode::SolverBiased,
         };
         matches!(
             do_dfs_impl(
@@ -733,8 +826,15 @@ pub trait ConstrainedLinearizationSolver {
     fn get_linearization(&mut self) -> Option<Vec<Self::Vertex>> {
         let options = self.search_options();
         let attempts = options.restart_max_attempts.saturating_add(1);
+        let mut portfolio_stats = [PortfolioStats::default(); 3];
         for attempt in 0..attempts {
             let is_final_attempt = attempt.saturating_add(1) == attempts;
+            let portfolio_mode =
+                if matches!(options.heuristic_portfolio, HeuristicPortfolio::Enabled) {
+                    choose_portfolio_mode(&portfolio_stats)
+                } else {
+                    PortfolioMode::SolverBiased
+                };
             let mut non_det_choices: VecDeque<Self::Vertex> = VecDeque::default();
             let mut active_parent: HashMap<Self::Vertex, usize> = HashMap::default();
             let mut linearization: Vec<Self::Vertex> = Vec::default();
@@ -772,9 +872,10 @@ pub trait ConstrainedLinearizationSolver {
                     options.restart_node_budget
                 },
                 budget_hit: false,
+                portfolio_mode,
             };
 
-            if matches!(
+            let found = matches!(
                 do_dfs_impl(
                     self,
                     &mut non_det_choices,
@@ -785,7 +886,14 @@ pub trait ConstrainedLinearizationSolver {
                     &mut runtime,
                 ),
                 DfsStepResult::Found
-            ) {
+            );
+            let stat = &mut portfolio_stats[portfolio_index(portfolio_mode)];
+            stat.attempts = stat.attempts.saturating_add(1);
+            stat.total_nodes = stat.total_nodes.saturating_add(
+                u64::try_from(runtime.nodes_expanded).expect("node count fits u64"),
+            );
+            if found {
+                stat.successes = stat.successes.saturating_add(1);
                 return Some(linearization);
             }
             if !runtime.budget_hit {
@@ -818,6 +926,7 @@ mod tests {
                 tie_breaking: TieBreaking::Deterministic,
                 restart_max_attempts: 0,
                 restart_node_budget: None,
+                heuristic_portfolio: HeuristicPortfolio::Disabled,
                 prefer_allowed_first: true,
                 branch_ordering: BranchOrdering::HighScoreFirst,
             }
