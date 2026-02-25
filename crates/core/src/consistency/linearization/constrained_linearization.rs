@@ -219,6 +219,13 @@ where
     options: DfsSearchOptions,
     heuristics: SearchHeuristics<Vertex>,
     nogood_signatures: HashSet<u128>,
+    conflict_jump_depth: HashMap<u128, usize>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DfsStepResult {
+    Found,
+    Fail { jump_depth: usize },
 }
 
 fn order_frontier_with_heuristics<S: ConstrainedLinearizationSolver + ?Sized>(
@@ -259,6 +266,7 @@ fn order_frontier_with_heuristics<S: ConstrainedLinearizationSolver + ?Sized>(
         .collect()
 }
 
+#[allow(clippy::too_many_lines)]
 fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
     solver: &mut S,
     non_det_choices: &mut VecDeque<S::Vertex>,
@@ -267,31 +275,40 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
     seen: &mut HashSet<u128>,
     frontier_hash: &mut u128,
     runtime: &mut DfsRuntime<S::Vertex>,
-) -> bool {
+) -> DfsStepResult {
+    let depth = linearization.len();
     let options = runtime.options;
     if solver.should_prune(linearization, non_det_choices.len()) {
-        return false;
+        return DfsStepResult::Fail {
+            jump_depth: depth.saturating_sub(1),
+        };
     }
-
     let signature = solver.frontier_signature(*frontier_hash, linearization);
     if matches!(options.nogood_learning, NogoodLearning::Enabled)
         && runtime.nogood_signatures.contains(&signature)
     {
-        return false;
+        return DfsStepResult::Fail {
+            jump_depth: runtime
+                .conflict_jump_depth
+                .get(&signature)
+                .copied()
+                .unwrap_or_else(|| depth.saturating_sub(1)),
+        };
     }
-
     if options.memoize_frontier && !seen.insert(signature) {
-        return false;
+        return DfsStepResult::Fail {
+            jump_depth: runtime
+                .conflict_jump_depth
+                .get(&signature)
+                .copied()
+                .unwrap_or_else(|| depth.saturating_sub(1)),
+        };
     }
-
     if non_det_choices.is_empty() {
-        return true;
+        return DfsStepResult::Found;
     }
-
     let candidates =
         order_frontier_with_heuristics(solver, non_det_choices, linearization, runtime);
-    let depth = linearization.len();
-
     for (candidate, allow_next) in candidates {
         let Some(pos) = non_det_choices.iter().position(|v| v == &candidate) else {
             continue;
@@ -299,7 +316,6 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
         let Some(u) = non_det_choices.remove(pos) else {
             continue;
         };
-
         if allow_next {
             let mut newly_activated: Vec<S::Vertex> = Vec::new();
             if let Some(vs) = solver.children_of(&u) {
@@ -315,12 +331,10 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
                     }
                 }
             }
-
             linearization.push(u.clone());
             *frontier_hash ^= solver.zobrist_value(&u);
             solver.forward_book_keeping(linearization);
-
-            if do_dfs_impl(
+            let recurse = do_dfs_impl(
                 solver,
                 non_det_choices,
                 active_parent,
@@ -328,16 +342,15 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
                 seen,
                 frontier_hash,
                 runtime,
-            ) {
+            );
+            if matches!(recurse, DfsStepResult::Found) {
                 runtime.heuristics.record_success_move(depth, &u);
-                return true;
+                return DfsStepResult::Found;
             }
-
             runtime.heuristics.record_failed_move(depth, &u);
             solver.backtrack_book_keeping(linearization);
             linearization.pop();
             *frontier_hash ^= solver.zobrist_value(&u);
-
             if let Some(vs) = solver.children_of(&u) {
                 for v in vs {
                     let entry = active_parent
@@ -346,7 +359,6 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
                     *entry += 1;
                 }
             }
-
             for v in newly_activated {
                 if let Some(activated_pos) = non_det_choices.iter().position(|x| x == &v) {
                     let removed = non_det_choices
@@ -355,14 +367,21 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
                     *frontier_hash ^= solver.zobrist_value(&removed);
                 }
             }
+            if let DfsStepResult::Fail { jump_depth } = recurse {
+                if jump_depth < depth {
+                    runtime.conflict_jump_depth.insert(signature, jump_depth);
+                    return DfsStepResult::Fail { jump_depth };
+                }
+            }
         }
-
         non_det_choices.push_back(u);
     }
     if matches!(options.nogood_learning, NogoodLearning::Enabled) {
         runtime.nogood_signatures.insert(signature);
     }
-    false
+    let jump_depth = depth.saturating_sub(1);
+    runtime.conflict_jump_depth.insert(signature, jump_depth);
+    DfsStepResult::Fail { jump_depth }
 }
 
 /// Trait for consistency-specific linearization solvers.
@@ -538,15 +557,19 @@ pub trait ConstrainedLinearizationSolver {
             options: self.search_options(),
             heuristics: SearchHeuristics::default(),
             nogood_signatures: HashSet::default(),
+            conflict_jump_depth: HashMap::default(),
         };
-        do_dfs_impl(
-            self,
-            non_det_choices,
-            active_parent,
-            linearization,
-            seen,
-            frontier_hash,
-            &mut runtime,
+        matches!(
+            do_dfs_impl(
+                self,
+                non_det_choices,
+                active_parent,
+                linearization,
+                seen,
+                frontier_hash,
+                &mut runtime,
+            ),
+            DfsStepResult::Found
         )
     }
 
