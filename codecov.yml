@@ -1,0 +1,50 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  range: "50...100"
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+      rust:
+        flags:
+          - rust
+        target: auto
+        threshold: 1%
+      deno:
+        flags:
+          - deno
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+      rust:
+        flags:
+          - rust
+        target: auto
+        threshold: 1%
+      deno:
+        flags:
+          - deno
+        target: auto
+        threshold: 1%
+
+flags:
+  rust:
+    carryforward: true
+    paths:
+      - crates/
+  deno:
+    carryforward: true
+    paths:
+      - crates/wasm/
+
+ignore:
+  - target/**
+  - wasmlib/**
