@@ -47,7 +47,10 @@ use core::hash::Hash;
 
 use hashbrown::{HashMap, HashSet};
 
-use crate::consistency::constrained_linearization::ConstrainedLinearizationSolver;
+use crate::consistency::constrained_linearization::{
+    seeded_hash_u128, BranchOrdering, ConstrainedLinearizationSolver, DfsSearchOptions,
+    DominancePruning, HeuristicPortfolio, NogoodLearning, PrincipalVariationOrdering, TieBreaking,
+};
 use crate::history::atomic::types::TransactionId;
 use crate::history::atomic::AtomicTransactionPO;
 
@@ -95,6 +98,54 @@ where
     Variable: Clone + Eq + Ord + Hash,
 {
     type Vertex = TransactionId;
+
+    fn search_options(&self) -> DfsSearchOptions {
+        DfsSearchOptions {
+            memoize_frontier: true,
+            nogood_learning: NogoodLearning::Enabled,
+            enable_killer_history: true,
+            dominance_pruning: DominancePruning::Enabled,
+            tie_breaking: TieBreaking::Randomized,
+            restart_max_attempts: 2,
+            restart_node_budget: Some(20_000),
+            heuristic_portfolio: HeuristicPortfolio::Enabled,
+            principal_variation_ordering: PrincipalVariationOrdering::Enabled,
+            prefer_allowed_first: true,
+            branch_ordering: BranchOrdering::HighScoreFirst,
+        }
+    }
+
+    fn branch_score(&self, _linearization: &[Self::Vertex], v: &Self::Vertex) -> i64 {
+        let txn_info = self.history.history.0.get(v).unwrap();
+        let child_count = self.children_of(v).map_or(0, |children| children.len());
+        let unresolved_readers = txn_info
+            .reads
+            .keys()
+            .filter(|x| self.active_write.get(*x).is_some_and(|ts| ts.contains(v)))
+            .count();
+        let unresolved_readers_score =
+            i64::try_from(unresolved_readers).expect("unresolved reader count fits i64");
+        let write_set = txn_info.writes.len();
+        let child_score = i64::try_from(child_count).expect("child count fits i64");
+        let write_score = i64::try_from(write_set).expect("write count fits i64");
+        (unresolved_readers_score * 8) + (child_score * 2) + write_score
+    }
+
+    fn frontier_signature(&self, frontier_hash: u128, _linearization: &[Self::Vertex]) -> u128 {
+        let mut signature = frontier_hash;
+        for (var, readers) in &self.active_write {
+            let mut readers_mix = 0_u128;
+            for reader in readers {
+                readers_mix ^= seeded_hash_u128(0x701, reader);
+            }
+            let var_mix = seeded_hash_u128(0x702, var);
+            let reader_count = u64::try_from(readers.len()).expect("reader count fits u64");
+            let count_mix = seeded_hash_u128(0x703, &reader_count);
+            signature ^= var_mix ^ readers_mix ^ count_mix;
+        }
+        signature
+    }
+
     fn get_root(&self) -> Self::Vertex {
         TransactionId::default()
     }

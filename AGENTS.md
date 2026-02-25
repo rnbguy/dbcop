@@ -268,6 +268,14 @@ present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
 - `Consistency` enum: `CommittedRead`, `AtomicRead`, `Causal`, `Prefix`,
   `SnapshotIsolation`, `Serializable`.
 
+- `DfsSearchOptions` / `BranchOrdering`
+  (`consistency/linearization/constrained_linearization.rs`): trait-level DFS
+  policy for NPC solvers. Options include memoization/nogood toggles,
+  legal-first frontier ordering (`prefer_allowed_first`), dominance pruning
+  mode, tie-breaking mode, restart policy (`restart_max_attempts`,
+  `restart_node_budget`), adaptive portfolio mode, principal variation mode, and
+  branch ordering (`AsProvided`, `HighScoreFirst`, `LowScoreFirst`).
+
 - `check()` entry point: returns `Result<Witness, Error<Variable, Version>>`.
   Each consistency level produces a specific `Witness` variant on success:
   - Committed Read: `SaturationOrder(DiGraph<TransactionId>)` (committed order
@@ -317,8 +325,63 @@ notepads, and agent memory.
 ## Performance Decisions
 
 - Zobrist hashing (`constrained_linearization.rs`): uses `HashSet<u128>` with
-  per-variable random u128 seeds for O(1) DFS memoization. Replaces
-  `HashSet<BTreeSet<TransactionId>>` which had O(T log T) hash cost.
+  frontier-state signatures for O(1) DFS memoization. Replaces
+  `HashSet<BTreeSet<TransactionId>>` which had O(T log T) hash cost. Zobrist
+  token generation is now solver-provider controlled via trait method
+  `zobrist_value()`.
+
+- DFS policy hooks (`constrained_linearization.rs`): the solver trait now
+  exposes `search_options()`, `branch_score()`, `frontier_signature()`, and
+  `should_prune()` so each NPC checker can provide branch ordering, state-aware
+  memoization keys, and pruning behavior without changing the shared DFS engine.
+
+- Legal-first move ordering (`constrained_linearization.rs`): DFS now computes
+  `allow_next` once per frontier candidate and prioritizes legal moves before
+  illegal ones (then applies score ordering). This is a chess-style move
+  ordering optimization that reduces failed branch expansions.
+
+- Conflict-driven branching
+  (`linearization/{prefix,snapshot_isolation,serializable}.rs`): NPC solvers
+  bias branch scores toward candidates that reduce outstanding dependency
+  pressure (e.g., unresolved readers and active-variable releases), not just raw
+  out-degree.
+
+- State-aware memo signatures
+  (`linearization/{prefix,snapshot_isolation,serializable}.rs`): memo keys now
+  mix frontier hash with solver state (`active_write`, and for SI also
+  `active_variable`) to reduce transposition aliasing between distinct search
+  states.
+
+- Killer/history move ordering (`constrained_linearization.rs`): DFS maintains
+  per-depth killer moves and global history scores, then boosts candidate order
+  using those learned statistics.
+
+- Nogood learning (`constrained_linearization.rs`): failed signatures are stored
+  and reused to prune repeated unsatisfiable states early.
+
+- Conflict-directed backjumping (`constrained_linearization.rs`): DFS tracks
+  learned jump depths per failed signature and propagates non-chronological
+  backjumps when a subtree conflict is independent of the current decision.
+
+- Frontier-dominance pruning (`constrained_linearization.rs`): for the same
+  solver-state signature, if a failed frontier is a superset of the current
+  frontier, the current state is pruned as dominated.
+
+- Randomized restarts (`constrained_linearization.rs`): NPC solvers can run
+  budgeted attempts with randomized tie-breaking before a final exhaustive pass
+  (completeness preserved by always running the final unbounded attempt).
+
+- Adaptive heuristic portfolio (`constrained_linearization.rs`): restart
+  attempts choose among multiple ordering modes (solver-biased, frontier-heavy,
+  diverse) using online per-mode stats.
+
+- Principal variation ordering (`constrained_linearization.rs`): restart
+  attempts carry forward the deepest path reached so far and prioritize that PV
+  move at each depth on subsequent attempts.
+
+- Counter-move heuristic (`constrained_linearization.rs`): DFS learns
+  parent→response move pairs from successful recursion paths and boosts the
+  learned reply when the same parent move appears again.
 
 - Chain closure (`atomic/mod.rs`): computes session-order transitive closure
   with an O(S * T^2) forward scan grouped by session. Replaces general
