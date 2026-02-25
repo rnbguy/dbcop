@@ -374,6 +374,10 @@ notepads, and agent memory.
   against core NPC solvers (`DBCOP_DIFF_FUZZ_SAMPLES`, default 256).
 - `crates/core/benches/consistency.rs` -- 18 Criterion benchmarks (6 consistency
   levels x 3 history sizes).
+- `crates/sat/benches/npc_vs_sat.rs` -- Criterion comparison benchmark for
+  Prefix/SnapshotIsolation/Serializable using randomly sampled valid histories;
+  reports prebench SAT/Core average latency ratio and benchmarks both solver
+  paths.
 - Always add tests when adding new functionality.
 
 ## AGENTS.md Update Protocol
