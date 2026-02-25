@@ -23,7 +23,7 @@ categories = [
   "development-tools::debugging",
 ]
 edition = "2021"
-rust-version = "1.73.0"
+rust-version = "1.93.1"
 readme = "README.md"
 
 [workspace.dependencies]

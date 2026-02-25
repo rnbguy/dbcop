@@ -38,9 +38,17 @@ where
     }
 
     /// Inserts directed edges from `source` to every vertex in `targets`.
-    pub fn add_edges(&mut self, source: T, targets: &[T]) {
-        let entry = self.adj_map.entry(source).or_default();
-        entry.extend(targets.iter().cloned());
+    pub fn add_edges<N>(&mut self, source: &T, targets: N)
+    where
+        N: IntoIterator<Item = T>,
+    {
+        for target in targets {
+            self.adj_map
+                .entry(source.clone())
+                .or_default()
+                .insert(target.clone());
+            self.adj_map.entry(target).or_default();
+        }
     }
 
     /// Adds a vertex with no outgoing edges (if not already present).
@@ -176,32 +184,42 @@ where
         None
     }
 
-    /// Returns true if there is a path from `source` to `target` in the graph.
-    #[allow(dead_code)]
-    fn is_reachable_helper(&self, source: &T, target: &T, reachable: &mut HashSet<T>) -> bool {
-        if let Some(neighbors) = self.adj_map.get(source) {
-            for neighbor in neighbors {
-                if neighbor == target
-                    || (reachable.insert(neighbor.clone())
-                        && self.is_reachable_helper(neighbor, target, reachable))
-                {
-                    return true;
+    /// Returns all vertices reachable from `source`.
+    fn find_all_reachable(&self, source: &T) -> HashSet<T> {
+        let mut reachable = HashSet::new();
+        let mut stack = Vec::new();
+        stack.push(source.clone());
+
+        while let Some(node) = stack.pop() {
+            if let Some(neighbors) = self.adj_map.get(&node) {
+                for neighbor in neighbors {
+                    if reachable.insert(neighbor.clone()) {
+                        stack.push(neighbor.clone());
+                    }
                 }
             }
         }
-        false
+
+        reachable
     }
 
-    /// Mutates `reachable` to contain all vertices reachable from `source`.
-    fn find_all_reachable_helper(&self, source: &T, mut reachable: HashSet<T>) -> HashSet<T> {
-        if let Some(neighbors) = self.adj_map.get(source) {
-            for neighbor in neighbors {
-                if reachable.insert(neighbor.clone()) {
-                    reachable = self.find_all_reachable_helper(neighbor, reachable);
-                }
-            }
-        }
-        reachable
+    /// Computes the transitive closure and whether it changed the graph.
+    pub(crate) fn closure_with_change(&self) -> (Self, bool) {
+        let mut changed = false;
+        let adj_map = self
+            .adj_map
+            .keys()
+            .map(|source| {
+                let reachable = self.find_all_reachable(source);
+                changed |= self
+                    .adj_map
+                    .get(source)
+                    .is_none_or(|neighbors| neighbors.len() != reachable.len());
+                (source.clone(), reachable)
+            })
+            .collect();
+
+        (Self { adj_map }, changed)
     }
 
     /// Computes the transitive closure of the graph.
@@ -210,18 +228,7 @@ where
     /// `v` is reachable from `u` in the original graph.
     #[must_use]
     pub fn closure(&self) -> Self {
-        Self {
-            adj_map: self
-                .adj_map
-                .keys()
-                .map(|source| {
-                    (
-                        source.clone(),
-                        self.find_all_reachable_helper(source, [].into()),
-                    )
-                })
-                .collect(),
-        }
+        self.closure_with_change().0
     }
 
     /// Merges all edges from `other` into this graph.
@@ -262,16 +269,34 @@ where
     /// Precondition: `self` should already be transitively closed for correct
     /// incremental behavior. An empty graph is trivially closed.
     pub fn incremental_closure<I: IntoIterator<Item = (T, T)>>(&mut self, new_edges: I) -> bool {
+        let mut reverse_adj: HashMap<T, HashSet<T>> = HashMap::default();
+        for vertex in self.adj_map.keys() {
+            reverse_adj.entry(vertex.clone()).or_default();
+        }
+        for (source, targets) in &self.adj_map {
+            for target in targets {
+                reverse_adj
+                    .entry(target.clone())
+                    .or_default()
+                    .insert(source.clone());
+            }
+        }
+
         let mut changed = false;
         for (u, v) in new_edges {
+            self.adj_map.entry(u.clone()).or_default();
+            self.adj_map.entry(v.clone()).or_default();
+            reverse_adj.entry(u.clone()).or_default();
+            reverse_adj.entry(v.clone()).or_default();
+
             let mut ancestors = HashSet::new();
             let mut stack: Vec<T> = Vec::new();
             stack.push(u.clone());
             while let Some(node) = stack.pop() {
                 if ancestors.insert(node.clone()) {
-                    for (src, dsts) in &self.adj_map {
-                        if dsts.contains(&node) {
-                            stack.push(src.clone());
+                    if let Some(parents) = reverse_adj.get(&node) {
+                        for parent in parents {
+                            stack.push(parent.clone());
                         }
                     }
                 }
@@ -292,6 +317,7 @@ where
                 for d in &descendants {
                     if !self.has_edge(a, d) {
                         self.add_edge(a.clone(), d.clone());
+                        reverse_adj.entry(d.clone()).or_default().insert(a.clone());
                         changed = true;
                     }
                 }
@@ -330,6 +356,18 @@ mod tests {
         assert_eq!(closure.adj_map[&3], [4, 5].into());
         assert_eq!(closure.adj_map[&4], [5].into());
         assert_eq!(closure.adj_map[&5], [].into());
+    }
+
+    #[test]
+    fn test_add_edges_matches_add_edge_behavior() {
+        let mut graph: DiGraph<u32> = DiGraph::default();
+        graph.add_edges(&1, [2, 3, 4]);
+        assert!(graph.has_edge(&1, &2));
+        assert!(graph.has_edge(&1, &3));
+        assert!(graph.has_edge(&1, &4));
+        assert!(graph.adj_map.contains_key(&2));
+        assert!(graph.adj_map.contains_key(&3));
+        assert!(graph.adj_map.contains_key(&4));
     }
 
     #[test]
@@ -451,5 +489,34 @@ mod tests {
 
         let changed = graph.incremental_closure([(0u32, 2)]);
         assert!(!changed);
+    }
+
+    #[test]
+    fn test_incremental_closure_updates_reverse_index_between_new_edges() {
+        let mut graph: DiGraph<u32> = DiGraph::default();
+        graph.add_edge(1, 2);
+        graph.add_edge(3, 4);
+        graph = graph.closure();
+
+        // Processing (2,3) first should make 1 an ancestor of 3, and that new
+        // ancestry must be visible while processing (3,5).
+        let changed = graph.incremental_closure([(2u32, 3), (3, 5)]);
+        assert!(changed);
+        assert!(graph.has_edge(&1, &5));
+        assert!(graph.has_edge(&2, &5));
+        assert!(graph.has_edge(&3, &5));
+    }
+
+    #[test]
+    fn test_closure_handles_deep_chain_iteratively() {
+        let mut graph: DiGraph<u32> = DiGraph::default();
+        let depth: u32 = 5_000;
+        for i in 0..depth {
+            graph.add_edge(i, i + 1);
+        }
+
+        let closure = graph.closure();
+        assert!(closure.has_edge(&0, &depth));
+        assert!(closure.has_edge(&(depth - 1), &depth));
     }
 }

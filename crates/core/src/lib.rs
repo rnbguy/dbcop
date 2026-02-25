@@ -48,7 +48,6 @@
 //! live in the separate `dbcop_parser` crate.
 
 #![cfg_attr(not(any(test, feature = "schemars")), no_std)]
-#![cfg_attr(not(test), no_main)]
 extern crate alloc;
 
 pub mod consistency;

@@ -4,6 +4,8 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use dbcop_core::consistency::Consistency;
 use dbcop_core::history::raw::types::{Event, Session, Transaction};
 
+const VARIABLES: [&str; 10] = ["x", "y", "z", "a", "b", "c", "d", "e", "f", "g"];
+
 /// Build a history with given dimensions.
 /// sessions: number of sessions
 /// `txns_per_session`: transactions per session
@@ -14,35 +16,30 @@ fn build_history(
     events_per_txn: usize,
 ) -> Vec<Session<&'static str, u64>> {
     let mut result = Vec::new();
+    let mut latest_version = [0u64; VARIABLES.len()];
+    let mut next_version: u64 = 1;
+    let mut txn_index: usize = 0;
 
-    for s in 0..sessions {
+    for _ in 0..sessions {
         let mut session = Vec::new();
-        for t in 0..txns_per_session {
+        for _ in 0..txns_per_session {
             let mut events = Vec::new();
             for e in 0..events_per_txn {
-                let var_idx = (s * txns_per_session + t) % 10;
-                let val = (s * 100 + t * 10 + e) as u64;
-                let var_name = match var_idx {
-                    0 => "x",
-                    1 => "y",
-                    2 => "z",
-                    3 => "a",
-                    4 => "b",
-                    5 => "c",
-                    6 => "d",
-                    7 => "e",
-                    8 => "f",
-                    _ => "g",
-                };
+                let var_idx = (txn_index + e) % VARIABLES.len();
+                let var_name = VARIABLES[var_idx];
 
-                // Alternate writes and reads
                 if e % 2 == 0 {
-                    events.push(Event::write(var_name, val));
+                    // Reads always target an existing committed version
+                    // (or 0, which maps to the root initial version).
+                    events.push(Event::read(var_name, latest_version[var_idx]));
                 } else {
-                    events.push(Event::read(var_name, val));
+                    events.push(Event::write(var_name, next_version));
+                    latest_version[var_idx] = next_version;
+                    next_version += 1;
                 }
             }
             session.push(Transaction::committed(events));
+            txn_index += 1;
         }
         result.push(session);
     }
@@ -60,6 +57,13 @@ fn bench_consistency(c: &mut Criterion) {
 
     // Large: 8 sessions, 10 txns each, 5 events per txn
     let history_large = build_history(8, 10, 5);
+
+    for history in [&history_small, &history_medium, &history_large] {
+        assert!(
+            dbcop_core::consistency::check(history, Consistency::CommittedRead).is_ok(),
+            "benchmark history generation must produce valid committed-read histories",
+        );
+    }
 
     let mut group = c.benchmark_group("consistency_check");
 
