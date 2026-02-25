@@ -115,6 +115,15 @@ visited frontier states to prune the search. Candidate ordering first
 prioritizes currently legal moves (`allow_next = true`), then applies
 `branch_score()` according to `search_options()`.
 
+The current DFS search stack also includes:
+
+- killer/history move ordering (learned move boosts),
+- nogood learning on failed signatures,
+- conflict-directed backjumping with learned jump depths,
+- frontier-dominance pruning at fixed solver-state signature,
+- randomized, budgeted restarts with final exhaustive fallback,
+- adaptive attempt-level heuristic portfolio selection.
+
 ### Prefix (`prefix.rs`)
 
 Splits each transaction into a read phase and a write phase. Finds a

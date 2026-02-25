@@ -270,9 +270,11 @@ present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
 
 - `DfsSearchOptions` / `BranchOrdering`
   (`consistency/linearization/constrained_linearization.rs`): trait-level DFS
-  policy for NPC solvers. Options currently include frontier memoization toggle,
-  legal-first frontier ordering toggle (`prefer_allowed_first`), and branch
-  ordering mode (`AsProvided`, `HighScoreFirst`, `LowScoreFirst`).
+  policy for NPC solvers. Options include memoization/nogood toggles,
+  legal-first frontier ordering (`prefer_allowed_first`), dominance pruning
+  mode, tie-breaking mode, restart policy (`restart_max_attempts`,
+  `restart_node_budget`), adaptive portfolio mode, and branch ordering
+  (`AsProvided`, `HighScoreFirst`, `LowScoreFirst`).
 
 - `check()` entry point: returns `Result<Witness, Error<Variable, Version>>`.
   Each consistency level produces a specific `Witness` variant on success:
@@ -349,6 +351,29 @@ notepads, and agent memory.
   mix frontier hash with solver state (`active_write`, and for SI also
   `active_variable`) to reduce transposition aliasing between distinct search
   states.
+
+- Killer/history move ordering (`constrained_linearization.rs`): DFS maintains
+  per-depth killer moves and global history scores, then boosts candidate order
+  using those learned statistics.
+
+- Nogood learning (`constrained_linearization.rs`): failed signatures are stored
+  and reused to prune repeated unsatisfiable states early.
+
+- Conflict-directed backjumping (`constrained_linearization.rs`): DFS tracks
+  learned jump depths per failed signature and propagates non-chronological
+  backjumps when a subtree conflict is independent of the current decision.
+
+- Frontier-dominance pruning (`constrained_linearization.rs`): for the same
+  solver-state signature, if a failed frontier is a superset of the current
+  frontier, the current state is pruned as dominated.
+
+- Randomized restarts (`constrained_linearization.rs`): NPC solvers can run
+  budgeted attempts with randomized tie-breaking before a final exhaustive pass
+  (completeness preserved by always running the final unbounded attempt).
+
+- Adaptive heuristic portfolio (`constrained_linearization.rs`): restart
+  attempts choose among multiple ordering modes (solver-biased, frontier-heavy,
+  diverse) using online per-mode stats.
 
 - Chain closure (`atomic/mod.rs`): computes session-order transitive closure
   with an O(S * T^2) forward scan grouped by session. Replaces general
