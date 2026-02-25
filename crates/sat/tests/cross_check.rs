@@ -353,6 +353,16 @@ fn sat_snapshot_witness_preserves_singleton_component() {
 }
 
 #[test]
+fn sat_serializable_decomposition_handles_singleton_component() {
+    let h = two_clusters_plus_singleton_history();
+    assert_agree_ser(&h, "two-clusters-plus-singleton-ser");
+    assert!(
+        check_serializable(&h).is_ok(),
+        "expected SAT-SER pass for decomposed history with singleton component",
+    );
+}
+
+#[test]
 fn sat_single_session_serializable_fast_path() {
     let h = single_session_two_txn_history();
     assert!(

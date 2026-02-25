@@ -173,15 +173,19 @@ fn singleton_session_witness<Variable, Version>(
         })
         .collect();
 
-    match level {
-        Consistency::Prefix | Consistency::Serializable => Witness::CommitOrder(commit_order),
-        Consistency::SnapshotIsolation => Witness::SplitCommitOrder(
+    if matches!(level, Consistency::SnapshotIsolation) {
+        Witness::SplitCommitOrder(
             commit_order
                 .into_iter()
                 .flat_map(|tid| [(tid, false), (tid, true)])
                 .collect(),
-        ),
-        _ => unreachable!("singleton_session_witness called for non-NPC level"),
+        )
+    } else {
+        debug_assert!(matches!(
+            level,
+            Consistency::Prefix | Consistency::Serializable
+        ));
+        Witness::CommitOrder(commit_order)
     }
 }
 
@@ -410,6 +414,40 @@ mod tests {
         ];
         let result = check(&history, Consistency::SnapshotIsolation);
         assert!(result.is_err(), "expected SI violation, got: {result:?}");
+    }
+
+    #[test]
+    fn singleton_session_witness_commit_order_for_prefix() {
+        let session = vec![
+            Transaction::committed(vec![Event::write("x", 1)]),
+            Transaction::committed(vec![Event::read("x", 1), Event::write("y", 1)]),
+        ];
+        let witness = singleton_session_witness(&session, Consistency::Prefix);
+        let Witness::CommitOrder(order) = witness else {
+            panic!("expected CommitOrder");
+        };
+        assert_eq!(order.len(), 2);
+        assert_eq!(order[0].session_id, 1);
+        assert_eq!(order[0].session_height, 0);
+        assert_eq!(order[1].session_id, 1);
+        assert_eq!(order[1].session_height, 1);
+    }
+
+    #[test]
+    fn singleton_session_witness_split_order_for_snapshot_isolation() {
+        let session = vec![
+            Transaction::committed(vec![Event::write("x", 1)]),
+            Transaction::committed(vec![Event::read("x", 1), Event::write("y", 1)]),
+        ];
+        let witness = singleton_session_witness(&session, Consistency::SnapshotIsolation);
+        let Witness::SplitCommitOrder(order) = witness else {
+            panic!("expected SplitCommitOrder");
+        };
+        assert_eq!(order.len(), 4);
+        assert!(!order[0].1);
+        assert!(order[1].1);
+        assert!(!order[2].1);
+        assert!(order[3].1);
     }
 
     #[test]
