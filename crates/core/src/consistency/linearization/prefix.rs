@@ -99,6 +99,7 @@ where
     fn search_options(&self) -> DfsSearchOptions {
         DfsSearchOptions {
             memoize_frontier: true,
+            enable_killer_history: true,
             prefer_allowed_first: true,
             branch_ordering: BranchOrdering::HighScoreFirst,
         }

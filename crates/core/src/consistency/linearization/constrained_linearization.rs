@@ -81,6 +81,8 @@ pub enum BranchOrdering {
 pub struct DfsSearchOptions {
     /// Enable frontier-signature memoization.
     pub memoize_frontier: bool,
+    /// Enable killer/history move ordering augmentation.
+    pub enable_killer_history: bool,
     /// Prioritize currently-legal candidates before illegal ones.
     ///
     /// This keeps branch ordering focused on feasible moves and reduces
@@ -94,6 +96,7 @@ impl Default for DfsSearchOptions {
     fn default() -> Self {
         Self {
             memoize_frontier: true,
+            enable_killer_history: true,
             prefer_allowed_first: true,
             branch_ordering: BranchOrdering::AsProvided,
         }
@@ -132,6 +135,216 @@ pub(crate) fn seeded_hash_u128<T: Hash>(seed: u64, value: &T) -> u128 {
     let hi = h2.finish();
 
     (u128::from(hi) << 64) | u128::from(lo)
+}
+
+#[derive(Debug)]
+struct SearchHeuristics<Vertex>
+where
+    Vertex: Eq + Hash + Clone,
+{
+    killer_moves: HashMap<usize, Vec<Vertex>>,
+    history_scores: HashMap<Vertex, u64>,
+}
+
+impl<Vertex> SearchHeuristics<Vertex>
+where
+    Vertex: Eq + Hash + Clone,
+{
+    fn history_reward(depth: usize) -> u64 {
+        let capped = core::cmp::min(depth, 16);
+        let shift = u32::try_from(capped).expect("depth cap fits u32");
+        1_u64 << shift
+    }
+
+    fn add_history_reward(&mut self, v: &Vertex, depth: usize) {
+        let reward = Self::history_reward(depth);
+        let entry = self.history_scores.entry(v.clone()).or_insert(0);
+        *entry = entry.saturating_add(reward);
+    }
+
+    fn candidate_bonus(&self, depth: usize, v: &Vertex) -> u64 {
+        let history_bonus = self.history_scores.get(v).copied().unwrap_or(0);
+        let killer_bonus = self
+            .killer_moves
+            .get(&depth)
+            .and_then(|moves| moves.iter().position(|k| k == v))
+            .map_or(0, |idx| if idx == 0 { 1_u64 << 20 } else { 1_u64 << 19 });
+        history_bonus.saturating_add(killer_bonus)
+    }
+
+    fn record_failed_move(&mut self, depth: usize, v: &Vertex) {
+        self.add_history_reward(v, depth);
+        let entry = self.killer_moves.entry(depth).or_default();
+        if entry.iter().any(|x| x == v) {
+            return;
+        }
+        entry.insert(0, v.clone());
+        if entry.len() > 2 {
+            entry.truncate(2);
+        }
+    }
+
+    fn record_success_move(&mut self, depth: usize, v: &Vertex) {
+        self.add_history_reward(v, depth.saturating_add(1));
+    }
+}
+
+impl<Vertex> Default for SearchHeuristics<Vertex>
+where
+    Vertex: Eq + Hash + Clone,
+{
+    fn default() -> Self {
+        Self {
+            killer_moves: HashMap::default(),
+            history_scores: HashMap::default(),
+        }
+    }
+}
+
+#[derive(Debug)]
+struct DfsRuntime<Vertex>
+where
+    Vertex: Eq + Hash + Clone,
+{
+    options: DfsSearchOptions,
+    heuristics: SearchHeuristics<Vertex>,
+}
+
+fn order_frontier_with_heuristics<S: ConstrainedLinearizationSolver + ?Sized>(
+    solver: &S,
+    non_det_choices: &VecDeque<S::Vertex>,
+    linearization: &[S::Vertex],
+    runtime: &DfsRuntime<S::Vertex>,
+) -> Vec<(S::Vertex, bool)> {
+    let options = runtime.options;
+    let base = solver.ordered_frontier_candidates(non_det_choices, linearization, options);
+    if !options.enable_killer_history {
+        return base;
+    }
+
+    let depth = linearization.len();
+    let mut decorated: Vec<(usize, S::Vertex, bool, u64)> = base
+        .into_iter()
+        .enumerate()
+        .map(|(idx, (v, allow_next))| {
+            let bonus = runtime.heuristics.candidate_bonus(depth, &v);
+            (idx, v, allow_next, bonus)
+        })
+        .collect();
+
+    decorated.sort_by(|a, b| {
+        if options.prefer_allowed_first {
+            b.2.cmp(&a.2)
+                .then_with(|| b.3.cmp(&a.3))
+                .then_with(|| a.0.cmp(&b.0))
+        } else {
+            b.3.cmp(&a.3).then_with(|| a.0.cmp(&b.0))
+        }
+    });
+
+    decorated
+        .into_iter()
+        .map(|(_, v, allow_next, _)| (v, allow_next))
+        .collect()
+}
+
+fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
+    solver: &mut S,
+    non_det_choices: &mut VecDeque<S::Vertex>,
+    active_parent: &mut HashMap<S::Vertex, usize>,
+    linearization: &mut Vec<S::Vertex>,
+    seen: &mut HashSet<u128>,
+    frontier_hash: &mut u128,
+    runtime: &mut DfsRuntime<S::Vertex>,
+) -> bool {
+    let options = runtime.options;
+    if solver.should_prune(linearization, non_det_choices.len()) {
+        return false;
+    }
+
+    if options.memoize_frontier {
+        let signature = solver.frontier_signature(*frontier_hash, linearization);
+        if !seen.insert(signature) {
+            return false;
+        }
+    }
+
+    if non_det_choices.is_empty() {
+        return true;
+    }
+
+    let candidates =
+        order_frontier_with_heuristics(solver, non_det_choices, linearization, runtime);
+    let depth = linearization.len();
+
+    for (candidate, allow_next) in candidates {
+        let Some(pos) = non_det_choices.iter().position(|v| v == &candidate) else {
+            continue;
+        };
+        let Some(u) = non_det_choices.remove(pos) else {
+            continue;
+        };
+
+        if allow_next {
+            let mut newly_activated: Vec<S::Vertex> = Vec::new();
+            if let Some(vs) = solver.children_of(&u) {
+                for v in vs {
+                    let entry = active_parent
+                        .get_mut(&v)
+                        .expect("all vertices are expected in active parent");
+                    *entry -= 1;
+                    if *entry == 0 {
+                        non_det_choices.push_back(v.clone());
+                        *frontier_hash ^= solver.zobrist_value(&v);
+                        newly_activated.push(v);
+                    }
+                }
+            }
+
+            linearization.push(u.clone());
+            *frontier_hash ^= solver.zobrist_value(&u);
+            solver.forward_book_keeping(linearization);
+
+            if do_dfs_impl(
+                solver,
+                non_det_choices,
+                active_parent,
+                linearization,
+                seen,
+                frontier_hash,
+                runtime,
+            ) {
+                runtime.heuristics.record_success_move(depth, &u);
+                return true;
+            }
+
+            runtime.heuristics.record_failed_move(depth, &u);
+            solver.backtrack_book_keeping(linearization);
+            linearization.pop();
+            *frontier_hash ^= solver.zobrist_value(&u);
+
+            if let Some(vs) = solver.children_of(&u) {
+                for v in vs {
+                    let entry = active_parent
+                        .get_mut(&v)
+                        .expect("all vertices are expected in active parent");
+                    *entry += 1;
+                }
+            }
+
+            for v in newly_activated {
+                if let Some(activated_pos) = non_det_choices.iter().position(|x| x == &v) {
+                    let removed = non_det_choices
+                        .remove(activated_pos)
+                        .expect("frontier vertex should exist");
+                    *frontier_hash ^= solver.zobrist_value(&removed);
+                }
+            }
+        }
+
+        non_det_choices.push_back(u);
+    }
+    false
 }
 
 /// Trait for consistency-specific linearization solvers.
@@ -303,91 +516,19 @@ pub trait ConstrainedLinearizationSolver {
         seen: &mut HashSet<u128>,
         frontier_hash: &mut u128,
     ) -> bool {
-        let options = self.search_options();
-
-        if self.should_prune(linearization, non_det_choices.len()) {
-            return false;
-        }
-
-        if options.memoize_frontier {
-            let signature = self.frontier_signature(*frontier_hash, linearization);
-            if !seen.insert(signature) {
-                return false;
-            }
-        }
-
-        if non_det_choices.is_empty() {
-            true
-        } else {
-            let candidates =
-                self.ordered_frontier_candidates(non_det_choices, linearization, options);
-
-            for (candidate, allow_next) in candidates {
-                let Some(pos) = non_det_choices.iter().position(|v| v == &candidate) else {
-                    continue;
-                };
-                let Some(u) = non_det_choices.remove(pos) else {
-                    continue;
-                };
-
-                if allow_next {
-                    let mut newly_activated: Vec<Self::Vertex> = Vec::new();
-                    if let Some(vs) = self.children_of(&u) {
-                        for v in vs {
-                            let entry = active_parent
-                                .get_mut(&v)
-                                .expect("all vertices are expected in active parent");
-                            *entry -= 1;
-                            if *entry == 0 {
-                                non_det_choices.push_back(v.clone());
-                                *frontier_hash ^= self.zobrist_value(&v);
-                                newly_activated.push(v);
-                            }
-                        }
-                    }
-
-                    linearization.push(u.clone());
-                    *frontier_hash ^= self.zobrist_value(&u);
-
-                    self.forward_book_keeping(linearization);
-
-                    if self.do_dfs(
-                        non_det_choices,
-                        active_parent,
-                        linearization,
-                        seen,
-                        frontier_hash,
-                    ) {
-                        return true;
-                    }
-
-                    self.backtrack_book_keeping(linearization);
-                    linearization.pop();
-                    *frontier_hash ^= self.zobrist_value(&u);
-
-                    if let Some(vs) = self.children_of(&u) {
-                        for v in vs {
-                            let entry = active_parent
-                                .get_mut(&v)
-                                .expect("all vertices are expected in active parent");
-                            *entry += 1;
-                        }
-                    }
-
-                    for v in newly_activated {
-                        if let Some(activated_pos) = non_det_choices.iter().position(|x| x == &v) {
-                            let removed = non_det_choices
-                                .remove(activated_pos)
-                                .expect("frontier vertex should exist");
-                            *frontier_hash ^= self.zobrist_value(&removed);
-                        }
-                    }
-                }
-
-                non_det_choices.push_back(u);
-            }
-            false
-        }
+        let mut runtime = DfsRuntime {
+            options: self.search_options(),
+            heuristics: SearchHeuristics::default(),
+        };
+        do_dfs_impl(
+            self,
+            non_det_choices,
+            active_parent,
+            linearization,
+            seen,
+            frontier_hash,
+            &mut runtime,
+        )
     }
 
     /// Search for a valid constrained linearization.
@@ -460,6 +601,7 @@ mod tests {
         fn search_options(&self) -> DfsSearchOptions {
             DfsSearchOptions {
                 memoize_frontier: true,
+                enable_killer_history: true,
                 prefer_allowed_first: true,
                 branch_ordering: BranchOrdering::HighScoreFirst,
             }
