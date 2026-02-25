@@ -141,16 +141,7 @@ where
     ///
     /// The `expect` never panics
     pub fn vis_is_trans(&mut self) -> bool {
-        let closure = self.visibility_relation.closure();
-        let change = self.visibility_relation.adj_map.iter().any(|(k, v)| {
-            closure
-                .adj_map
-                .get(k)
-                .expect("closure map should have it")
-                .difference(v)
-                .count()
-                > 0
-        });
+        let (closure, change) = self.visibility_relation.closure_with_change();
         self.visibility_relation = closure;
         change
     }
