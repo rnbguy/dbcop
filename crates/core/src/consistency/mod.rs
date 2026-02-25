@@ -156,6 +156,56 @@ fn merge_witnesses(base: Witness, other: Witness) -> Witness {
     }
 }
 
+fn solve_npc_from_po<Variable, Version>(
+    po: crate::history::atomic::AtomicTransactionPO<Variable>,
+    level: Consistency,
+) -> Result<Witness, Error<Variable, Version>>
+where
+    Variable: Eq + Hash + Clone + Ord,
+    Version: Eq + Hash + Clone + Default,
+{
+    match level {
+        Consistency::Prefix => {
+            let mut solver = PrefixConsistencySolver::from(po);
+            solver
+                .get_linearization()
+                .map(|lin| {
+                    Witness::CommitOrder(
+                        lin.into_iter()
+                            .filter(|(_, is_write)| *is_write)
+                            .map(|(tid, _)| tid)
+                            .collect(),
+                    )
+                })
+                .ok_or(Error::Invalid(Consistency::Prefix))
+        }
+        Consistency::SnapshotIsolation => {
+            let mut solver = SnapshotIsolationSolver::from(po);
+            solver
+                .get_linearization()
+                .map(Witness::SplitCommitOrder)
+                .ok_or(Error::Invalid(Consistency::SnapshotIsolation))
+        }
+        Consistency::Serializable => {
+            let mut solver = SerializabilitySolver::from(po);
+            solver
+                .get_linearization()
+                .map(Witness::CommitOrder)
+                .ok_or(Error::Invalid(Consistency::Serializable))
+        }
+        _ => unreachable!("solve_npc_from_po called for non-NPC consistency level"),
+    }
+}
+
+fn components_overlap(components: &[BTreeSet<u64>]) -> bool {
+    let total_membership: usize = components.iter().map(BTreeSet::len).sum();
+    let unique_membership: BTreeSet<u64> = components
+        .iter()
+        .flat_map(|component| component.iter().copied())
+        .collect();
+    total_membership != unique_membership.len()
+}
+
 /// Build the trivial NPC witness for a single-session history.
 ///
 /// For one session, the transaction order is fixed by session order, so
@@ -190,11 +240,14 @@ fn singleton_session_witness<Variable, Version>(
 }
 
 /// Check NP-complete consistency levels (Prefix, `SnapshotIsolation`, Serializable)
-/// using connected-component decomposition of the communication graph
+/// using biconnected-component decomposition of the communication graph
 /// (Theorem 5.2 in Biswas & Enea 2019).
 ///
-/// Decomposes the communication graph into connected components and checks
-/// each independently, then remaps and merges the witnesses.
+/// Decomposes the communication graph into biconnected components.
+///
+/// When components are disjoint, it checks and merges sub-witnesses directly.
+/// When components overlap on articulation sessions, it pre-checks components
+/// and then solves the full PO once to emit a non-duplicated global witness.
 fn check_npc<Variable, Version>(
     sessions: &[Session<Variable, Version>],
     level: Consistency,
@@ -210,14 +263,16 @@ where
     }
 
     let comm_graph = decomposition::communication_graph(&po);
-    let all_components = decomposition::connected_components(&comm_graph);
+    let all_components = decomposition::biconnected_components(&comm_graph);
 
     // Keep every component (including singletons) so the merged witness
     // always covers all sessions in the original history.
     let components_to_check: Vec<BTreeSet<u64>> = all_components;
+    let has_overlap = components_overlap(&components_to_check);
 
     tracing::debug!(
         components = components_to_check.len(),
+        overlap = has_overlap,
         sessions = sessions.len(),
         ?level,
         "communication graph decomposition"
@@ -225,37 +280,14 @@ where
 
     // Single (or no) component: run DFS directly on the pre-built PO.
     if components_to_check.len() <= 1 {
-        return match level {
-            Consistency::Prefix => {
-                let mut solver = PrefixConsistencySolver::from(po);
-                solver
-                    .get_linearization()
-                    .map(|lin| {
-                        Witness::CommitOrder(
-                            lin.into_iter()
-                                .filter(|(_, is_write)| *is_write)
-                                .map(|(tid, _)| tid)
-                                .collect(),
-                        )
-                    })
-                    .ok_or(Error::Invalid(Consistency::Prefix))
-            }
-            Consistency::SnapshotIsolation => {
-                let mut solver = SnapshotIsolationSolver::from(po);
-                solver
-                    .get_linearization()
-                    .map(Witness::SplitCommitOrder)
-                    .ok_or(Error::Invalid(Consistency::SnapshotIsolation))
-            }
-            Consistency::Serializable => {
-                let mut solver = SerializabilitySolver::from(po);
-                solver
-                    .get_linearization()
-                    .map(Witness::CommitOrder)
-                    .ok_or(Error::Invalid(Consistency::Serializable))
-            }
-            _ => unreachable!("check_npc called for non-NPC consistency level"),
-        };
+        return solve_npc_from_po(po, level);
+    }
+
+    // Biconnected components overlap on articulation sessions. Direct
+    // per-component projection can drop writer context for external reads, so
+    // fall back to solving on the full PO and emit a non-duplicated witness.
+    if has_overlap {
+        return solve_npc_from_po(po, level);
     }
 
     // Initial empty witness of the correct variant for this level.

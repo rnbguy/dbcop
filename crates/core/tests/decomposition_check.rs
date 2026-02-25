@@ -32,6 +32,18 @@ fn single_session_two_txn_history() -> History {
     ])]
 }
 
+fn articulation_chain_history() -> History {
+    vec![
+        // S1 --x--> S2 --y--> S3  (communication graph path 1-2-3)
+        session(vec![Transaction::committed(vec![Event::write("x", 1)])]),
+        session(vec![
+            Transaction::committed(vec![Event::read("x", 1)]),
+            Transaction::committed(vec![Event::write("y", 1)]),
+        ]),
+        session(vec![Transaction::committed(vec![Event::read("y", 1)])]),
+    ]
+}
+
 #[test]
 fn decomposition_two_independent_clusters_serializable_pass() {
     // Sessions {1,2} share var "x"; sessions {3,4} share var "y".
@@ -153,6 +165,47 @@ fn decomposition_preserves_singleton_snapshot_isolation_witness() {
     );
     let ids: std::collections::HashSet<u64> = order.iter().map(|(tid, _)| tid.session_id).collect();
     assert_eq!(ids, [1, 2, 3, 4, 5].into());
+}
+
+#[test]
+fn biconnected_overlap_prefix_witness_has_no_duplicates() {
+    let history = articulation_chain_history();
+    let result = check(&history, Consistency::Prefix);
+    assert!(result.is_ok(), "expected pass, got: {result:?}");
+    let Witness::CommitOrder(order) = result.unwrap() else {
+        panic!("expected CommitOrder witness");
+    };
+    assert_eq!(order.len(), 4, "expected one entry per transaction");
+    let ids: std::collections::HashSet<u64> = order.iter().map(|tid| tid.session_id).collect();
+    assert_eq!(ids, [1, 2, 3].into());
+}
+
+#[test]
+fn biconnected_overlap_snapshot_witness_has_no_duplicates() {
+    let history = articulation_chain_history();
+    let result = check(&history, Consistency::SnapshotIsolation);
+    assert!(result.is_ok(), "expected pass, got: {result:?}");
+    let Witness::SplitCommitOrder(order) = result.unwrap() else {
+        panic!("expected SplitCommitOrder witness");
+    };
+    assert_eq!(
+        order.len(),
+        8,
+        "expected read/write phases for exactly four transactions",
+    );
+    let ids: std::collections::HashSet<u64> = order.iter().map(|(tid, _)| tid.session_id).collect();
+    assert_eq!(ids, [1, 2, 3].into());
+}
+
+#[test]
+fn biconnected_overlap_serializable_passes() {
+    let history = articulation_chain_history();
+    let result = check(&history, Consistency::Serializable);
+    assert!(result.is_ok(), "expected pass, got: {result:?}");
+    let Witness::CommitOrder(order) = result.unwrap() else {
+        panic!("expected CommitOrder witness");
+    };
+    assert_eq!(order.len(), 4, "expected one entry per transaction");
 }
 
 #[test]
