@@ -1,3 +1,5 @@
+#![allow(clippy::doc_markdown)]
+
 use dbcop_core::consistency::atomic_read::check_atomic_read;
 use dbcop_core::consistency::causal::check_causal_read;
 use dbcop_core::consistency::committed_read::check_committed_read;

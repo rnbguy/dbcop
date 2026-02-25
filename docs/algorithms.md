@@ -48,9 +48,8 @@ reads across variables.
 ### Causal (`causal.rs`)
 
 Extends atomic-read with transitivity: the visibility relation must be
-transitively closed. Additionally enforces write-write ordering (`causal_ww`)
-and read-write ordering (`causal_rw`) constraints. Uses incremental transitive
-closure for efficiency.
+transitively closed. It enforces write-write ordering (`causal_ww`) constraints
+to saturation fixed point, using incremental transitive closure for efficiency.
 
 ## Constrained Linearization (NP-Complete Checkers)
 
@@ -62,6 +61,21 @@ For the NP-complete levels, dbcop first runs the causal checker (as a
 prerequisite), then searches for a valid linearization using depth-first search
 over topological orderings.
 
+Complexity note: Worst-case complexity is NP-complete when the number of
+sessions is unbounded.
+
+For bounded session count `k`, let `n` be the history size. A frontier state is
+determined by per-session progress (and phase bits for split solvers), so the
+number of distinct frontier states is polynomial:
+
+- non-split solvers: `O(n^k)`
+- split solvers: `O((2n)^k) = O(n^k)` for fixed `k`
+
+The bounded-session check can be viewed as reachability in this frontier-state
+transition graph. Reachability (ST-REACH) is the canonical NL problem on the
+explicit graph, so this gives an NL-style formulation; with fixed `k` this is
+also polynomial-time in `n`.
+
 ### The Solver Trait
 
 The `ConstrainedLinearizationSolver` trait (`constrained_linearization.rs`)
@@ -69,9 +83,10 @@ defines the DFS framework:
 
 ```
 trait ConstrainedLinearizationSolver {
-    fn allow_next(&self, next: &TransactionId) -> bool;
-    fn forward_book_keeping(&mut self, next: &TransactionId);
-    fn backtrack_book_keeping(&mut self, next: &TransactionId);
+    type Vertex;
+    fn allow_next(&self, linearization: &[Self::Vertex], next: &Self::Vertex) -> bool;
+    fn forward_book_keeping(&mut self, linearization: &[Self::Vertex]);
+    fn backtrack_book_keeping(&mut self, linearization: &[Self::Vertex]);
 }
 ```
 
@@ -134,8 +149,9 @@ k_i are the component sizes. For histories where sessions interact sparsely
 small, fast checks.
 
 Applied only to NP-complete levels (Prefix, Snapshot Isolation, Serializable).
-The polynomial saturation checkers are already efficient enough without
-decomposition.
+Singleton components are handled via a trivial witness fast-path (no DFS/SAT
+search) after the causal prerequisite check. The polynomial saturation checkers
+are already efficient enough without decomposition.
 
 ## SAT Encoding (Alternative Solver)
 

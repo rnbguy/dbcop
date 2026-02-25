@@ -1,3 +1,5 @@
+#![allow(clippy::doc_markdown)]
+
 /// Integration tests for version-0 reads mapping to the initial state (Bug 3 fix).
 ///
 /// `x==0` (version Some(0) where 0 == Default::default()) is treated as reading

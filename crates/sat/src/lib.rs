@@ -167,10 +167,10 @@ fn visibility_edges<Variable: Eq + Hash + Clone>(
 
 /// Decompose sessions by connected components of the communication graph.
 ///
-/// Returns `Some(components)` when 2+ non-trivial components exist (each
-/// component is a sorted vec of original 1-based session IDs paired with the
-/// corresponding sub-session slice). Returns `None` when decomposition
-/// provides no benefit (0 or 1 non-trivial components).
+/// Returns `Some(components)` when 2+ components exist (each component is a
+/// sorted vec of original 1-based session IDs paired with the corresponding
+/// sub-session slice). Returns `None` when decomposition provides no benefit
+/// (0 or 1 components).
 #[allow(clippy::type_complexity)]
 fn decompose_sessions<Variable, Version>(
     po: &AtomicTransactionPO<Variable>,
@@ -183,10 +183,7 @@ where
     let comm_graph = communication_graph(po);
     let all_components = connected_components(&comm_graph);
 
-    let components_to_check: Vec<BTreeSet<u64>> = all_components
-        .into_iter()
-        .filter(|c| c.len() >= 2)
-        .collect();
+    let components_to_check: Vec<BTreeSet<u64>> = all_components;
 
     if components_to_check.len() <= 1 {
         return None;
@@ -229,6 +226,38 @@ fn remap_witness_sat(witness: Witness, session_ids: &[u64]) -> Witness {
     }
 }
 
+/// Build Prefix/Serializable witness for a single-session history.
+fn singleton_commit_order_witness<Variable, Version>(
+    sessions: &[Session<Variable, Version>],
+) -> Witness {
+    debug_assert_eq!(sessions.len(), 1);
+    let commit_order: Vec<TransactionId> = (0..)
+        .zip(sessions[0].iter())
+        .map(|(session_height, _)| TransactionId {
+            session_id: 1,
+            session_height,
+        })
+        .collect();
+    Witness::CommitOrder(commit_order)
+}
+
+/// Build Snapshot Isolation split witness for a single-session history.
+fn singleton_split_commit_order_witness<Variable, Version>(
+    sessions: &[Session<Variable, Version>],
+) -> Witness {
+    debug_assert_eq!(sessions.len(), 1);
+    Witness::SplitCommitOrder(
+        (0..)
+            .zip(sessions[0].iter())
+            .map(|(session_height, _)| TransactionId {
+                session_id: 1,
+                session_height,
+            })
+            .flat_map(|tid| [(tid, false), (tid, true)])
+            .collect(),
+    )
+}
+
 /// Check serializability using SAT.
 ///
 /// # Errors
@@ -243,9 +272,15 @@ where
 {
     let po = check_causal_read(sessions)?;
 
+    if sessions.len() == 1 {
+        return Ok(());
+    }
+
     if let Some(components) = decompose_sessions(&po, sessions) {
         for (_, sub_sessions) in components {
-            check_serializable(&sub_sessions)?;
+            if sub_sessions.len() > 1 {
+                check_serializable(&sub_sessions)?;
+            }
         }
         return Ok(());
     }
@@ -360,10 +395,18 @@ where
 {
     let po = check_causal_read(sessions)?;
 
+    if sessions.len() == 1 {
+        return Ok(singleton_commit_order_witness(sessions));
+    }
+
     if let Some(components) = decompose_sessions(&po, sessions) {
         let mut merged = Witness::CommitOrder(Vec::new());
         for (session_ids, sub_sessions) in components {
-            let sub_witness = check_prefix(&sub_sessions)?;
+            let sub_witness = if sub_sessions.len() == 1 {
+                singleton_commit_order_witness(&sub_sessions)
+            } else {
+                check_prefix(&sub_sessions)?
+            };
             let remapped = remap_witness_sat(sub_witness, &session_ids);
             merged = match (merged, remapped) {
                 (Witness::CommitOrder(mut a), Witness::CommitOrder(b)) => {
@@ -512,10 +555,18 @@ where
 {
     let po = check_causal_read(sessions)?;
 
+    if sessions.len() == 1 {
+        return Ok(singleton_split_commit_order_witness(sessions));
+    }
+
     if let Some(components) = decompose_sessions(&po, sessions) {
         let mut merged = Witness::SplitCommitOrder(Vec::new());
         for (session_ids, sub_sessions) in components {
-            let sub_witness = check_snapshot_isolation(&sub_sessions)?;
+            let sub_witness = if sub_sessions.len() == 1 {
+                singleton_split_commit_order_witness(&sub_sessions)
+            } else {
+                check_snapshot_isolation(&sub_sessions)?
+            };
             let remapped = remap_witness_sat(sub_witness, &session_ids);
             merged = match (merged, remapped) {
                 (Witness::SplitCommitOrder(mut a), Witness::SplitCommitOrder(b)) => {

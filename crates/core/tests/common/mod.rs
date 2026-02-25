@@ -20,7 +20,7 @@
 /// - `w(var, val)` → `Event::write("var", val)`
 /// - `r(var, val)` → `Event::read("var", val)`
 /// - `r(var)`      → `Event::read_empty("var")`
-
+///
 /// Build a single Event.
 #[macro_export]
 macro_rules! ev {

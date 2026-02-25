@@ -15,5 +15,13 @@ dbcop_core     = { workspace = true }
 rustsat        = "0.7"
 rustsat-batsat = "0.7"
 
+[dev-dependencies]
+criterion     = { version = "0.8", features = [ "html_reports" ] }
+dbcop_testgen = { workspace = true }
+
 [lints]
 workspace = true
+
+[[bench]]
+name    = "npc_vs_sat"
+harness = false

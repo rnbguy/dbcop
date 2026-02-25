@@ -1,3 +1,5 @@
+#![allow(clippy::doc_markdown, clippy::missing_const_for_fn)]
+
 //! Tests enforcing the strict consistency hierarchy:
 //!   CommittedRead < AtomicRead < Causal < Prefix < SnapshotIsolation < Serializable
 //!

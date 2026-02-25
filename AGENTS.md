@@ -331,9 +331,16 @@ notepads, and agent memory.
 - Communication graph decomposition (`consistency/mod.rs`, `dbcop_sat/lib.rs`):
   decomposes history by connected components of the communication graph (Theorem
   5.2 from Biswas & Enea 2019). Checks each component independently, then remaps
-  and merges witnesses. Reduces DFS/SAT search space from O(n!) to O(sum of
-  k_i!) where k_i are component sizes. Applied to NP-complete levels only:
-  Prefix, SnapshotIsolation, Serializable.
+  and merges witnesses. Decomposition must include singleton components as well,
+  otherwise merged Prefix/SI/Serializable witnesses can drop isolated sessions.
+  Reduces DFS/SAT search space from O(n!) to O(sum of k_i!) where k_i are
+  component sizes. Applied to NP-complete levels only: Prefix,
+  SnapshotIsolation, Serializable.
+- Singleton NPC fast-path (`consistency/mod.rs`, `dbcop_sat/lib.rs`): when the
+  projected history has exactly one session, skip DFS/SAT linearization search
+  and synthesize the trivial witness from session order after causal check. Also
+  applied per component during decomposition to avoid recursive re-checking and
+  SAT solving for singleton components.
 
 - Incremental transitive closure (`digraph.rs`): `incremental_closure()` extends
   an existing closed graph with new edges using BFS ancestor/descendant
@@ -357,11 +364,20 @@ notepads, and agent memory.
   `test_inconsistent_local_read_before_write`.
 - `crates/core/tests/paper_polynomial.rs` -- 13 tests verifying polynomial-time
   checker correctness against known histories.
-- `crates/core/tests/decomposition_check.rs` -- 3 tests verifying communication
-  graph decomposition in NP-complete checkers (independent clusters, single
-  cluster fallback, write-skew detection across components).
+- `crates/core/tests/decomposition_check.rs` -- 9 tests verifying communication
+  graph decomposition in NP-complete checkers, including singleton-component
+  witness preservation and single-session trivial witnesses for
+  Prefix/SI/Serializable.
+- `crates/sat/tests/cross_check.rs` includes SAT witness regression tests for
+  singleton-component preservation and single-session fast-path coverage in
+  Prefix/SnapshotIsolation/Serializable, plus a bounded differential fuzz test
+  against core NPC solvers (`DBCOP_DIFF_FUZZ_SAMPLES`, default 256).
 - `crates/core/benches/consistency.rs` -- 18 Criterion benchmarks (6 consistency
   levels x 3 history sizes).
+- `crates/sat/benches/npc_vs_sat.rs` -- Criterion comparison benchmark for
+  Prefix/SnapshotIsolation/Serializable using randomly sampled valid histories;
+  reports prebench SAT/Core average latency ratio and benchmarks both solver
+  paths.
 - Always add tests when adding new functionality.
 
 ## AGENTS.md Update Protocol

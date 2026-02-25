@@ -1,8 +1,14 @@
+#![allow(
+    clippy::doc_markdown,
+    clippy::missing_const_for_fn,
+    clippy::result_large_err
+)]
+
 //! Tests for Causal Consistency (CC) and Prefix Consistency (PC).
 //!
 //! Paper references:
-//!   CC — Section 3, Algorithm 1 (visibility saturation + acyclicity)
-//!   PC — Section 4.2 (causal + prefix-closed visibility under some total order)
+//!   CC -- Section 3, Algorithm 1 (visibility saturation + acyclicity)
+//!   PC -- Section 4.2 (causal + prefix-closed visibility under some total order)
 //!
 //! Hierarchy in this implementation (weakest to strongest):
 //!   CommittedRead < AtomicRead < Causal == Prefix < SnapshotIsolation < Serializable
@@ -52,10 +58,10 @@ fn check_prefix(h: &[Session<&'static str, u64>]) -> Result<Witness, Error<&'sta
 /// CC PASS: simple causal chain S1→S2→S3.
 ///
 /// S1: w(x,1)
-/// S2: r(x,1) w(y,2)   — S1 causally precedes S2 via WR edge on x
-/// S3: r(y,2)           — S2 causally precedes S3 via WR edge on y
+/// S2: r(x,1) w(y,2)   -- S1 causally precedes S2 via WR edge on x
+/// S3: r(y,2)           -- S2 causally precedes S3 via WR edge on y
 ///
-/// Visibility: S1 <vis S2 <vis S3.  Acyclic — passes CC.
+/// Visibility: S1 <vis S2 <vis S3.  Acyclic -- passes CC.
 #[test]
 fn cc_pass_simple_chain() {
     let h: Vec<Session<&str, u64>> = vec![
@@ -75,12 +81,12 @@ fn cc_pass_simple_chain() {
 ///
 /// History (7 sessions, single transaction each):
 ///   S1: w(x,1) w(a,1)
-///   S2: r(x,1) w(y,1)      — WR: S1→S2
-///   S3: r(y,1) w(z,1)      — WR: S2→S3
-///   S4: r(z,1) w(a,2)      — WR: S3→S4; S4 overwrites S1's a=1 with a=2
-///   S5: r(a,2) w(p,1)      — WR: S4→S5
-///   S6: r(p,1) w(q,1)      — WR: S5→S6
-///   S7: r(q,1) r(a,1)      — WR: S6→S7 (q), S1→S7 (a=1, stale)
+///   S2: r(x,1) w(y,1)      -- WR: S1→S2
+///   S3: r(y,1) w(z,1)      -- WR: S2→S3
+///   S4: r(z,1) w(a,2)      -- WR: S3→S4; S4 overwrites S1's a=1 with a=2
+///   S5: r(a,2) w(p,1)      -- WR: S4→S5
+///   S6: r(p,1) w(q,1)      -- WR: S5→S6
+///   S7: r(q,1) r(a,1)      -- WR: S6→S7 (q), S1→S7 (a=1, stale)
 ///
 /// Causal chain: S1→S2→S3→S4→S5→S6→S7 (via WR edges).
 /// S7 reads a=1 from S1. S4 writes a=2 (overwriting S1).
@@ -175,7 +181,7 @@ fn cc_violation_ww_conflict() {
 /// CC PASS: 5-session acyclic causal chain.
 ///
 /// S1→S2→S3→S4→S5 via write-read dependencies on distinct variables.
-/// The induced visibility order is a linear DAG — no cycle — passes CC.
+/// The induced visibility order is a linear DAG -- no cycle -- passes CC.
 #[test]
 fn cc_pass_long_chain() {
     let h: Vec<Session<&str, u64>> = vec![
@@ -217,19 +223,19 @@ fn pc_pass_total_order() {
 /// Two transactions both read x=1 from an initial writer and both overwrite x.
 /// This is valid under CC (no causal ordering cycle) and PC (the linearization
 /// solver's write-section constraint is satisfied), but fails Snapshot Isolation
-/// because T2 and T3 are concurrent and both write x — a write-write conflict.
+/// because T2 and T3 are concurrent and both write x -- a write-write conflict.
 ///
 /// In this implementation, the smallest history that passes CC but fails a
 /// higher level is an SI violation. There is no CC-pass/PC-fail history in
 /// this model: the CC ww-edge saturation enforces the same ordering invariants
 /// that the PC linearization solver checks, making CC and PC equivalent here.
 ///
-/// T1: w(x,1)            — initial write
-/// T2: r(x,1) w(x,2)     — reads T1's x, overwrites with x=2
-/// T3: r(x,1) w(x,3)     — concurrent with T2, also reads T1's x and writes x=3
+/// T1: w(x,1)            -- initial write
+/// T2: r(x,1) w(x,2)     -- reads T1's x, overwrites with x=2
+/// T3: r(x,1) w(x,3)     -- concurrent with T2, also reads T1's x and writes x=3
 ///
 /// CC: WR T1→T2 (x), WR T1→T3 (x). No ww edge (T2 and T3 don't see each other's
-///   readers). Acyclic — passes CC and PC.
+///   readers). Acyclic -- passes CC and PC.
 /// SI: T2 and T3 are concurrent (no vis between them) and both write x.
 ///   SI forbids concurrent write-write conflicts → fails SI.
 #[test]
@@ -261,9 +267,9 @@ fn pc_violation_not_prefix() {
 
 /// PC PASS: classic write skew pattern.
 ///
-/// T0: w(x,1) w(y,1)      — set initial values
-/// T1: r(x,1) w(y,2)      — reads x from T0, writes y=2 (write skew)
-/// T2: r(y,1) w(x,2)      — reads y from T0, writes x=2 (write skew)
+/// T0: w(x,1) w(y,1)      -- set initial values
+/// T1: r(x,1) w(y,2)      -- reads x from T0, writes y=2 (write skew)
+/// T2: r(y,1) w(x,2)      -- reads y from T0, writes x=2 (write skew)
 ///
 /// CC: WR T0→T1 (x), T0→T2 (y). T1 and T2 are concurrent (no WR between them).
 ///   No ww cycle (T1 doesn't see T2's readers, T2 doesn't see T1's readers). CC passes.
@@ -273,7 +279,7 @@ fn pc_violation_not_prefix() {
 /// SI: T1 writes y=2, T2 writes x=2. They write DIFFERENT variables, so no
 ///   write-write conflict under SI. SI passes (write skew is the canonical
 ///   SI-valid but SER-invalid anomaly).
-/// SER: T1 reads old x, T2 reads old y — anti-dependency cycle → SER fails.
+/// SER: T1 reads old x, T2 reads old y -- anti-dependency cycle → SER fails.
 #[test]
 fn pc_pass_write_skew() {
     let h: Vec<Session<&str, u64>> = vec![
@@ -302,9 +308,9 @@ fn pc_pass_write_skew() {
 /// S4: r(a,1) r(b,1) r(c,1)
 ///
 /// Any total order placing S1,S2,S3 before S4 works.
-/// S4 reads from all three writers — the PC solver places S1,S2,S3 write
+/// S4 reads from all three writers -- the PC solver places S1,S2,S3 write
 /// sections first (satisfying their reader constraints) then S4.
-/// No write-ordering conflict — PC passes.
+/// No write-ordering conflict -- PC passes.
 #[test]
 fn pc_pass_three_sessions() {
     let h: Vec<Session<&str, u64>> = vec![

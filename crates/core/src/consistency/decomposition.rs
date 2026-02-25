@@ -263,10 +263,7 @@ mod tests {
             "Session 1 should exist"
         );
         assert!(
-            comm_graph
-                .adj_map
-                .get(&1)
-                .is_some_and(|neighbors| neighbors.is_empty()),
+            comm_graph.adj_map.get(&1).is_some_and(HashSet::is_empty),
             "Session 1 should have no neighbors"
         );
     }
@@ -306,9 +303,7 @@ mod tests {
                             .adj_map
                             .get(&i)
                             .is_some_and(|neighbors| neighbors.contains(&j)),
-                        "Sessions {} and {} should be connected",
-                        i,
-                        j
+                        "Sessions {i} and {j} should be connected",
                     );
                 }
             }

@@ -156,6 +156,39 @@ fn merge_witnesses(base: Witness, other: Witness) -> Witness {
     }
 }
 
+/// Build the trivial NPC witness for a single-session history.
+///
+/// For one session, the transaction order is fixed by session order, so
+/// Prefix/Serializable witnesses are the commit chain and Snapshot Isolation
+/// is its split-phase expansion.
+fn singleton_session_witness<Variable, Version>(
+    session: &Session<Variable, Version>,
+    level: Consistency,
+) -> Witness {
+    let commit_order: Vec<TransactionId> = (0..)
+        .zip(session.iter())
+        .map(|(session_height, _)| TransactionId {
+            session_id: 1,
+            session_height,
+        })
+        .collect();
+
+    if matches!(level, Consistency::SnapshotIsolation) {
+        Witness::SplitCommitOrder(
+            commit_order
+                .into_iter()
+                .flat_map(|tid| [(tid, false), (tid, true)])
+                .collect(),
+        )
+    } else {
+        debug_assert!(matches!(
+            level,
+            Consistency::Prefix | Consistency::Serializable
+        ));
+        Witness::CommitOrder(commit_order)
+    }
+}
+
 /// Check NP-complete consistency levels (Prefix, `SnapshotIsolation`, Serializable)
 /// using connected-component decomposition of the communication graph
 /// (Theorem 5.2 in Biswas & Enea 2019).
@@ -172,15 +205,16 @@ where
 {
     let po = check_causal_read(sessions)?;
 
+    if sessions.len() == 1 {
+        return Ok(singleton_session_witness(&sessions[0], level));
+    }
+
     let comm_graph = decomposition::communication_graph(&po);
     let all_components = decomposition::connected_components(&comm_graph);
 
-    // Only non-trivial components (>= 2 sessions) require a consistency check.
-    // Singleton sessions are trivially consistent after the causal check.
-    let components_to_check: Vec<BTreeSet<u64>> = all_components
-        .into_iter()
-        .filter(|c| c.len() >= 2)
-        .collect();
+    // Keep every component (including singletons) so the merged witness
+    // always covers all sessions in the original history.
+    let components_to_check: Vec<BTreeSet<u64>> = all_components;
 
     tracing::debug!(
         components = components_to_check.len(),
@@ -189,7 +223,7 @@ where
         "communication graph decomposition"
     );
 
-    // Single (or no) non-trivial component: run DFS directly on the pre-built PO.
+    // Single (or no) component: run DFS directly on the pre-built PO.
     if components_to_check.len() <= 1 {
         return match level {
             Consistency::Prefix => {
@@ -239,7 +273,11 @@ where
             .map(|&sid| sessions[sid as usize - 1].clone())
             .collect();
 
-        let sub_witness = check_npc(&sub_sessions, level)?;
+        let sub_witness = if sub_sessions.len() == 1 {
+            singleton_session_witness(&sub_sessions[0], level)
+        } else {
+            check_npc(&sub_sessions, level)?
+        };
         let remapped = remap_witness(sub_witness, &session_ids);
         merged = merge_witnesses(merged, remapped);
     }
@@ -379,6 +417,40 @@ mod tests {
     }
 
     #[test]
+    fn singleton_session_witness_commit_order_for_prefix() {
+        let session = vec![
+            Transaction::committed(vec![Event::write("x", 1)]),
+            Transaction::committed(vec![Event::read("x", 1), Event::write("y", 1)]),
+        ];
+        let witness = singleton_session_witness(&session, Consistency::Prefix);
+        let Witness::CommitOrder(order) = witness else {
+            panic!("expected CommitOrder");
+        };
+        assert_eq!(order.len(), 2);
+        assert_eq!(order[0].session_id, 1);
+        assert_eq!(order[0].session_height, 0);
+        assert_eq!(order[1].session_id, 1);
+        assert_eq!(order[1].session_height, 1);
+    }
+
+    #[test]
+    fn singleton_session_witness_split_order_for_snapshot_isolation() {
+        let session = vec![
+            Transaction::committed(vec![Event::write("x", 1)]),
+            Transaction::committed(vec![Event::read("x", 1), Event::write("y", 1)]),
+        ];
+        let witness = singleton_session_witness(&session, Consistency::SnapshotIsolation);
+        let Witness::SplitCommitOrder(order) = witness else {
+            panic!("expected SplitCommitOrder");
+        };
+        assert_eq!(order.len(), 4);
+        assert!(!order[0].1);
+        assert!(order[1].1);
+        assert!(!order[2].1);
+        assert!(order[3].1);
+    }
+
+    #[test]
     fn remap_witness_commit_order() {
         let witness = Witness::CommitOrder(vec![
             TransactionId {
@@ -422,9 +494,9 @@ mod tests {
             panic!("expected SplitCommitOrder");
         };
         assert_eq!(order[0].0.session_id, 7);
-        assert_eq!(order[0].1, false);
+        assert!(!order[0].1);
         assert_eq!(order[1].0.session_id, 7);
-        assert_eq!(order[1].1, true);
+        assert!(order[1].1);
     }
 
     #[test]
