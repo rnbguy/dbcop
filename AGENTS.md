@@ -63,7 +63,7 @@ Examples:
   Config: `.github/zizmor.yml` suppresses hash-pin warnings (we use tag-pinned
   refs, not SHA hashes). Fix all other zizmor lints.
 - Coverage:
-  `cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info`.
+  `cargo llvm-cov --workspace --all-features --lcov --output-path coverage/rust.lcov`.
   Requires `llvm-tools-preview` component and `cargo-llvm-cov` installed.
 
 ## CI Checks
@@ -77,8 +77,8 @@ All five must pass before merging:
    files, typos spell check
 4. `Deno` (deno.yaml) -- builds WASM, runs deno fmt/lint/check, runs WASM
    integration tests
-5. `coverage` (coverage.yaml) -- cargo-llvm-cov + Codecov upload (requires
-   `CODECOV_TOKEN` secret)
+5. `coverage` (coverage.yaml) -- cargo-llvm-cov + Deno lcov + split Codecov
+   uploads (flags: `rust`, `deno`; requires `CODECOV_TOKEN` secret)
 
 ## Code Constraints
 
@@ -132,6 +132,8 @@ dbcop/                          workspace root
     rust.yaml                    build + format CI
     code-quality.yaml            taplo + typos CI
     deno.yaml                    Deno fmt/lint/check + WASM tests CI
+    coverage.yaml                Rust + Deno coverage generation and Codecov upload
+  codecov.yml                    Codecov status config (project/patch + rust/deno flags)
   .github/zizmor.yml             zizmor config: suppress hash-pin lint (allow tag-pinned refs)
   .husky/pre-commit              ASCII check + cargo +nightly fmt + deno:ci
   taplo.toml                     TOML formatter config

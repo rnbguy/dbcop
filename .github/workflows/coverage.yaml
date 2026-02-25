@@ -33,8 +33,15 @@ jobs:
         with:
           tool: cargo-llvm-cov
 
-      - name: Generate coverage report
-        run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
+      - name: Prepare coverage output directories
+        run: |
+          rm -rf coverage
+          mkdir -p coverage
+
+      - name: Generate Rust coverage report (LCOV)
+        run: |
+          cargo llvm-cov clean --workspace
+          cargo llvm-cov --workspace --all-features --lcov --output-path coverage/rust.lcov
 
       - name: Set up Deno
         uses: denoland/setup-deno@v2
@@ -50,9 +57,25 @@ jobs:
 
       - name: Generate Deno LCOV report
         run: deno coverage coverage/deno --lcov --output=coverage/deno.lcov
-      - name: Upload coverage to Codecov
+
+      - name: Upload Rust coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: lcov.info,coverage/deno.lcov
+          files: coverage/rust.lcov
+          flags: rust
+          name: rust-coverage
+          disable_search: true
           fail_ci_if_error: true
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload Deno coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage/deno.lcov
+          flags: deno
+          name: deno-coverage
+          disable_search: true
+          fail_ci_if_error: true
+          verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
