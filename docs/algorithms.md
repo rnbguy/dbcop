@@ -84,6 +84,10 @@ defines the DFS framework:
 ```
 trait ConstrainedLinearizationSolver {
     type Vertex;
+    fn search_options(&self) -> DfsSearchOptions;
+    fn branch_score(&self, linearization: &[Self::Vertex], next: &Self::Vertex) -> i64;
+    fn zobrist_value(&self, next: &Self::Vertex) -> u128;
+    fn should_prune(&self, linearization: &[Self::Vertex], frontier_len: usize) -> bool;
     fn allow_next(&self, linearization: &[Self::Vertex], next: &Self::Vertex) -> bool;
     fn forward_book_keeping(&mut self, linearization: &[Self::Vertex]);
     fn backtrack_book_keeping(&mut self, linearization: &[Self::Vertex]);
@@ -92,6 +96,13 @@ trait ConstrainedLinearizationSolver {
 
 - `allow_next()` -- Can this transaction be appended to the current partial
   linearization?
+- `search_options()` -- Solver-provided DFS policy (memoization and branch
+  ordering mode).
+- `branch_score()` -- Optional heuristic score for frontier ordering (used by
+  high-score/low-score modes).
+- `zobrist_value()` -- Solver-provided Zobrist token source for frontier-state
+  signatures.
+- `should_prune()` -- Optional branch-and-bound style pruning hook.
 - `forward_book_keeping()` -- Update solver state after appending a transaction.
 - `backtrack_book_keeping()` -- Undo state changes when backtracking.
 

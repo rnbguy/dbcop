@@ -47,7 +47,9 @@ use core::hash::Hash;
 
 use hashbrown::{HashMap, HashSet};
 
-use crate::consistency::constrained_linearization::ConstrainedLinearizationSolver;
+use crate::consistency::constrained_linearization::{
+    BranchOrdering, ConstrainedLinearizationSolver, DfsSearchOptions,
+};
 use crate::history::atomic::types::TransactionId;
 use crate::history::atomic::AtomicTransactionPO;
 
@@ -95,6 +97,27 @@ where
     Variable: Clone + Eq + Ord + Hash,
 {
     type Vertex = TransactionId;
+
+    fn search_options(&self) -> DfsSearchOptions {
+        DfsSearchOptions {
+            memoize_frontier: true,
+            branch_ordering: BranchOrdering::HighScoreFirst,
+        }
+    }
+
+    fn branch_score(&self, _linearization: &[Self::Vertex], v: &Self::Vertex) -> i64 {
+        let child_count = self.children_of(v).map_or(0, |children| children.len());
+        let write_set = self
+            .history
+            .history
+            .0
+            .get(v)
+            .map_or(0, |info| info.writes.len());
+        let child_score = i64::try_from(child_count).expect("child count fits i64");
+        let write_score = i64::try_from(write_set).expect("write count fits i64");
+        child_score + (write_score * 2)
+    }
+
     fn get_root(&self) -> Self::Vertex {
         TransactionId::default()
     }

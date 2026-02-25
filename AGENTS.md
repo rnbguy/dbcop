@@ -268,6 +268,11 @@ present for visualization. On invalid input: `{"ok": false, "error": "..."}`.
 - `Consistency` enum: `CommittedRead`, `AtomicRead`, `Causal`, `Prefix`,
   `SnapshotIsolation`, `Serializable`.
 
+- `DfsSearchOptions` / `BranchOrdering`
+  (`consistency/linearization/constrained_linearization.rs`): trait-level DFS
+  policy for NPC solvers. Options currently include frontier memoization toggle
+  and branch ordering mode (`AsProvided`, `HighScoreFirst`, `LowScoreFirst`).
+
 - `check()` entry point: returns `Result<Witness, Error<Variable, Version>>`.
   Each consistency level produces a specific `Witness` variant on success:
   - Committed Read: `SaturationOrder(DiGraph<TransactionId>)` (committed order
@@ -317,8 +322,15 @@ notepads, and agent memory.
 ## Performance Decisions
 
 - Zobrist hashing (`constrained_linearization.rs`): uses `HashSet<u128>` with
-  per-variable random u128 seeds for O(1) DFS memoization. Replaces
-  `HashSet<BTreeSet<TransactionId>>` which had O(T log T) hash cost.
+  frontier-state signatures for O(1) DFS memoization. Replaces
+  `HashSet<BTreeSet<TransactionId>>` which had O(T log T) hash cost. Zobrist
+  token generation is now solver-provider controlled via trait method
+  `zobrist_value()`.
+
+- DFS policy hooks (`constrained_linearization.rs`): the solver trait now
+  exposes `search_options()`, `branch_score()`, and `should_prune()` so each NPC
+  checker can provide branch ordering and pruning behavior without changing the
+  shared DFS engine.
 
 - Chain closure (`atomic/mod.rs`): computes session-order transitive closure
   with an O(S * T^2) forward scan grouped by session. Replaces general
