@@ -149,6 +149,17 @@ fn single_session_two_txn_history() -> Vec<Session<&'static str, u64>> {
     ]]
 }
 
+fn articulation_chain_history() -> Vec<Session<&'static str, u64>> {
+    vec![
+        vec![Transaction::committed(vec![Event::write("x", 1)])],
+        vec![
+            Transaction::committed(vec![Event::read("x", 1)]),
+            Transaction::committed(vec![Event::write("y", 1)]),
+        ],
+        vec![Transaction::committed(vec![Event::read("y", 1)])],
+    ]
+}
+
 // ---------------------------------------------------------------------------
 // Serializability cross-checks
 // ---------------------------------------------------------------------------
@@ -360,6 +371,36 @@ fn sat_serializable_decomposition_handles_singleton_component() {
         check_serializable(&h).is_ok(),
         "expected SAT-SER pass for decomposed history with singleton component",
     );
+}
+
+#[test]
+fn sat_biconnected_overlap_prefix_witness_has_no_duplicates() {
+    let h = articulation_chain_history();
+    assert_agree_pc(&h, "biconnected-overlap-prefix");
+    let Witness::CommitOrder(order) = check_prefix(&h).expect("expected SAT-PC pass") else {
+        panic!("expected CommitOrder witness");
+    };
+    assert_eq!(order.len(), 4, "expected one entry per transaction");
+    let ids: std::collections::HashSet<u64> = order.iter().map(|tid| tid.session_id).collect();
+    assert_eq!(ids, [1, 2, 3].into());
+}
+
+#[test]
+fn sat_biconnected_overlap_snapshot_witness_has_no_duplicates() {
+    let h = articulation_chain_history();
+    assert_agree_si(&h, "biconnected-overlap-snapshot");
+    let Witness::SplitCommitOrder(order) =
+        check_snapshot_isolation(&h).expect("expected SAT-SI pass")
+    else {
+        panic!("expected SplitCommitOrder witness");
+    };
+    assert_eq!(
+        order.len(),
+        8,
+        "expected read/write phases for exactly four transactions",
+    );
+    let ids: std::collections::HashSet<u64> = order.iter().map(|(tid, _)| tid.session_id).collect();
+    assert_eq!(ids, [1, 2, 3].into());
 }
 
 #[test]

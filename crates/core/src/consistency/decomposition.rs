@@ -4,6 +4,7 @@ use core::hash::Hash;
 
 use hashbrown::HashSet;
 
+use crate::graph::biconnected_component::BiconnectedComponentWalker;
 use crate::graph::ugraph::UGraph;
 use crate::history::atomic::AtomicTransactionPO;
 
@@ -109,6 +110,20 @@ pub fn connected_components(graph: &UGraph<u64>) -> Vec<BTreeSet<u64>> {
         components.push(component);
     }
     components
+}
+
+/// Find biconnected components of a communication graph.
+///
+/// Returns vertex-sets (session IDs) for all biconnected blocks plus
+/// singleton/pair non-groups produced by the decomposition walker.
+#[must_use]
+pub fn biconnected_components(graph: &UGraph<u64>) -> Vec<BTreeSet<u64>> {
+    let (_, components, non_group) = BiconnectedComponentWalker::get_vertex_components(graph);
+
+    let mut result: Vec<BTreeSet<u64>> = components.into_iter().chain(non_group).collect();
+    result.sort_unstable();
+    result.dedup();
+    result
 }
 
 #[cfg(test)]
@@ -308,5 +323,15 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_biconnected_components_path_graph() {
+        let mut graph: UGraph<u64> = UGraph::default();
+        graph.add_edge(1, 2);
+        graph.add_edge(2, 3);
+
+        let components = biconnected_components(&graph);
+        assert_eq!(components, vec![[1, 2].into(), [2, 3].into()]);
     }
 }

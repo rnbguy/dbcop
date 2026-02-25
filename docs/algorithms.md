@@ -122,7 +122,7 @@ with the prefix of writes preceding it. Returns `Witness::CommitOrder`.
 **Source:** `crates/core/src/consistency/decomposition.rs`
 
 **Theorem 5.2 (Biswas & Enea 2019):** A history satisfies a consistency
-criterion if and only if its projection onto each connected component of the
+criterion if and only if its projection onto each biconnected component of the
 communication graph satisfies that criterion.
 
 The **communication graph** is an undirected graph where:
@@ -135,18 +135,18 @@ The **communication graph** is an undirected graph where:
 
 1. Build the communication graph from the `AtomicTransactionPO`'s write-read
    relations.
-2. Find connected components of the communication graph.
+2. Find biconnected components of the communication graph.
 3. For each component with 2+ sessions, project the history onto those sessions
    and check independently.
-4. Remap transaction IDs in each sub-witness back to original session IDs.
-5. Merge all sub-witnesses into the final result.
+4. If components are disjoint, remap and merge sub-witnesses directly.
+5. If components overlap on articulation sessions, fall back to solving on the
+   full PO to emit a non-duplicated witness.
 
 ### Impact
 
-This decomposition reduces the search space from O(n!) to O(sum of k_i!) where
-k_i are the component sizes. For histories where sessions interact sparsely
-(common in practice), this can turn an intractable problem into a series of
-small, fast checks.
+For disjoint decompositions, this reduces the search space from O(n!) to O(sum
+of k_i!) where k_i are the component sizes. For articulation-overlap cases,
+dbcop falls back to a full solve for correctness.
 
 Applied only to NP-complete levels (Prefix, Snapshot Isolation, Serializable).
 Singleton components are handled via a trivial witness fast-path (no DFS/SAT

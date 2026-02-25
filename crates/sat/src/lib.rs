@@ -14,7 +14,7 @@
 use std::collections::{BTreeSet, HashMap};
 use std::hash::Hash;
 
-use dbcop_core::consistency::decomposition::{communication_graph, connected_components};
+use dbcop_core::consistency::decomposition::{biconnected_components, communication_graph};
 use dbcop_core::consistency::error::Error;
 use dbcop_core::consistency::saturation::causal::check_causal_read;
 use dbcop_core::consistency::witness::Witness;
@@ -25,6 +25,8 @@ use dbcop_core::Consistency;
 use rustsat::solvers::{Solve, SolverResult};
 use rustsat::types::{Lit, TernaryVal};
 use rustsat_batsat::BasicSolver;
+
+type SessionSubset<Variable, Version> = (Vec<u64>, Vec<Session<Variable, Version>>);
 
 /// Map from vertex pairs to SAT variable indices.
 ///
@@ -165,23 +167,37 @@ fn visibility_edges<Variable: Eq + Hash + Clone>(
     edges
 }
 
-/// Decompose sessions by connected components of the communication graph.
+struct SessionDecomposition<Variable, Version> {
+    components: Vec<SessionSubset<Variable, Version>>,
+    has_overlap: bool,
+}
+
+fn components_overlap(components: &[BTreeSet<u64>]) -> bool {
+    let total_membership: usize = components.iter().map(BTreeSet::len).sum();
+    let unique_membership: BTreeSet<u64> = components
+        .iter()
+        .flat_map(|component| component.iter().copied())
+        .collect();
+    total_membership != unique_membership.len()
+}
+
+/// Decompose sessions by biconnected components of the communication graph.
 ///
 /// Returns `Some(components)` when 2+ components exist (each component is a
 /// sorted vec of original 1-based session IDs paired with the corresponding
 /// sub-session slice). Returns `None` when decomposition provides no benefit
-/// (0 or 1 components).
+/// (0 or 1 components). `has_overlap` indicates articulation-session overlap.
 #[allow(clippy::type_complexity)]
 fn decompose_sessions<Variable, Version>(
     po: &AtomicTransactionPO<Variable>,
     sessions: &[Session<Variable, Version>],
-) -> Option<Vec<(Vec<u64>, Vec<Session<Variable, Version>>)>>
+) -> Option<SessionDecomposition<Variable, Version>>
 where
     Variable: Clone + Eq + Hash,
     Version: Clone,
 {
     let comm_graph = communication_graph(po);
-    let all_components = connected_components(&comm_graph);
+    let all_components = biconnected_components(&comm_graph);
 
     let components_to_check: Vec<BTreeSet<u64>> = all_components;
 
@@ -189,20 +205,24 @@ where
         return None;
     }
 
-    Some(
-        components_to_check
-            .into_iter()
-            .map(|component| {
-                let session_ids: Vec<u64> = component.iter().copied().collect();
-                #[allow(clippy::cast_possible_truncation)]
-                let sub_sessions: Vec<Session<Variable, Version>> = session_ids
-                    .iter()
-                    .map(|&sid| sessions[sid as usize - 1].clone())
-                    .collect();
-                (session_ids, sub_sessions)
-            })
-            .collect(),
-    )
+    let has_overlap = components_overlap(&components_to_check);
+    let components = components_to_check
+        .into_iter()
+        .map(|component| {
+            let session_ids: Vec<u64> = component.iter().copied().collect();
+            #[allow(clippy::cast_possible_truncation)]
+            let sub_sessions: Vec<Session<Variable, Version>> = session_ids
+                .iter()
+                .map(|&sid| sessions[sid as usize - 1].clone())
+                .collect();
+            (session_ids, sub_sessions)
+        })
+        .collect();
+
+    Some(SessionDecomposition {
+        components,
+        has_overlap,
+    })
 }
 
 /// Remap witness `TransactionId`s from sub-history session IDs to original IDs.
@@ -276,13 +296,19 @@ where
         return Ok(());
     }
 
-    if let Some(components) = decompose_sessions(&po, sessions) {
-        for (_, sub_sessions) in components {
-            if sub_sessions.len() > 1 {
-                check_serializable(&sub_sessions)?;
+    if let Some(decomposition) = decompose_sessions(&po, sessions) {
+        let SessionDecomposition {
+            components,
+            has_overlap,
+        } = decomposition;
+        if !has_overlap {
+            for (_, sub_sessions) in components {
+                if sub_sessions.len() > 1 {
+                    check_serializable(&sub_sessions)?;
+                }
             }
+            return Ok(());
         }
-        return Ok(());
     }
 
     check_serializable_from_po(&po)
@@ -399,9 +425,13 @@ where
         return Ok(singleton_commit_order_witness(sessions));
     }
 
-    if let Some(components) = decompose_sessions(&po, sessions) {
+    if let Some(decomposition) = decompose_sessions(&po, sessions) {
+        if decomposition.has_overlap {
+            return check_prefix_from_po(&po).ok_or(Error::Invalid(Consistency::Prefix));
+        }
+
         let mut merged = Witness::CommitOrder(Vec::new());
-        for (session_ids, sub_sessions) in components {
+        for (session_ids, sub_sessions) in decomposition.components {
             let sub_witness = if sub_sessions.len() == 1 {
                 singleton_commit_order_witness(&sub_sessions)
             } else {
@@ -559,9 +589,13 @@ where
         return Ok(singleton_split_commit_order_witness(sessions));
     }
 
-    if let Some(components) = decompose_sessions(&po, sessions) {
+    if let Some(decomposition) = decompose_sessions(&po, sessions) {
+        if decomposition.has_overlap {
+            return check_si_from_po(&po).ok_or(Error::Invalid(Consistency::SnapshotIsolation));
+        }
+
         let mut merged = Witness::SplitCommitOrder(Vec::new());
-        for (session_ids, sub_sessions) in components {
+        for (session_ids, sub_sessions) in decomposition.components {
             let sub_witness = if sub_sessions.len() == 1 {
                 singleton_split_commit_order_witness(&sub_sessions)
             } else {
