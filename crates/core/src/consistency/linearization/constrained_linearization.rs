@@ -90,6 +90,13 @@ pub enum DominancePruning {
     Enabled,
 }
 
+/// Tie-breaking policy for equally ranked candidates.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TieBreaking {
+    Deterministic,
+    Randomized,
+}
+
 /// DFS engine options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DfsSearchOptions {
@@ -101,6 +108,14 @@ pub struct DfsSearchOptions {
     pub enable_killer_history: bool,
     /// Enable/disable frontier dominance pruning.
     pub dominance_pruning: DominancePruning,
+    /// Tie-breaking policy among similarly ranked candidates.
+    pub tie_breaking: TieBreaking,
+    /// Number of additional restart attempts before a final exhaustive run.
+    pub restart_max_attempts: usize,
+    /// Per-attempt node budget for restart attempts.
+    ///
+    /// The final attempt is always exhaustive (`None`) to preserve completeness.
+    pub restart_node_budget: Option<usize>,
     /// Prioritize currently-legal candidates before illegal ones.
     ///
     /// This keeps branch ordering focused on feasible moves and reduces
@@ -117,6 +132,9 @@ impl Default for DfsSearchOptions {
             nogood_learning: NogoodLearning::Enabled,
             enable_killer_history: true,
             dominance_pruning: DominancePruning::Enabled,
+            tie_breaking: TieBreaking::Deterministic,
+            restart_max_attempts: 0,
+            restart_node_budget: None,
             prefer_allowed_first: true,
             branch_ordering: BranchOrdering::AsProvided,
         }
@@ -231,6 +249,10 @@ where
     nogood_signatures: HashSet<u128>,
     conflict_jump_depth: HashMap<u128, usize>,
     failed_frontiers_by_state: HashMap<u128, Vec<HashSet<Vertex>>>,
+    rng: XorShift64,
+    nodes_expanded: usize,
+    node_budget: Option<usize>,
+    budget_hit: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -243,6 +265,22 @@ impl<Vertex> DfsRuntime<Vertex>
 where
     Vertex: Eq + Hash + Clone,
 {
+    fn next_random(&mut self) -> u64 {
+        self.rng.next_u64()
+    }
+
+    fn consume_node_budget(&mut self) -> bool {
+        self.nodes_expanded = self.nodes_expanded.saturating_add(1);
+        if self
+            .node_budget
+            .is_some_and(|budget| self.nodes_expanded > budget)
+        {
+            self.budget_hit = true;
+            return false;
+        }
+        true
+    }
+
     fn is_dominated(&self, state_signature: u128, frontier: &HashSet<Vertex>) -> bool {
         self.failed_frontiers_by_state
             .get(&state_signature)
@@ -269,11 +307,36 @@ where
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+struct XorShift64 {
+    state: u64,
+}
+
+impl XorShift64 {
+    const fn new(seed: u64) -> Self {
+        let initial = if seed == 0 {
+            0x9E37_79B9_7F4A_7C15
+        } else {
+            seed
+        };
+        Self { state: initial }
+    }
+
+    fn next_u64(&mut self) -> u64 {
+        let mut x = self.state;
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+        self.state = x;
+        x
+    }
+}
+
 fn order_frontier_with_heuristics<S: ConstrainedLinearizationSolver + ?Sized>(
     solver: &S,
     non_det_choices: &VecDeque<S::Vertex>,
     linearization: &[S::Vertex],
-    runtime: &DfsRuntime<S::Vertex>,
+    runtime: &mut DfsRuntime<S::Vertex>,
 ) -> Vec<(S::Vertex, bool)> {
     let options = runtime.options;
     let base = solver.ordered_frontier_candidates(non_det_choices, linearization, options);
@@ -282,12 +345,17 @@ fn order_frontier_with_heuristics<S: ConstrainedLinearizationSolver + ?Sized>(
     }
 
     let depth = linearization.len();
-    let mut decorated: Vec<(usize, S::Vertex, bool, u64)> = base
+    let mut decorated: Vec<(usize, S::Vertex, bool, u64, u64)> = base
         .into_iter()
         .enumerate()
         .map(|(idx, (v, allow_next))| {
             let bonus = runtime.heuristics.candidate_bonus(depth, &v);
-            (idx, v, allow_next, bonus)
+            let random_tie = if matches!(options.tie_breaking, TieBreaking::Randomized) {
+                runtime.next_random()
+            } else {
+                0
+            };
+            (idx, v, allow_next, bonus, random_tie)
         })
         .collect();
 
@@ -295,15 +363,18 @@ fn order_frontier_with_heuristics<S: ConstrainedLinearizationSolver + ?Sized>(
         if options.prefer_allowed_first {
             b.2.cmp(&a.2)
                 .then_with(|| b.3.cmp(&a.3))
+                .then_with(|| b.4.cmp(&a.4))
                 .then_with(|| a.0.cmp(&b.0))
         } else {
-            b.3.cmp(&a.3).then_with(|| a.0.cmp(&b.0))
+            b.3.cmp(&a.3)
+                .then_with(|| b.4.cmp(&a.4))
+                .then_with(|| a.0.cmp(&b.0))
         }
     });
 
     decorated
         .into_iter()
-        .map(|(_, v, allow_next, _)| (v, allow_next))
+        .map(|(_, v, allow_next, _, _)| (v, allow_next))
         .collect()
 }
 
@@ -321,6 +392,11 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
     let options = runtime.options;
     let state_signature = solver.frontier_signature(0, linearization);
     let mut frontier_set_for_dominance: Option<HashSet<S::Vertex>> = None;
+    if !runtime.consume_node_budget() {
+        return DfsStepResult::Fail {
+            jump_depth: depth.saturating_sub(1),
+        };
+    }
     if solver.should_prune(linearization, non_det_choices.len()) {
         return DfsStepResult::Fail {
             jump_depth: depth.saturating_sub(1),
@@ -443,6 +519,11 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
     let jump_depth = depth.saturating_sub(1);
     runtime.conflict_jump_depth.insert(signature, jump_depth);
     DfsStepResult::Fail { jump_depth }
+}
+
+fn attempt_seed(attempt: usize) -> u64 {
+    let attempt64 = u64::try_from(attempt).expect("attempt index fits u64");
+    0xA076_1D64_78BD_642F_u64 ^ attempt64.wrapping_mul(0xE703_7ED1_A0B4_28DB_u64)
 }
 
 /// Trait for consistency-specific linearization solvers.
@@ -620,6 +701,10 @@ pub trait ConstrainedLinearizationSolver {
             nogood_signatures: HashSet::default(),
             conflict_jump_depth: HashMap::default(),
             failed_frontiers_by_state: HashMap::default(),
+            rng: XorShift64::new(attempt_seed(0)),
+            nodes_expanded: 0,
+            node_budget: None,
+            budget_hit: false,
         };
         matches!(
             do_dfs_impl(
@@ -646,46 +731,68 @@ pub trait ConstrainedLinearizationSolver {
     ///
     /// [`do_dfs`]: ConstrainedLinearizationSolver::do_dfs
     fn get_linearization(&mut self) -> Option<Vec<Self::Vertex>> {
-        let mut non_det_choices: VecDeque<Self::Vertex> = VecDeque::default();
-        let mut active_parent: HashMap<Self::Vertex, usize> = HashMap::default();
-        let mut linearization: Vec<Self::Vertex> = Vec::default();
-        let mut seen: HashSet<u128> = HashSet::default();
-        let mut frontier_hash: u128 = 0;
+        let options = self.search_options();
+        let attempts = options.restart_max_attempts.saturating_add(1);
+        for attempt in 0..attempts {
+            let is_final_attempt = attempt.saturating_add(1) == attempts;
+            let mut non_det_choices: VecDeque<Self::Vertex> = VecDeque::default();
+            let mut active_parent: HashMap<Self::Vertex, usize> = HashMap::default();
+            let mut linearization: Vec<Self::Vertex> = Vec::default();
+            let mut seen: HashSet<u128> = HashSet::default();
+            let mut frontier_hash: u128 = 0;
 
-        // do active_parent counting
-        for u in self.vertices() {
-            {
+            for u in self.vertices() {
                 active_parent.entry(u.clone()).or_insert(0);
-            }
-            if let Some(vs) = self.children_of(&u) {
-                for v in vs {
-                    let entry = active_parent.entry(v).or_insert(0);
-                    *entry += 1;
+                if let Some(vs) = self.children_of(&u) {
+                    for v in vs {
+                        let entry = active_parent.entry(v).or_insert(0);
+                        *entry += 1;
+                    }
                 }
             }
-        }
 
-        // take vertices with zero active_parent as non-det choices
-        active_parent.iter().for_each(|(n, v)| {
-            if *v == 0 {
-                non_det_choices.push_back(n.clone());
-                frontier_hash ^= self.zobrist_value(n);
+            active_parent.iter().for_each(|(n, v)| {
+                if *v == 0 {
+                    non_det_choices.push_back(n.clone());
+                    frontier_hash ^= self.zobrist_value(n);
+                }
+            });
+
+            let mut runtime = DfsRuntime {
+                options,
+                heuristics: SearchHeuristics::default(),
+                nogood_signatures: HashSet::default(),
+                conflict_jump_depth: HashMap::default(),
+                failed_frontiers_by_state: HashMap::default(),
+                rng: XorShift64::new(attempt_seed(attempt)),
+                nodes_expanded: 0,
+                node_budget: if is_final_attempt {
+                    None
+                } else {
+                    options.restart_node_budget
+                },
+                budget_hit: false,
+            };
+
+            if matches!(
+                do_dfs_impl(
+                    self,
+                    &mut non_det_choices,
+                    &mut active_parent,
+                    &mut linearization,
+                    &mut seen,
+                    &mut frontier_hash,
+                    &mut runtime,
+                ),
+                DfsStepResult::Found
+            ) {
+                return Some(linearization);
             }
-        });
-
-        self.do_dfs(
-            &mut non_det_choices,
-            &mut active_parent,
-            &mut linearization,
-            &mut seen,
-            &mut frontier_hash,
-        );
-
-        if linearization.is_empty() {
-            None
-        } else {
-            Some(linearization)
+            if !runtime.budget_hit {
+                break;
+            }
         }
+        None
     }
 }
 
@@ -708,6 +815,9 @@ mod tests {
                 nogood_learning: NogoodLearning::Enabled,
                 enable_killer_history: true,
                 dominance_pruning: DominancePruning::Enabled,
+                tie_breaking: TieBreaking::Deterministic,
+                restart_max_attempts: 0,
+                restart_node_budget: None,
                 prefer_allowed_first: true,
                 branch_ordering: BranchOrdering::HighScoreFirst,
             }

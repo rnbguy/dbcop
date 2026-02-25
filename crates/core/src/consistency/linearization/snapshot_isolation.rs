@@ -50,7 +50,7 @@ use hashbrown::{HashMap, HashSet};
 
 use crate::consistency::constrained_linearization::{
     seeded_hash_u128, BranchOrdering, ConstrainedLinearizationSolver, DfsSearchOptions,
-    DominancePruning, NogoodLearning,
+    DominancePruning, NogoodLearning, TieBreaking,
 };
 use crate::history::atomic::types::TransactionId;
 use crate::history::atomic::AtomicTransactionPO;
@@ -113,6 +113,9 @@ where
             nogood_learning: NogoodLearning::Enabled,
             enable_killer_history: true,
             dominance_pruning: DominancePruning::Enabled,
+            tie_breaking: TieBreaking::Randomized,
+            restart_max_attempts: 2,
+            restart_node_budget: Some(20_000),
             prefer_allowed_first: true,
             branch_ordering: BranchOrdering::HighScoreFirst,
         }
