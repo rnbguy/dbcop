@@ -104,10 +104,33 @@ where
     }
 
     fn branch_score(&self, _linearization: &[Self::Vertex], v: &Self::Vertex) -> i64 {
+        let txn_info = self.history.history.0.get(&v.0).unwrap();
         let child_count = self.children_of(v).map_or(0, |children| children.len());
         let child_score = i64::try_from(child_count).expect("child count fits i64");
-        let write_bias = i64::from(u8::from(v.1));
-        (child_score * 2) + write_bias
+        let unresolved_readers = txn_info
+            .reads
+            .keys()
+            .filter(|x| {
+                self.active_write
+                    .get(*x)
+                    .is_some_and(|ts| ts.contains(&v.0))
+            })
+            .count();
+        let unresolved_readers_score =
+            i64::try_from(unresolved_readers).expect("unresolved reader count fits i64");
+        let write_release_count = txn_info
+            .writes
+            .iter()
+            .filter(|x| {
+                self.active_write
+                    .get(*x)
+                    .is_some_and(|ts| ts.len() == 1 && ts.contains(&v.0))
+            })
+            .count();
+        let write_release_score =
+            i64::try_from(write_release_count).expect("write release count fits i64");
+        let write_bias = i64::from(u8::from(v.1)) * 2;
+        (unresolved_readers_score * 8) + (write_release_score * 4) + (child_score * 2) + write_bias
     }
 
     fn frontier_signature(&self, frontier_hash: u128, _linearization: &[Self::Vertex]) -> u128 {
