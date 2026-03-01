@@ -23,7 +23,7 @@ use core::ops::Range;
 #[derive(::logos::Logos, Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
     /// A line comment starting with `//` and running to end of line.
-    #[regex(r"//[^\n]*")]
+    #[regex(r"//[^\n]*", allow_greedy = true)]
     Comment,
 
     /// One or more `-` characters on their own (session separator).
