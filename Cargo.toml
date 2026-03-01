@@ -46,7 +46,7 @@ rayon              = { version = "1.10" }
 derive_more        = { version = "2.1", default-features = false, features = [ "from" ] }
 winnow             = { version = "0.7" }
 logos              = { version = "0.15" }
-schemars           = { version = "0.8", default-features = false, features = [ "derive" ] }
+schemars           = { version = "1.2", default-features = false, features = [ "derive" ] }
 
 [workspace.lints.rust]
 unused_qualifications = "warn"
