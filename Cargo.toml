@@ -45,7 +45,7 @@ rand               = { version = "0.10" }
 rayon              = { version = "1.10" }
 derive_more        = { version = "2.1", default-features = false, features = [ "from" ] }
 winnow             = { version = "0.7" }
-logos              = { version = "0.15" }
+logos              = { version = "0.16" }
 schemars           = { version = "1.2", default-features = false, features = [ "derive" ] }
 
 [workspace.lints.rust]
