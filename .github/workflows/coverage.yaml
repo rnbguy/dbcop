@@ -58,7 +58,7 @@ jobs:
         run: deno coverage coverage/deno --lcov --output=coverage/deno.lcov
 
       - name: Upload Rust coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: coverage/rust.lcov
           flags: rust
@@ -69,7 +69,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload Deno coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: coverage/deno.lcov
           flags: deno
