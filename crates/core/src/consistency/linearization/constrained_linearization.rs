@@ -769,7 +769,7 @@ pub trait ConstrainedLinearizationSolver {
         if matches!(options.branch_ordering, BranchOrdering::AsProvided)
             && options.prefer_allowed_first
         {
-            candidates.sort_by(|a, b| b.1.cmp(&a.1));
+            candidates.sort_by_key(|candidate| core::cmp::Reverse(candidate.1));
         }
 
         candidates
