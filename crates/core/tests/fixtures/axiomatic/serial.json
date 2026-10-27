@@ -1,0 +1,16 @@
+{
+  "params": {
+    "id": 0,
+    "n_node": 2,
+    "n_variable": 2,
+    "n_transaction": 1,
+    "n_event": 2
+  },
+  "info": "A serial execution; independent axioms admit SI and SER.",
+  "start": "2026-01-01T00:00:00+00:00",
+  "end": "2026-01-01T00:00:00+00:00",
+  "data": [
+    [{ "events": [["w", 0, 1]], "committed": true }],
+    [{ "events": [["r", 0, 1], ["w", 1, 2]], "committed": true }]
+  ]
+}
