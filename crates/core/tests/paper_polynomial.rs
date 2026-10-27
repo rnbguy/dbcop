@@ -228,7 +228,7 @@ fn ra_check_api_violation() {
         ],
     };
     let result = check(&h, Consistency::AtomicRead);
-    assert!(result.is_err(), "expected RA violation via check(), got Ok",);
+    assert!(result.is_err(), "expected RA violation via check(), got Ok");
 }
 
 /// Sees newer then older version of x across *different transactions*.

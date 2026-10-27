@@ -9,8 +9,6 @@ use dbcop_core::consistency::prefix::PrefixConsistencySolver;
 use dbcop_core::consistency::repeatable_read::check_repeatable_read;
 use dbcop_core::consistency::serializable::SerializabilitySolver;
 use dbcop_core::consistency::snapshot_isolation::SnapshotIsolationSolver;
-use dbcop_core::history::atomic::types::AtomicTransactionHistory;
-use dbcop_core::history::atomic::AtomicTransactionPO;
 use dbcop_core::history::raw::types::{Event, Session, Transaction};
 use dbcop_core::{check, Consistency};
 
@@ -27,30 +25,6 @@ fn simple_valid_history() -> Vec<Session<&'static str, u64>> {
             Event::read("y", 1),
         ])],
     ]
-}
-
-/// Helper: build AtomicTransactionPO from sessions that are known to pass repeatable read.
-fn build_atomic_po<V, W>(histories: &[Session<V, W>]) -> Result<AtomicTransactionPO<V>, Error<V, W>>
-where
-    V: Eq + std::hash::Hash + Clone,
-    W: Eq + std::hash::Hash + Clone + Default,
-{
-    let atomic_history = AtomicTransactionHistory::try_from(histories)?;
-    let mut po = AtomicTransactionPO::from(atomic_history);
-    // Reproduce causal's visibility fixpoint so the PO is fully resolved
-    po.vis_includes(&po.get_wr());
-    loop {
-        po.vis_is_trans();
-        let ww_rel = po.causal_ww();
-        let mut changed = false;
-        for ww_x in ww_rel.values() {
-            changed |= po.vis_includes(ww_x);
-        }
-        if !changed {
-            break;
-        }
-    }
-    Ok(po)
 }
 
 // -- Committed Read ------------------------------------------------------
@@ -222,7 +196,7 @@ fn causal_violation() {
 #[test]
 fn serializable_pass() {
     let h = simple_valid_history();
-    let po = build_atomic_po(&h).expect("should build atomic PO");
+    let po = check_causal_read(&h).expect("should build atomic PO");
     let mut solver = SerializabilitySolver::from(po);
     assert!(
         solver.get_linearization().is_some(),
@@ -249,7 +223,7 @@ fn serializable_violation() {
         ])],
     ];
 
-    let po = build_atomic_po(&h).expect("should build atomic PO (passes causal)");
+    let po = check_causal_read(&h).expect("should build atomic PO (passes causal)");
     let mut solver = SerializabilitySolver::from(po);
     assert!(
         solver.get_linearization().is_none(),
@@ -262,7 +236,7 @@ fn serializable_violation() {
 #[test]
 fn snapshot_isolation_pass() {
     let h = simple_valid_history();
-    let po = build_atomic_po(&h).expect("should build atomic PO");
+    let po = check_causal_read(&h).expect("should build atomic PO");
     let mut solver = SnapshotIsolationSolver::from(po);
     assert!(
         solver.get_linearization().is_some(),
@@ -275,7 +249,7 @@ fn snapshot_isolation_pass() {
 #[test]
 fn prefix_pass() {
     let h = simple_valid_history();
-    let po = build_atomic_po(&h).expect("should build atomic PO");
+    let po = check_causal_read(&h).expect("should build atomic PO");
     let mut solver = PrefixConsistencySolver::from(po);
     assert!(
         solver.get_linearization().is_some(),

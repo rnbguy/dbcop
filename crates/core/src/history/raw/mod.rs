@@ -138,10 +138,10 @@ where
     write_map
 }
 
-/// Checks if the local reads are consistent
+/// Checks if reads observe the latest preceding local write, when one exists.
 /// # Errors
 ///
-/// Will return [`Error`] if there are two writes with the same version.
+/// Will return [`Error`] for duplicate versions, absent writes, or inconsistent local reads.
 pub fn consistent_local_reads<Variable, Version>(
     histories: &[Session<Variable, Version>],
 ) -> Result<(), Error<Variable, Version>>
@@ -161,29 +161,28 @@ where
                     transaction_height: i_event,
                 };
                 match event {
-                    Event::Write { variable, version } => {
-                        local_writes.insert(variable.clone(), version.clone());
+                    Event::Write { variable, .. } => {
+                        local_writes.insert(variable, current_event_id);
                     }
-                    Event::Read { variable, version } => {
-                        if let Some(version) = version {
-                            let write_event_id = all_write_map.get(event).ok_or_else(|| {
-                                Error::IncompleteHistory {
+                    Event::Read { variable, .. } => {
+                        let write_event_id =
+                            all_write_map
+                                .get(event)
+                                .ok_or_else(|| Error::IncompleteHistory {
                                     event: event.clone(),
                                     id: current_event_id,
-                                }
-                            })?;
+                                })?;
 
-                            if write_event_id.transaction_id() == current_event_id.transaction_id()
-                            {
-                                local_writes
-                                    .get(variable)
-                                    .filter(|local_latest_version| local_latest_version == &version)
-                                    .ok_or_else(|| Error::InconsistentLocalRead {
-                                        read_event_id: current_event_id,
-                                        write_event_id: *write_event_id,
-                                        read_event: event.clone(),
-                                    })?;
-                            }
+                        let inconsistent = local_writes.get(variable).map_or_else(
+                            || write_event_id.transaction_id() == current_event_id.transaction_id(),
+                            |local_latest_write| local_latest_write != write_event_id,
+                        );
+                        if inconsistent {
+                            return Err(Error::InconsistentLocalRead {
+                                read_event_id: current_event_id,
+                                write_event_id: *write_event_id,
+                                read_event: event.clone(),
+                            });
                         }
                     }
                 }
@@ -194,10 +193,10 @@ where
     Ok(())
 }
 
-/// Reads can't happen from uncommitted writes
+/// External reads can't happen from uncommitted or overwritten writes.
 /// # Errors
 ///
-/// Will return [`Error`] if there is a read from an uncommitted write.
+/// Will return [`Error`] if an external read is from an uncommitted or overwritten write.
 pub fn committed_external_reads<Variable, Version>(
     histories: &[Session<Variable, Version>],
 ) -> Result<(), Error<Variable, Version>>
@@ -226,7 +225,10 @@ where
                                 id: current_event_id,
                             })?;
                     // Reads from root (initial state) are always valid
-                    if write_event_id.session_id == 0 {
+                    // Local reads are checked in execution order by consistent_local_reads.
+                    if write_event_id.session_id == 0
+                        || write_event_id.transaction_id() == current_event_id.transaction_id()
+                    {
                         continue;
                     }
                     if let Some(&(ref committed_version, committed_event_id)) =
