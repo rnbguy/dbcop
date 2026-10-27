@@ -15,10 +15,11 @@ crate-type = [ "cdylib" ]
 
 [dependencies]
 dbcop_core   = { workspace = true, features = [ "serde" ] }
-dbcop_parser = { workspace = true }
+dbcop_parser = { workspace = true, features = [ "serde" ] }
 wasm-bindgen = { workspace = true }
 serde        = { workspace = true, features = [ "derive" ] }
 serde_json   = { workspace = true, features = [ "alloc" ] }
+thiserror    = { workspace = true }
 
 [lints]
 workspace = true

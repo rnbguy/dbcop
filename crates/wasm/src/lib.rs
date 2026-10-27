@@ -13,6 +13,7 @@ use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::cell::{Cell, RefCell};
+use core::hash::Hash;
 use std::thread_local;
 
 use dbcop_core::consistency::saturation::committed_read::check_committed_read;
@@ -23,6 +24,31 @@ use dbcop_core::history::raw::types::{Event, Session, Transaction};
 use dbcop_core::Consistency;
 use wasm_bindgen::prelude::*;
 
+mod response;
+use response::{
+    CheckResponse, Edge, MessageError, ParsedHistory, ResponseError, StepResponse, TokenSpan,
+    TraceEdges, TraceEvent, TraceMetadata, TraceResponse, TraceTransaction,
+};
+
+#[derive(Debug, thiserror::Error)]
+enum InputError {
+    #[error("unknown consistency level")]
+    UnknownLevel,
+    #[error(transparent)]
+    Json(#[from] serde_json::Error),
+    #[error(transparent)]
+    Parse(#[from] dbcop_parser::ParseError),
+}
+
+fn encode<T: serde::Serialize>(response: &T) -> String {
+    // These DTOs contain only JSON-safe string keys, integer values and edge-list witnesses.
+    serde_json::to_string(response).expect("WASM response must be JSON serializable")
+}
+
+fn required_level(level: &str) -> Result<Consistency, InputError> {
+    parse_level(level).ok_or(InputError::UnknownLevel)
+}
+
 thread_local! {
     static STEP_SESSIONS: RefCell<BTreeMap<String, CausalStepSession>> = const { RefCell::new(BTreeMap::new()) };
     static NEXT_SESSION_ID: Cell<u64> = const { Cell::new(1) };
@@ -30,8 +56,7 @@ thread_local! {
 
 struct CausalStepSession {
     step: u64,
-    history_json: String,
-    level: String,
+    sessions: Vec<Session<u64, u64>>,
     po: AtomicTransactionPO<u64>,
 }
 
@@ -97,62 +122,17 @@ fn map_sessions_to_u64(sessions: Vec<Session<String, u64>>) -> Vec<Session<u64, 
         .collect()
 }
 
-fn parse_text_sessions_as_u64(text: &str) -> Result<Vec<Session<u64, u64>>, String> {
-    let sessions = dbcop_parser::parse_history(text).map_err(|error| error.to_string())?;
-    Ok(map_sessions_to_u64(sessions))
+fn parse_text_sessions_as_u64(
+    text: &str,
+) -> Result<Vec<Session<u64, u64>>, dbcop_parser::ParseError> {
+    Ok(map_sessions_to_u64(dbcop_parser::parse_history(text)?))
 }
 
-fn tid_to_json(tid: &TransactionId) -> serde_json::Value {
-    serde_json::json!({
-        "session_id": tid.session_id,
-        "session_height": tid.session_height
-    })
-}
-
-/// Convert a [`Witness`] into a JSON-safe [`serde_json::Value`].
-///
-/// `SaturationOrder` contains `DiGraph<TransactionId>` whose `HashMap` keys
-/// are not strings, so `serde_json::json!` panics when serializing directly.
-/// This helper converts the graph to an edge-list representation instead.
-fn witness_to_json(witness: &Witness) -> serde_json::Value {
+fn witness_edges(witness: &Witness) -> Vec<Edge> {
     match witness {
-        Witness::SaturationOrder(graph) => {
-            let edges: Vec<serde_json::Value> = graph
-                .to_edge_list()
-                .into_iter()
-                .map(|(from, to)| serde_json::json!([tid_to_json(&from), tid_to_json(&to)]))
-                .collect();
-            serde_json::json!({ "SaturationOrder": edges })
-        }
-        Witness::CommitOrder(order) => {
-            let tids: Vec<serde_json::Value> = order.iter().map(tid_to_json).collect();
-            serde_json::json!({ "CommitOrder": tids })
-        }
-        Witness::SplitCommitOrder(order) => {
-            let entries: Vec<serde_json::Value> = order
-                .iter()
-                .map(|(tid, is_write)| serde_json::json!([tid_to_json(tid), is_write]))
-                .collect();
-            serde_json::json!({ "SplitCommitOrder": entries })
-        }
-    }
-}
-
-fn witness_edges(witness: &Witness) -> Vec<serde_json::Value> {
-    match witness {
-        Witness::SaturationOrder(graph) => graph
-            .to_edge_list()
-            .into_iter()
-            .map(|(from, to)| serde_json::json!([tid_to_json(&from), tid_to_json(&to)]))
-            .collect(),
-        Witness::CommitOrder(order) => order
-            .windows(2)
-            .map(|w| serde_json::json!([tid_to_json(&w[0]), tid_to_json(&w[1])]))
-            .collect(),
-        Witness::SplitCommitOrder(order) => order
-            .windows(2)
-            .map(|w| serde_json::json!([tid_to_json(&w[0].0), tid_to_json(&w[1].0)]))
-            .collect(),
+        Witness::SaturationOrder(graph) => graph.to_edge_list(),
+        Witness::CommitOrder(order) => order.windows(2).map(|w| (w[0], w[1])).collect(),
+        Witness::SplitCommitOrder(order) => order.windows(2).map(|w| (w[0].0, w[1].0)).collect(),
     }
 }
 
@@ -164,27 +144,19 @@ fn next_step_session_id() -> String {
     })
 }
 
-fn edge_to_json(from: TransactionId, to: TransactionId) -> serde_json::Value {
-    serde_json::json!([tid_to_json(&from), tid_to_json(&to)])
-}
-
-fn parse_embedded_result(result_json: &str) -> serde_json::Value {
-    serde_json::from_str::<serde_json::Value>(result_json)
-        .unwrap_or_else(|e| serde_json::json!({"ok": false, "error": e.to_string()}))
-}
-
 fn step_init_impl(
-    sessions: &[Session<u64, u64>],
-    history_json: String,
+    sessions: Vec<Session<u64, u64>>,
     level: &str,
     consistency: Consistency,
-) -> String {
+) -> StepResponse {
     let session_id = next_step_session_id();
     if matches!(consistency, Consistency::Causal) {
-        let atomic_history = match AtomicTransactionHistory::try_from(sessions) {
+        let atomic_history = match AtomicTransactionHistory::try_from(sessions.as_slice()) {
             Ok(h) => h,
-            Err(e) => {
-                return serde_json::json!({"error": e}).to_string();
+            Err(error) => {
+                return StepResponse::Error {
+                    error: ResponseError::Core(error),
+                }
             }
         };
         let mut po = AtomicTransactionPO::from(atomic_history);
@@ -192,143 +164,117 @@ fn step_init_impl(
         po.vis_is_trans();
         let state = CausalStepSession {
             step: 0,
-            history_json,
-            level: level.to_string(),
+            sessions,
             po,
         };
         STEP_SESSIONS.with(|store| {
             store.borrow_mut().insert(session_id.clone(), state);
         });
 
-        serde_json::json!({
-            "session_id": session_id,
-            "step": 0,
-            "level": "causal",
-            "steppable": true,
-            "done": false,
-            "new_edges": [],
-            "total_edges": 0
-        })
-        .to_string()
+        StepResponse::CausalInit {
+            session_id,
+            step: 0,
+            level: "causal",
+            steppable: true,
+            done: false,
+            new_edges: Vec::new(),
+            total_edges: 0,
+        }
     } else {
-        let trace = check_consistency_trace(&history_json, level);
-        let result = parse_embedded_result(&trace);
-        serde_json::json!({
-            "session_id": session_id,
-            "step": 0,
-            "level": level,
-            "steppable": false,
-            "done": true,
-            "result": result
-        })
-        .to_string()
+        StepResponse::CompleteInit {
+            session_id,
+            step: 0,
+            level: level.to_string(),
+            steppable: false,
+            done: true,
+            result: trace_impl(&sessions, level, consistency),
+        }
     }
 }
 
 #[must_use]
 #[wasm_bindgen]
 pub fn check_consistency_step_init(history_json: &str, level: &str) -> String {
-    let Some(consistency) = parse_level(level) else {
-        return serde_json::json!({"error": "unknown consistency level"}).to_string();
-    };
-    let sessions = match serde_json::from_str::<Vec<Session<u64, u64>>>(history_json) {
-        Ok(s) => s,
-        Err(e) => {
-            return serde_json::json!({"error": e.to_string()}).to_string();
-        }
-    };
-
-    step_init_impl(&sessions, history_json.to_string(), level, consistency)
+    let result = (|| {
+        let consistency = required_level(level)?;
+        let sessions = serde_json::from_str::<Vec<Session<u64, u64>>>(history_json)?;
+        Ok::<_, InputError>(step_init_impl(sessions, level, consistency))
+    })();
+    encode(&result.unwrap_or_else(|error| StepResponse::Error {
+        error: ResponseError::Message(error.to_string()),
+    }))
 }
 
 #[must_use]
 #[wasm_bindgen]
 pub fn check_consistency_step_init_text(text: &str, level: &str) -> String {
-    let Some(consistency) = parse_level(level) else {
-        return serde_json::json!({"error": "unknown consistency level"}).to_string();
-    };
-
-    let mapped_sessions = match parse_text_sessions_as_u64(text) {
-        Ok(s) => s,
-        Err(e) => {
-            return serde_json::json!({"error": e}).to_string();
-        }
-    };
-
-    let history_json = match serde_json::to_string(&mapped_sessions) {
-        Ok(s) => s,
-        Err(e) => {
-            return serde_json::json!({"error": e.to_string()}).to_string();
-        }
-    };
-
-    step_init_impl(&mapped_sessions, history_json, level, consistency)
+    let result = (|| {
+        let consistency = required_level(level)?;
+        let sessions = parse_text_sessions_as_u64(text)?;
+        Ok::<_, InputError>(step_init_impl(sessions, level, consistency))
+    })();
+    encode(&result.unwrap_or_else(|error| StepResponse::Error {
+        error: ResponseError::Message(error.to_string()),
+    }))
 }
 
 #[must_use]
 #[wasm_bindgen]
 pub fn check_consistency_step_next(session_id: &str) -> String {
-    STEP_SESSIONS.with(|store| {
+    let response = STEP_SESSIONS.with(|store| {
         let mut store = store.borrow_mut();
         let Some(mut state) = store.remove(session_id) else {
-            return serde_json::json!({"error": "unknown session_id"}).to_string();
+            return StepResponse::Error {
+                error: ResponseError::Message("unknown session_id".to_string()),
+            };
         };
-
         state.step += 1;
-
-        let ww_rel = state.po.causal_ww();
         let mut new_edges = Vec::new();
 
-        for ww_x in ww_rel.values() {
-            for (src, dsts) in &ww_x.adj_map {
-                for dst in dsts {
-                    if !state.po.visibility_relation.has_edge(src, dst) {
-                        new_edges.push((*src, *dst));
+        // Commit-order constraints are derived once from fixed causal visibility.
+        if state.step == 1 {
+            for ww_x in state.po.causal_ww().values() {
+                for (src, dsts) in &ww_x.adj_map {
+                    for dst in dsts {
+                        if !state.po.visibility_relation.has_edge(src, dst) {
+                            new_edges.push((*src, *dst));
+                        }
                     }
                 }
             }
         }
 
-        if new_edges.is_empty() {
-            let total_edges = state.po.visibility_relation.to_edge_list().len() as u64;
-            let trace = check_consistency_trace(&state.history_json, &state.level);
-            let result = parse_embedded_result(&trace);
-
-            serde_json::json!({
-                "session_id": session_id,
-                "step": state.step,
-                "phase": "ww",
-                "new_edges": [],
-                "total_edges": total_edges,
-                "done": true,
-                "result": result
-            })
-            .to_string()
+        let done = new_edges.is_empty();
+        let result = if done {
+            Some(trace_impl(&state.sessions, "causal", Consistency::Causal))
         } else {
             state
                 .po
                 .visibility_relation
-                .incremental_closure(new_edges.clone());
-            let total_edges = state.po.visibility_relation.to_edge_list().len() as u64;
-            let step = state.step;
-            let new_edges_json: Vec<serde_json::Value> = new_edges
-                .into_iter()
-                .map(|(from, to)| edge_to_json(from, to))
-                .collect();
-
+                .incremental_closure(new_edges.iter().copied());
+            None
+        };
+        let response = StepResponse::Advance {
+            session_id: session_id.to_string(),
+            step: state.step,
+            phase: if done { "ww" } else { "co" },
+            new_edges,
+            total_edges: state
+                .po
+                .visibility_relation
+                .adj_map
+                .values()
+                .map(|destinations| destinations.len() as u64)
+                .sum(),
+            done,
+            result,
+        };
+        if !done {
             store.insert(session_id.to_string(), state);
-
-            serde_json::json!({
-                "session_id": session_id,
-                "step": step,
-                "phase": "vis",
-                "new_edges": new_edges_json,
-                "total_edges": total_edges,
-                "done": false
-            })
-            .to_string()
         }
-    })
+        response
+    });
+    encode(&response)
 }
 
 /// Check whether a history (as JSON) satisfies the given consistency level.
@@ -340,94 +286,106 @@ pub fn check_consistency_step_next(session_id: &str) -> String {
 #[must_use]
 #[wasm_bindgen]
 pub fn check_consistency(history_json: &str, level: &str) -> String {
-    let Some(consistency) = parse_level(level) else {
-        return serde_json::json!({"ok": false, "error": "unknown consistency level"}).to_string();
-    };
+    let result = (|| {
+        let consistency = required_level(level)?;
+        let sessions = serde_json::from_str::<Vec<Session<u64, u64>>>(history_json)?;
+        Ok::<_, InputError>(check_impl(&sessions, consistency))
+    })();
+    encode(&result.unwrap_or_else(|error| CheckResponse::Failure {
+        ok: false,
+        error: ResponseError::Message(error.to_string()),
+    }))
+}
 
-    let sessions = match serde_json::from_str::<Vec<Session<u64, u64>>>(history_json) {
-        Ok(s) => s,
-        Err(e) => {
-            return serde_json::json!({"ok": false, "error": e.to_string()}).to_string();
-        }
-    };
-
-    match dbcop_core::check(&sessions, consistency) {
-        Ok(witness) => {
-            serde_json::json!({"ok": true, "witness": witness_to_json(&witness)}).to_string()
-        }
-        Err(error) => serde_json::json!({"ok": false, "error": error}).to_string(),
+fn check_impl<V>(sessions: &[Session<V, u64>], consistency: Consistency) -> CheckResponse<V>
+where
+    V: Eq + Hash + Clone + Ord,
+{
+    match dbcop_core::check(sessions, consistency) {
+        Ok(witness) => CheckResponse::Success { ok: true, witness },
+        Err(error) => CheckResponse::Failure {
+            ok: false,
+            error: ResponseError::Core(error),
+        },
     }
 }
 
-fn build_sessions_json<V, W>(sessions: &[Session<V, W>]) -> (serde_json::Value, u64, u64)
-where
-    V: ToString,
-    W: serde::Serialize + ToString,
-{
-    let session_count = sessions.len() as u64;
-    let transaction_count: u64 = sessions.iter().map(|s| s.len() as u64).sum();
-
-    let sessions_json: Vec<serde_json::Value> = sessions
-        .iter()
-        .enumerate()
-        .map(|(sid, session)| {
-            let txns: Vec<serde_json::Value> = session
-                .iter()
-                .enumerate()
-                .map(|(th, txn)| {
-                    let mut reads = serde_json::Map::new();
-                    let mut writes = serde_json::Map::new();
-                    let events: Vec<serde_json::Value> = txn
-                        .events
-                        .iter()
-                        .map(|event| match event {
-                            Event::Read { variable, version } => {
-                                reads.insert(
-                                    variable.to_string(),
-                                    version
-                                        .as_ref()
-                                        .map_or(serde_json::Value::Null, |v| serde_json::json!(v)),
-                                );
-                                serde_json::json!({
-                                    "type": "R",
-                                    "variable": variable.to_string(),
-                                    "version": version.as_ref().map_or(
-                                        serde_json::Value::Null,
-                                        |v| serde_json::json!(v),
-                                    )
-                                })
-                            }
-                            Event::Write { variable, version } => {
-                                writes.insert(variable.to_string(), serde_json::json!(version));
-                                serde_json::json!({
-                                    "type": "W",
-                                    "variable": variable.to_string(),
-                                    "version": serde_json::json!(version)
-                                })
-                            }
-                        })
-                        .collect();
-                    serde_json::json!({
-                        "id": {
-                            "session_id": (sid as u64) + 1,
-                            "session_height": th as u64
-                        },
-                        "reads": reads,
-                        "writes": writes,
-                        "events": events,
-                        "committed": txn.committed
+fn build_sessions<V: ToString>(sessions: &[Session<V, u64>], level: &str) -> TraceMetadata {
+    TraceMetadata {
+        level: level.to_string(),
+        session_count: sessions.len() as u64,
+        transaction_count: sessions.iter().map(|session| session.len() as u64).sum(),
+        sessions: sessions
+            .iter()
+            .enumerate()
+            .map(|(sid, session)| {
+                session
+                    .iter()
+                    .enumerate()
+                    .map(|(th, txn)| {
+                        let mut reads = BTreeMap::new();
+                        let mut writes = BTreeMap::new();
+                        let events = txn
+                            .events
+                            .iter()
+                            .map(|event| match event {
+                                Event::Read { variable, version } => {
+                                    reads.insert(variable.to_string(), *version);
+                                    TraceEvent::Read {
+                                        variable: variable.to_string(),
+                                        version: *version,
+                                    }
+                                }
+                                Event::Write { variable, version } => {
+                                    writes.insert(variable.to_string(), *version);
+                                    TraceEvent::Write {
+                                        variable: variable.to_string(),
+                                        version: *version,
+                                    }
+                                }
+                            })
+                            .collect();
+                        TraceTransaction {
+                            id: TransactionId {
+                                session_id: sid as u64 + 1,
+                                session_height: th as u64,
+                            },
+                            reads,
+                            writes,
+                            events,
+                            committed: txn.committed,
+                        }
                     })
-                })
-                .collect();
-            serde_json::json!(txns)
-        })
-        .collect();
+                    .collect()
+            })
+            .collect(),
+    }
+}
 
-    (
-        serde_json::json!(sessions_json),
-        session_count,
-        transaction_count,
-    )
+fn trace_impl<V>(
+    sessions: &[Session<V, u64>],
+    level: &str,
+    consistency: Consistency,
+) -> TraceResponse<V>
+where
+    V: Eq + Hash + Clone + Ord + ToString + core::fmt::Debug,
+{
+    let metadata = build_sessions(sessions, level);
+    let result = check_impl(sessions, consistency);
+    let proof = match &result {
+        CheckResponse::Success { witness, .. } => Some(TraceEdges {
+            witness_edges: witness_edges(witness),
+            wr_edges: check_committed_read(sessions)
+                .expect("successful consistency check must be committed-read")
+                .to_edge_list(),
+        }),
+        CheckResponse::Failure { .. } => None,
+    };
+    TraceResponse::Checked {
+        result,
+        metadata,
+        proof,
+    }
 }
 
 /// Check consistency and return a rich trace suitable for web visualization.
@@ -465,57 +423,15 @@ where
 #[must_use]
 #[wasm_bindgen]
 pub fn check_consistency_trace(history_json: &str, level: &str) -> String {
-    let Some(consistency) = parse_level(level) else {
-        return serde_json::json!({"ok": false, "error": "unknown consistency level"}).to_string();
-    };
-
-    let sessions = match serde_json::from_str::<Vec<Session<u64, u64>>>(history_json) {
-        Ok(s) => s,
-        Err(e) => {
-            return serde_json::json!({"ok": false, "error": e.to_string()}).to_string();
-        }
-    };
-
-    let (sessions_json, session_count, transaction_count) = build_sessions_json(&sessions);
-
-    let wr_edges: Vec<serde_json::Value> = check_committed_read(&sessions)
-        .ok()
-        .map(|graph| {
-            graph
-                .to_edge_list()
-                .into_iter()
-                .map(|(from, to)| serde_json::json!([tid_to_json(&from), tid_to_json(&to)]))
-                .collect()
-        })
-        .unwrap_or_default();
-
-    let level_str = level;
-
-    match dbcop_core::check(&sessions, consistency) {
-        Ok(witness) => {
-            let edges = witness_edges(&witness);
-            serde_json::json!({
-                "ok": true,
-                "level": level_str,
-                "session_count": session_count,
-                "transaction_count": transaction_count,
-                "sessions": sessions_json,
-                "witness": witness_to_json(&witness),
-                "witness_edges": edges,
-                "wr_edges": wr_edges
-            })
-            .to_string()
-        }
-        Err(error) => serde_json::json!({
-            "ok": false,
-            "level": level_str,
-            "session_count": session_count,
-            "transaction_count": transaction_count,
-            "sessions": sessions_json,
-            "error": error
-        })
-        .to_string(),
-    }
+    let result = (|| {
+        let consistency = required_level(level)?;
+        let sessions = serde_json::from_str::<Vec<Session<u64, u64>>>(history_json)?;
+        Ok::<_, InputError>(trace_impl(&sessions, level, consistency))
+    })();
+    encode(&result.unwrap_or_else(|error| TraceResponse::Invalid {
+        ok: false,
+        error: error.to_string(),
+    }))
 }
 
 /// Parse a compact history DSL string and return JSON.
@@ -525,11 +441,13 @@ pub fn check_consistency_trace(history_json: &str, level: &str) -> String {
 #[must_use]
 #[wasm_bindgen]
 pub fn parse_history_text(text: &str) -> String {
-    match dbcop_parser::parse_history(text) {
-        Ok(sessions) => serde_json::to_string(&sessions)
-            .unwrap_or_else(|e| serde_json::json!({"error": e.to_string()}).to_string()),
-        Err(e) => serde_json::json!({"error": e.to_string()}).to_string(),
-    }
+    let response = match dbcop_parser::parse_history(text) {
+        Ok(sessions) => ParsedHistory::Sessions(sessions),
+        Err(error) => ParsedHistory::Error(MessageError {
+            error: error.to_string(),
+        }),
+    };
+    encode(&response)
 }
 
 /// Check consistency from a compact history DSL string and return a rich trace.
@@ -539,57 +457,15 @@ pub fn parse_history_text(text: &str) -> String {
 #[must_use]
 #[wasm_bindgen]
 pub fn check_consistency_trace_text(text: &str, level: &str) -> String {
-    let Some(consistency) = parse_level(level) else {
-        return serde_json::json!({"ok": false, "error": "unknown consistency level"}).to_string();
-    };
-
-    let sessions = match dbcop_parser::parse_history(text) {
-        Ok(s) => s,
-        Err(e) => {
-            return serde_json::json!({"ok": false, "error": e.to_string()}).to_string();
-        }
-    };
-
-    let (sessions_json, session_count, transaction_count) = build_sessions_json(&sessions);
-
-    let wr_edges: Vec<serde_json::Value> = check_committed_read(&sessions)
-        .ok()
-        .map(|graph| {
-            graph
-                .to_edge_list()
-                .into_iter()
-                .map(|(from, to)| serde_json::json!([tid_to_json(&from), tid_to_json(&to)]))
-                .collect()
-        })
-        .unwrap_or_default();
-
-    let level_str = level;
-
-    match dbcop_core::check(&sessions, consistency) {
-        Ok(witness) => {
-            let edges = witness_edges(&witness);
-            serde_json::json!({
-                "ok": true,
-                "level": level_str,
-                "session_count": session_count,
-                "transaction_count": transaction_count,
-                "sessions": sessions_json,
-                "witness": witness_to_json(&witness),
-                "witness_edges": edges,
-                "wr_edges": wr_edges
-            })
-            .to_string()
-        }
-        Err(error) => serde_json::json!({
-            "ok": false,
-            "level": level_str,
-            "session_count": session_count,
-            "transaction_count": transaction_count,
-            "sessions": sessions_json,
-            "error": error
-        })
-        .to_string(),
-    }
+    let result = (|| {
+        let consistency = required_level(level)?;
+        let sessions = dbcop_parser::parse_history(text)?;
+        Ok::<_, InputError>(trace_impl(&sessions, level, consistency))
+    })();
+    encode(&result.unwrap_or_else(|error| TraceResponse::Invalid {
+        ok: false,
+        error: error.to_string(),
+    }))
 }
 
 /// Tokenize a compact history DSL string for syntax highlighting.
@@ -599,18 +475,16 @@ pub fn check_consistency_trace_text(text: &str, level: &str) -> String {
 #[wasm_bindgen]
 pub fn tokenize_history(text: &str) -> String {
     let tokens = dbcop_parser::tokenize(text);
-    let result: Vec<serde_json::Value> = tokens
+    let result: Vec<TokenSpan<'_>> = tokens
         .iter()
-        .map(|t| {
-            serde_json::json!({
-                "kind": format!("{:?}", t.kind),
-                "start": t.span.start,
-                "end": t.span.end,
-                "text": t.text(text),
-            })
+        .map(|token| TokenSpan {
+            kind: &token.kind,
+            start: token.span.start,
+            end: token.span.end,
+            text: token.text(text),
         })
         .collect();
-    serde_json::to_string(&result).unwrap_or_else(|_| "[]".to_string())
+    encode(&result)
 }
 
 /// Convert a compact history DSL string to pretty-printed JSON sessions.
@@ -623,16 +497,15 @@ pub fn tokenize_history(text: &str) -> String {
 #[must_use]
 #[wasm_bindgen]
 pub fn text_to_json_sessions(text: &str) -> String {
-    let mapped_sessions = match parse_text_sessions_as_u64(text) {
-        Ok(s) => s,
-        Err(e) => {
-            return serde_json::json!({"error": e}).to_string();
-        }
-    };
-
-    match serde_json::to_string_pretty(&mapped_sessions) {
-        Ok(s) => s,
-        Err(e) => serde_json::json!({"error": e.to_string()}).to_string(),
+    match parse_text_sessions_as_u64(text) {
+        Ok(sessions) => serde_json::to_string_pretty(&sessions).unwrap_or_else(|error| {
+            encode(&MessageError {
+                error: error.to_string(),
+            })
+        }),
+        Err(error) => encode(&MessageError {
+            error: error.to_string(),
+        }),
     }
 }
 

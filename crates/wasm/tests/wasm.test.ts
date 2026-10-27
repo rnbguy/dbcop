@@ -79,37 +79,6 @@ const LOST_UPDATE = JSON.stringify([
   ],
 ]);
 
-/** Causal violation -- fails causal consistency. */
-const _CAUSAL_VIOLATION = JSON.stringify([
-  [
-    {
-      events: [
-        { Write: { variable: 0, version: 1 } },
-        { Write: { variable: 1, version: 1 } },
-      ],
-      committed: true,
-    },
-  ],
-  [
-    {
-      events: [
-        { Read: { variable: 0, version: 1 } },
-        { Write: { variable: 1, version: 2 } },
-      ],
-      committed: true,
-    },
-  ],
-  [
-    {
-      events: [
-        { Read: { variable: 1, version: 2 } },
-        { Read: { variable: 0, version: 0 } },
-      ],
-      committed: true,
-    },
-  ],
-]);
-
 // -- check_consistency tests -------------------------------------------------
 
 Deno.test("check_consistency: write-read passes serializable", () => {
@@ -201,8 +170,7 @@ Deno.test("check_consistency_trace: invalid JSON returns error", () => {
   assertEquals(result.ok, false);
 });
 
-// -- Bug 3 (version-zero -> root) -------------------------------------------
-
+// -- version-zero maps to root -----------------------------------------------
 Deno.test("check_consistency_trace: lost update passes causal (x==0 maps to initial state)", () => {
   const result = JSON.parse(check_consistency_trace(LOST_UPDATE, "causal"));
   assertEquals(
@@ -234,8 +202,7 @@ Deno.test("check_consistency_trace_text: version-zero history fails snapshot-iso
   assertEquals(result.level, "snapshot-isolation");
 });
 
-// -- Bug 4 (TxCard event order) -------------------------------------------
-
+// -- event order preserved ---------------------------------------------------
 Deno.test("check_consistency_trace: sessions include events field", () => {
   // SERIALIZABLE_HISTORY has known structure; verify every txn has events array
   const result = JSON.parse(
