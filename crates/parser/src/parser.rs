@@ -26,24 +26,13 @@ use winnow::ModalResult;
 // ---------------------------------------------------------------------------
 
 /// A parse error with human-readable location information.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, thiserror::Error)]
+#[error("parse error at line {line}, column {column}: {message}")]
 pub struct ParseError {
     pub message: String,
     pub line: usize,
     pub column: usize,
 }
-
-impl core::fmt::Display for ParseError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "parse error at line {}, column {}: {}",
-            self.line, self.column, self.message
-        )
-    }
-}
-
-impl std::error::Error for ParseError {}
 
 // ---------------------------------------------------------------------------
 // Public entry point
