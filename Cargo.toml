@@ -8,6 +8,7 @@ members = [
   "crates/wasm",
   "crates/sat",
   "crates/drivers",
+  "crates/ffi",
 ]
 
 [workspace.package]
