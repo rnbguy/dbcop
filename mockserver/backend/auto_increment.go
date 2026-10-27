@@ -40,7 +40,7 @@ func (t *Table) GetNextAutoIncrementValue(ctx *sql.Context, insertVal interface{
 	return next, nil
 }
 
-// Native inserters may receive explicit rows without an AutoIncrement expression.
+// Native writes may receive explicit rows without an AutoIncrement expression.
 func (t *Table) observeAutoIncrement(ctx *sql.Context, row sql.Row) error {
 	for i, column := range t.def.Columns {
 		if !column.AutoIncrement {

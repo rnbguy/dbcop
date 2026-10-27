@@ -1311,6 +1311,9 @@ func (w *rowWriter) Update(ctx *sql.Context, oldRow, newRow sql.Row) error {
 	if err := w.checkUnique(ctx, key, oldKey, newRow); err != nil {
 		return err
 	}
+	if err := w.table.observeAutoIncrement(ctx, newRow); err != nil {
+		return err
+	}
 	if err := w.table.addIndexRow(ctx, key, newRow); err != nil {
 		return err
 	}
