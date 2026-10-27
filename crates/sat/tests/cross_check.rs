@@ -267,7 +267,7 @@ fn cross_check_write_skew() {
         check(&h, Consistency::Prefix).is_ok(),
         "write skew should pass PC",
     );
-    assert!(check_prefix(&h).is_ok(), "write skew should pass SAT-PC",);
+    assert!(check_prefix(&h).is_ok(), "write skew should pass SAT-PC");
 
     // Both solvers must agree that write skew passes SI
     assert_agree_si(&h, "write-skew-si");
@@ -453,7 +453,7 @@ fn differential_fuzz_sat_vs_core_npc() {
     let samples = std::env::var("DBCOP_DIFF_FUZZ_SAMPLES")
         .ok()
         .and_then(|s| s.parse::<usize>().ok())
-        .unwrap_or(256);
+        .unwrap_or(1024);
 
     let node_options = [1_u64, 3, 5];
     let var_options = [2_u64, 3, 4];
