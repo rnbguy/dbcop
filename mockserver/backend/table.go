@@ -486,6 +486,14 @@ func (t *Table) pushedKeys(ctx *sql.Context) ([]string, bool) {
 		if !point {
 			continue
 		}
+		if types.IsText(t.def.Columns[filter.ordinal].Type) {
+			// Numeric predicates do not share the column's string posting key.
+			switch value.(type) {
+			case string, []byte:
+			default:
+				continue
+			}
+		}
 		token, supported, err := t.indexEqualityKey(ctx, filter.index, filter.position, value)
 		if err != nil || !supported {
 			continue
@@ -615,7 +623,18 @@ func (t *Table) GetIndexes(_ *sql.Context) ([]sql.Index, error) {
 	return indexes, nil
 }
 
-func (t *Table) PreciseMatch() bool { return true }
+func (t *Table) PreciseMatch() bool {
+	for _, filter := range t.pushed {
+		if types.IsText(t.def.Columns[filter.ordinal].Type) {
+			for _, child := range filter.expr.Children() {
+				if !types.IsText(child.Type()) {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
 
 // No ordering is advertised: the engine retains ORDER BY and LIMIT operators.
 func (t *Table) IndexedAccess(_ *sql.Context, lookup sql.IndexLookup) sql.IndexedTable {
@@ -646,6 +665,10 @@ func (t *indexedTable) LookupPartitions(ctx *sql.Context, lookup sql.IndexLookup
 	ranges, ok := lookup.Ranges.(sql.MySQLRangeCollection)
 	if !ok {
 		return nil, fmt.Errorf("expected MySQL index ranges, got %T", lookup.Ranges)
+	}
+	// Mixed-type text predicates do not match the optimizer's text ranges.
+	if !t.PreciseMatch() {
+		return t.Table.Partitions(ctx)
 	}
 	filter, err := expression.NewRangeFilterExpr(index.Index.(*memory.Index).Exprs, ranges)
 	if err != nil {
