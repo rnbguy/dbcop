@@ -51,12 +51,16 @@ The unified axiom schema (from the paper) is:
 
 ### Read Committed (RC)
 
-**Informal:** Every read observes a value written by a committed transaction. No
-dirty reads.
+**Informal:** Every external read observes an initial value or a committed
+transaction's final write. Reads within a transaction respect a common commit
+order, but need not observe the most recent committed value.
 
-**Axiom:** For each variable x, if transaction t1 writes x and t2 reads the
-value written by t1, then any other transaction t3 that also writes x must
-either precede t1 or follow t2 in the commit order.
+**Axiom:** If an external read of x observes transaction a, and an earlier
+external read in the same transaction observes a distinct transaction b that
+also writes x, then b precedes a in commit order. The earlier read may be of any
+variable, not just x. The initial transaction writes every variable and comes
+first, so a read cannot return to initial x after observing a writer of x. See
+[Biswas and Enea, Figure 2(a)](https://arxiv.org/html/1908.04509).
 
 **Checker:** Saturation algorithm builds a committed order graph. If the graph
 is acyclic, the history is RC-consistent.
@@ -88,9 +92,9 @@ cannot observe partial effects of another transaction. No fractured reads.
 transaction t1 is visible to t2 (t2 reads any value from t1), then all of t1's
 writes are visible to t2.
 
-**Checker:** Saturation algorithm extends committed-read visibility with
-atomic-read constraints. Builds visibility relation to a fixed point; cycle
-detection indicates violation.
+**Checker:** Derives commit-order constraints once from the fixed union of
+session order and write-read edges. A cycle in the resulting commit graph
+indicates a violation; inferred commit edges are not new visibility premises.
 
 **Source:** `crates/core/src/consistency/saturation/atomic_read.rs`
 
@@ -99,13 +103,13 @@ detection indicates violation.
 **Informal:** If transaction t1 causally affects t2, then all transactions that
 observe t2 must also observe t1 in the same order. Causality is transitive.
 
-**Axiom:** The commit order must be compatible with the transitive closure of
-session order and write-read relations. The visibility relation must be
-transitively closed.
+**Axiom:** The commit order extends the transitive closure of session order and
+write-read relations. If a transaction reads x from writer W and another writer
+V of x causally precedes that transaction, V must precede W in commit order.
 
-**Checker:** Saturation algorithm iteratively extends the visibility relation
-with causal constraints (write-write and read-write ordering). Uses incremental
-transitive closure for efficiency. Continues until fixed point or cycle.
+**Checker:** Computes the fixed causal closure, derives writer-order
+constraints, and checks the resulting commit graph for cycles. Inferred
+commit-order edges never become additional causal premises.
 
 **Source:** `crates/core/src/consistency/saturation/causal.rs`
 

@@ -2,7 +2,7 @@
 
 ## Workspace Overview
 
-dbcop is a Rust workspace (v0.2.0, edition 2021, MSRV 1.73.0) with six crates:
+dbcop is a Rust workspace (v0.2.0, edition 2021, MSRV 1.99.0) with eight crates:
 
 | Crate           | Path              | Purpose                                                                                                                |
 | --------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -11,7 +11,9 @@ dbcop is a Rust workspace (v0.2.0, edition 2021, MSRV 1.73.0) with six crates:
 | `dbcop_wasm`    | `crates/wasm/`    | WebAssembly bindings via `wasm-bindgen` for browser-based checking.                                                    |
 | `dbcop_sat`     | `crates/sat/`     | SAT solver backend using `rustsat` + BatSAT. Alternative to the DFS-based linearization solver for NP-complete levels. |
 | `dbcop_testgen` | `crates/testgen/` | Random history generator with coherence guarantees (every read backed by a committed write).                           |
-| `dbcop_drivers` | `crates/drivers/` | Database drivers for executing generated histories against real databases (Galera, AntidoteDB, CockroachDB).           |
+| `dbcop_parser`  | `crates/parser/`  | Text history parser (`winnow` + `logos`) for the compact `.hist` format.                                               |
+| `dbcop_drivers` | `crates/drivers/` | Database drivers (currently unimplemented stubs) for executing histories against real databases.                       |
+| `dbcop_ffi`     | `crates/ffi/`     | C ABI for batch checks and persistent incremental consistency oracles, used by the Go mockserver.                      |
 
 ## Data Flow
 
@@ -69,9 +71,9 @@ Result<Witness, Error>         ── crates/core/src/consistency/mod.rs
 - `linearization/` -- NP-complete checkers: `constrained_linearization.rs` (DFS
   solver trait + solver-provided DFS options + legal-first move ordering +
   Zobrist/state-signature memoization hooks + killer/history + nogood/backjump
-  - dominance pruning + randomized restarts + adaptive portfolio + principal
-    variation/counter-move ordering), `prefix.rs`, `snapshot_isolation.rs`,
-    `serializable.rs`.
+  - exact failed-frontier caching + randomized restarts + adaptive portfolio +
+    principal variation/counter-move ordering), `prefix.rs`,
+    `snapshot_isolation.rs`, `serializable.rs`.
 - `decomposition.rs` -- Communication graph construction and biconnected
   component extraction (Theorem 5.2 from Biswas & Enea 2019).
 - `witness.rs` -- `Witness` enum: `CommitOrder`, `SplitCommitOrder`,
@@ -89,14 +91,43 @@ Result<Witness, Error>         ── crates/core/src/consistency/mod.rs
 | `Witness`             | `consistency/witness.rs`  | Proof of consistency. `CommitOrder(Vec<TransactionId>)`, `SplitCommitOrder(Vec<(TransactionId, bool)>)`, `SaturationOrder(DiGraph<TransactionId>)`.        |
 | `Error<V, Ver>`       | `consistency/error.rs`    | `NonAtomic(NonAtomicError)`, `Invalid(Consistency)`, `Cycle { level, a, b }`.                                                                              |
 
+## MySQL Mockserver
+
+`mockserver/` is a separate Go module. `go-mysql-server` provides the MySQL wire
+protocol and SQL execution; the backend maps table cells and row existence to
+versioned keys. Clients create their own databases and tables. The server does
+not include a TPC-C schema or workload implementation.
+
+The standalone server initially uses serial, latest-value initialization.
+`CALL dbcop_seal_initial_state()` atomically turns the completed dataset into
+root values and starts weak execution. Preparation transactions are outside the
+measured history; post-seal transactions are retained. This is an initialization
+boundary, not a durable database checkpoint.
+
+Each store lazily creates a native `IncrementalChecker` handle per requested
+consistency level. Go sends committed transaction deltas and scalar read
+candidates. Accepted live reads retain their graph work; rejected trials undo
+only their changes. Commit checks the complete ordered transaction and retains
+writer indexes, dependency relations, closure state, and reusable order
+information. Search caches are invalidated when constraints change.
+
+Transactions execute serially across sessions, but reads can select historical
+versions admitted by the configured level. Commit publishes cells, versioned
+existence, and the ordered transaction log only after the oracle accepts.
+Rollback and disconnect discard staged state. Storage and native oracle state
+are process-local, not durable. See [mockserver usage](../mockserver/README.md)
+for release builds and commands using the unmodified official TPC-C client.
+
 ## End-to-End Testing Pipeline
 
-For testing real databases, dbcop provides a generate-execute-verify pipeline:
+For testing real databases, dbcop aims at a generate-execute-verify pipeline.
+The execute step is currently an unimplemented stub (`dbcop_drivers` is
+`todo!()`); only generate + verify run today:
 
 1. **Generate** (`dbcop_testgen`): Create random transaction histories with
    coherence guarantees.
 2. **Execute** (`dbcop_drivers`): Run histories against a real database cluster
-   via the `DbDriver` trait.
+   via the `DbDriver` trait. STUBBED -- not yet implemented.
 3. **Verify** (`dbcop_core`): Check whether the observed results satisfy a
    consistency level.
 
@@ -110,8 +141,8 @@ pub trait DbDriver {
 }
 ```
 
-`ClusterConfig` holds `hosts`, `port`, and `db_name`. Three driver
-implementations exist:
+`ClusterConfig` holds `hosts`, `port`, and `db_name`. Three driver stubs exist
+(all `todo!()`):
 
 - `galera.rs` -- Galera Cluster (MySQL/MariaDB)
 - `antidotedb.rs` -- AntidoteDB (CRDT-based)

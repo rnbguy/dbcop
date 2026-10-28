@@ -19,20 +19,20 @@ consistency. For theoretical background, see
 
 **Source:** `crates/core/src/consistency/saturation/`
 
-Saturation algorithms check consistency by incrementally building a **visibility
-relation** -- a directed graph over transactions that tracks which transactions'
-effects are visible to which others. The algorithm iterates until either a fixed
-point is reached (consistent) or a cycle is detected (violation).
+The polynomial checkers derive commit-order constraints from the observed
+session order (`so`) and write-read relation (`wr`). These constraints are not
+additional causal observations: feeding inferred commit edges back into the rule
+premises would reject legal histories.
 
 ### General Pattern
 
-1. Initialize the visibility relation from session order and write-read edges.
-2. Apply level-specific rules to infer new visibility edges.
-3. Repeat until no new edges are added (fixed point) or a cycle is found.
-4. If acyclic at fixed point, return
-   `Witness::SaturationOrder(visibility_graph)`.
-5. If a cycle is detected, return `Error::Cycle { level, a, b }` with the
-   conflicting edge.
+1. Validate committed reads and the level's repeated-read requirements.
+2. Form the fixed premise relation from `so union wr`; Causal uses its
+   transitive closure.
+3. Derive the level's required commit-order edges from that fixed relation.
+4. If the resulting commit graph is acyclic, return
+   `Witness::SaturationOrder(commit_graph)`.
+5. Otherwise return `Error::Cycle { level, a, b }` with a conflicting edge.
 
 ### Committed Read (`committed_read.rs`)
 
@@ -48,15 +48,17 @@ committed-order graph as the saturation witness.
 
 ### Atomic Read (`atomic_read.rs`)
 
-Extends repeatable-read: if transaction t2 reads any value from t1, then all of
-t1's writes must be visible to t2. Adds visibility edges to enforce atomicity of
-reads across variables.
+Extends repeatable-read with cross-variable atomicity constraints. It derives
+write ordering once from the fixed union of session order and write-read edges,
+then checks the resulting commit graph for cycles.
 
 ### Causal (`causal.rs`)
 
-Extends atomic-read with transitivity: the visibility relation must be
-transitively closed. It enforces write-write ordering (`causal_ww`) constraints
-to saturation fixed point, using incremental transitive closure for efficiency.
+Compute causal reachability as the transitive closure of `so union wr`.
+Algorithm 1 in the paper derives required writer ordering from this fixed
+relation, then checks the commit graph for cycles. Inferred write-write edges
+must not be fed back into causal reachability or used to derive further causal
+premises.
 
 ## Constrained Linearization (NP-Complete Checkers)
 
@@ -68,6 +70,13 @@ For the NP-complete levels, dbcop first runs the causal checker (as a
 prerequisite), then searches for a valid linearization using depth-first search
 over topological orderings.
 
+Prefix and Snapshot Isolation split transactions into read and write phases.
+Session-order and write-read dependencies connect a writer's commit phase to the
+successor's read phase. Constraints inferred only for commit order connect write
+phases instead; treating them as visibility would incorrectly force the
+successor's snapshot to include an earlier commit. The DFS and SAT encodings use
+the same distinction.
+
 Complexity note: Worst-case complexity is NP-complete when the number of
 sessions is unbounded.
 
@@ -78,10 +87,18 @@ number of distinct frontier states is polynomial:
 - non-split solvers: `O(n^k)`
 - split solvers: `O((2n)^k) = O(n^k)` for fixed `k`
 
-The bounded-session check can be viewed as reachability in this frontier-state
-transition graph. Reachability (ST-REACH) is the canonical NL problem on the
-explicit graph, so this gives an NL-style formulation; with fixed `k` this is
-also polynomial-time in `n`.
+These bounds count frontiers, not every mutable state of this DFS
+implementation. The solvers also retain active readers and, for SI, open
+writers; memo signatures mix in that state. Equal frontiers must not be assumed
+interchangeable without a state-equivalence argument. Finite tests are neither
+that argument nor a proof of the implementation's complexity bound.
+
+The replica campaigns use one ordered session per replica, so their fixed
+replica count also fixes `k`. Independent clients or reconnects can increase the
+session count; a physical replica bound alone does not impose this convention.
+See
+[bounded model validation](development.md#independent-tlatlc-semantic-oracle)
+for the tested domain and evidence limits.
 
 ### The Solver Trait
 
@@ -128,10 +145,17 @@ The current DFS search stack also includes:
 - counter-move ordering (learned parent->response replies),
 - nogood learning on failed signatures,
 - conflict-directed backjumping with learned jump depths,
-- frontier-dominance pruning at fixed solver-state signature,
+- failed-frontier caching at fixed solver-state signature, requiring equal
+  frontiers,
 - randomized, budgeted restarts with final exhaustive fallback,
 - adaptive attempt-level heuristic portfolio selection,
 - principal variation (PV) ordering across restart attempts.
+
+The `dominance_pruning` option only reuses failures for equal frontiers.
+Containment alone is unsound: a smaller frontier can represent work completed
+before an interval started, while the failed larger frontier still has that work
+blocked inside the interval. The cache retains distinct failed frontiers
+separately rather than discarding subsets.
 
 ### Prefix (`prefix.rs`)
 
@@ -230,17 +254,21 @@ predecessors: for each vertex u, its position is the number of vertices w where
 `crates/core/src/consistency/linearization/constrained_linearization.rs`
 
 The DFS solver uses Zobrist hashing for O(1) memoization of visited frontier
-states. Each transaction is assigned a random `u128` seed at initialization. The
-frontier hash is maintained incrementally via XOR: adding a transaction XORs its
-seed into the hash, removing it XORs again.
+states. Each transaction is assigned a deterministic `u128` token using fixed
+hash seeds. The frontier hash is maintained incrementally via XOR: adding a
+transaction XORs its token into the hash, removing it XORs again. Repeated
+hashing of the same state must agree for memoization and backtracking to work.
 
 This replaces the naive approach of hashing `HashSet<BTreeSet<TransactionId>>`
 which had O(T log T) cost per state.
 
 Prefix, Snapshot Isolation, and Serializable solvers strengthen this with
 state-aware signatures: memo keys include active solver state (`active_write`
-and, for SI, `active_variable`) in addition to frontier hash. This reduces state
-aliasing in the transposition table.
+and, for SI, `active_variable`) in addition to frontier hash. Reader and count
+tokens include their variable, so equal reader changes on different variables
+cannot systematically cancel and alias distinct states during failed-frontier
+caching. These fingerprints can still collide; they are not exact state
+representations.
 
 ### Chain Closure
 
@@ -255,19 +283,19 @@ O(V * (V+E)) closure algorithm.
 
 **Source:** `crates/core/src/graph/digraph.rs`
 
-The causal checker needs to maintain the transitive closure of the visibility
-relation as new edges are added during saturation. Rather than recomputing the
-full closure each iteration, `incremental_closure()` extends an already-closed
-graph: for each new edge (u, v), it finds all ancestors of u and all descendants
-of v via BFS, then adds edges from every ancestor to every descendant.
+`incremental_closure()` extends an already-closed graph: for each new edge (u,
+v), it finds all ancestors of u and all descendants of v, then inserts the
+cross-product. The persistent checker journals incremental changes to causal
+reachability and commit-order closure separately. Inferred commit edges never
+enter causal reachability.
 
 ### Visibility Adjacency Pre-fetch
 
-**Source:** `crates/core/src/consistency/saturation/causal.rs`
+**Source:** `crates/core/src/history/atomic/mod.rs`
 
-In the causal checker's hot paths (`causal_ww()` and `causal_rw()`), adjacency
-sets are pre-fetched from the visibility relation before iteration to avoid
-repeated graph lookups and cloning during the saturation loop.
+The `causal_ww()` and `causal_rw()` graph helpers pre-fetch adjacency sets to
+avoid repeated graph lookups and clones. The causal batch checker applies
+`causal_ww()` once to fixed causal reachability, not in a feedback loop.
 
 ## See Also
 

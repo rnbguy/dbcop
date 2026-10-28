@@ -97,8 +97,14 @@ With `--json`:
 
 ```json
 {"file":"0.json","ok":true,"witness":{"CommitOrder":[{"session_id":1,"session_height":0}]}}
-{"file":"1.json","ok":false,"error":{"Invalid":"Prefix"}}
+{"file":"1.json","ok":false,"error":"Invalid(Prefix)"}
 ```
+
+For Committed Read, Repeatable Read, Atomic Read, and Causal, the witness is
+`{"SaturationOrder":[[from,to],...]}`: an edge list whose endpoints contain
+`session_id` and `session_height`, matching the WASM JSON representation. Prefix
+and Serializable return `CommitOrder`; Snapshot Isolation returns
+`SplitCommitOrder`. Failure `error` values are Debug-formatted strings.
 
 **Exit codes:**
 
