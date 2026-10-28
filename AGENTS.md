@@ -169,6 +169,13 @@ dbcop/                          workspace root
     parser/                      text history parser -- dbcop_parser (winnow + logos)
     testgen/                     random history generator -- dbcop_testgen
     drivers/                     database drivers -- dbcop_drivers (antidotedb, cockroachdb, galera)
+    ffi/                         C ABI for batch and persistent incremental checking -- dbcop_ffi
+  mockserver/                    Go SQL application testing with MonkeyDB-style reads
+    backend/                     shared SQL/storage, native Rust and Apalache admission
+    apalachebackend/              pure-Go JSON-RPC client and canonical isolation/step specs
+    cmd/                         native/Apalache servers, assertions, controlled SQL replay
+    benchbase/                   stock-client configurations and experiment runner
+    exploration/                 guided/systematic admitted-choice exploration
   docs/
     architecture.md               crate structure, data flow, key types
     algorithms.md                 saturation, linearization, decomposition, SAT encoding
@@ -178,11 +185,13 @@ dbcop/                          workspace root
     wasm-api.md                   WASM bindings API reference
     development.md                building, testing, contributing
   .github/workflows/
-    rust.yaml                    build + format + model-validation CI
+    rust.yaml                    bounded Rust build/test + format CI
     code-quality.yaml            taplo + typos CI
     deno.yaml                    Deno fmt/lint/check + WASM tests CI
     coverage.yaml                Rust + Deno coverage generation and Codecov upload
-  codecov.yml                    Codecov status config (project/patch + rust/deno flags)
+    go.yaml                      native FFI, Go vet/build/coverage and Codecov upload
+    exhaustive.yaml              daily main-only full Rust, TLC and Apalache campaigns
+  codecov.yml                    Codecov status config (project/patch + rust/deno/go flags)
   .github/zizmor.yml             zizmor config: suppress hash-pin lint (allow tag-pinned refs)
   .husky/pre-commit              ASCII check + cargo +nightly fmt + deno:ci
   taplo.toml                     TOML formatter config
@@ -191,6 +200,12 @@ dbcop/                          workspace root
   typos.toml                     spell checker config (project-specific word list)
   wasmlib/                       pre-built WASM artifacts (.wasm, .d.ts, .js)
 ```
+
+The root README introduces both history checking and MonkeyDB-style SQL testing.
+Keep operational commands and experiment limits in `mockserver/README.md`;
+architecture/development docs link to that guide rather than duplicating startup
+recipes. Historical implementation links use immutable commit snapshots, not
+disposable branch names.
 
 ## CLI Usage
 
