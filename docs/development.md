@@ -38,6 +38,22 @@ cargo build --workspace
 cargo build -p dbcop_core --no-default-features
 ```
 
+### Dependency updates
+
+Commit `Cargo.lock`, `deno.lock`, and `mockserver/go.sum` with dependency
+updates. CI uses `--locked` for Rust so a build cannot silently choose a new
+dependency graph. Use `cargo upgrade` and `cargo update` for Rust, and `go get`
+followed by `go mod tidy` for the Go module.
+
+Keep the WASM toolchain paired: `@deno/wasmbuild` 0.23.0 requires `wasm-bindgen`
+exactly 0.2.108. Its version check rejects a newer bindgen crate, including
+0.2.129. Refresh the Deno lockfile from the build, hook, and WASM test entry
+points, then rebuild bindings and run the WASM tests.
+
+Decimal 1.6 retains exact SQL/replay values; do not change its process-global
+formatting or decode-limit settings to restore old edge-case behavior.
+Model-checker/JVM pins remain separate from routine dependency/action updates.
+
 ## Test
 
 ```bash

@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-cargo install --path crates/cli
+cargo install --locked --path crates/cli
 ```
 
 This installs the `dbcop` binary.

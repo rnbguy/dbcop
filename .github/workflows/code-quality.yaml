@@ -22,7 +22,7 @@ jobs:
           persist-credentials: false
 
       - name: Spell Check with Typos
-        uses: crate-ci/typos@v1.50.3
+        uses: crate-ci/typos@v1.51.1
 
       - name: Install Taplo
         uses: taiki-e/cache-cargo-install-action@v3

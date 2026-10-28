@@ -30,22 +30,22 @@ jobs:
         with:
           toolchain: stable
       - name: Build
-        run: cargo build --verbose --all-features
+        run: cargo build --locked --verbose --all-features
       - name: Clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
       - name: Run bounded tests
         run: |
-          cargo test --verbose --workspace --all-features -- \
+          cargo test --locked --verbose --workspace --all-features -- \
             --skip complete_bounded_domain \
             --skip exhaustive_incremental_admission_matches_exact_tentative_histories
       - name: Check no-std
-        run: cargo build -p dbcop_core --no-default-features
+        run: cargo build --locked -p dbcop_core --no-default-features
       - name: Check MSRV
         # MSRV per root Cargo.toml rust-version; toolchain installed explicitly
         # so this is a real gate, not a silent skip.
         run: |
           rustup toolchain install stable --profile minimal
-          cargo test -p dbcop_core -- \
+          cargo test --locked -p dbcop_core -- \
             --skip complete_bounded_domain \
             --skip exhaustive_incremental_admission_matches_exact_tentative_histories
       - name: E2E generate and verify

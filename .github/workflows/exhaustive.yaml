@@ -29,7 +29,7 @@ jobs:
         with:
           toolchain: stable
       - name: Run full Rust suite including exhaustive reference domains
-        run: cargo test --release --workspace --all-features
+        run: cargo test --locked --release --workspace --all-features
 
   model-validation:
     if: ${{ github.ref == 'refs/heads/main' }}
@@ -63,12 +63,12 @@ jobs:
         with:
           toolchain: stable
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: mockserver/go.mod
           cache-dependency-path: mockserver/go.sum
       - name: Set up Java for TLC
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "25"
@@ -104,21 +104,21 @@ jobs:
       - name: Run all finite TLC and incremental campaigns
         run: |
           # tlc_go_histories requires Go-supplied input; real-service tests invoke that adapter.
-          cargo test --release -p dbcop_core --test tlc_model -- \
+          cargo test --locked --release -p dbcop_core --test tlc_model -- \
             --ignored --skip tlc_go_histories --nocapture --test-threads=1 \
             2>&1 | tee "$MODEL_VALIDATION_DIR/logs/tlc-model.log"
       - name: Validate real search trace compatibility
         run: |
-          cargo test --release -p dbcop_core --lib tlc_search_trace_compatibility -- \
+          cargo test --locked --release -p dbcop_core --lib tlc_search_trace_compatibility -- \
             --ignored --nocapture \
             2>&1 | tee "$MODEL_VALIDATION_DIR/logs/tlc-search-trace.log"
       - name: Check instrumentation-free no-std build
         run: |
-          cargo build -p dbcop_core --no-default-features \
+          cargo build --locked -p dbcop_core --no-default-features \
             2>&1 | tee "$MODEL_VALIDATION_DIR/logs/no-std.log"
       - name: Build debug native oracle for comparison
         run: |
-          cargo build -p dbcop_ffi \
+          cargo build --locked -p dbcop_ffi \
             2>&1 | tee "$MODEL_VALIDATION_DIR/logs/native-build.log"
       - name: Start owned isolated Apalache service
         run: |
@@ -194,7 +194,7 @@ jobs:
           fi
       - name: Preserve failed model inputs and complete logs
         if: ${{ failure() && env.MODEL_VALIDATION_DIR != '' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: model-validation-failure-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
