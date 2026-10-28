@@ -16,8 +16,15 @@ import (
 // NewEngine adds the FilteredTable dispatch missing from go-mysql-server v0.20.
 // Run after binding, index selection, and projection; retain engine filters too.
 func NewEngine(provider *Provider) *sqle.Engine {
-	a := analyzer.NewBuilder(provider).AddPreValidationRule(-1, pushReadFilters).Build()
-	return sqle.New(a, nil)
+	builder := analyzer.NewBuilder(provider).AddPreValidationRule(-1, pushReadFilters)
+	// shortcut: v0.20's unsafe sort-rule ID needs name lookup; revisit on upgrade.
+	for _, rule := range analyzer.OnceAfterDefault {
+		if rule.Id.String() == "replaceIdxSort" {
+			builder.RemoveOnceAfterRule(rule.Id)
+			break
+		}
+	}
+	return sqle.New(builder.Build(), nil)
 }
 
 func pushReadFilters(ctx *sql.Context, _ *analyzer.Analyzer, node sql.Node, _ *plan.Scope, _ analyzer.RuleSelector, _ *sql.QueryFlags) (sql.Node, transform.TreeIdentity, error) {

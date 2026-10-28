@@ -37,8 +37,8 @@ type tableState struct {
 	indexes         map[string]*tableIndex
 }
 
-// Keep only the sql.Index contract: memory.Index's optional ordered and
-// extended-index interfaces require memory's own row storage.
+// memory.Index's ordered and extended interfaces require its own row storage.
+// Explicitly report no ordering instead of inheriting native index assumptions.
 type tableIndex struct {
 	sql.Index
 	columns []int
@@ -47,6 +47,10 @@ type tableIndex struct {
 	entries    map[string][]sql.Row
 	equalities []map[string][]string // per-column value -> historical physical identities
 }
+
+func (*tableIndex) Order() sql.IndexOrder { return sql.IndexOrderNone }
+
+func (*tableIndex) Reversible() bool { return false }
 
 type Table struct {
 	def          TableDef
