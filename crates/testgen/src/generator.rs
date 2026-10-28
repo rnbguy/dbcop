@@ -116,7 +116,7 @@ pub fn generate_single_history(
             }
 
             for _ in 0..n_transaction {
-                let readable = latest_writes.clone();
+                let mut readable = latest_writes.clone();
                 let mut read_vars: HashSet<u64> = HashSet::new();
                 let events = (0..n_event)
                     .map(|_| {
@@ -131,6 +131,7 @@ pub fn generate_single_history(
                                 *entry
                             };
                             latest_writes.insert(variable, version);
+                            readable.insert(variable, version);
                             Event::write(variable, version)
                         }
                     })

@@ -1,0 +1,9582 @@
+[
+  {
+    "name": "apalache_000",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_001",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_002",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_003",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_004",
+    "history": [
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_005",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_006",
+    "history": [
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_007",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_008",
+    "history": [
+      [],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_009",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_010",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_011",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_012",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_013",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_014",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_015",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_016",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_017",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_018",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_019",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_020",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_021",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_022",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_023",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_024",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_025",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_026",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_027",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_028",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_029",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_030",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_031",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_032",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_033",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_034",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_035",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_036",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_037",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_038",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_039",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_040",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_041",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_042",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_043",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_044",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_045",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_046",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_047",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_048",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_049",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_050",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_051",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_052",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_053",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_054",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_055",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_056",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_057",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_058",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_059",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_060",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_061",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_062",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_063",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_064",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_065",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_066",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_067",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_068",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_069",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_070",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_071",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_072",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_073",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_074",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_075",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_076",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_077",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_078",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_079",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_080",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_081",
+    "history": [
+      [],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_082",
+    "history": [
+      [],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_083",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_084",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_085",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_086",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_087",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_088",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_089",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_090",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_091",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_092",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_093",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_094",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_095",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_096",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_097",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_098",
+    "history": [
+      [],
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_099",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_100",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_101",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_102",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_103",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_104",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_105",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_106",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_107",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_108",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_109",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_110",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_111",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_112",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_113",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  {
+    "name": "apalache_114",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_115",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  {
+    "name": "apalache_116",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_117",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 3
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  {
+    "name": "apalache_118",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 3
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_119",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 3
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  {
+    "name": "apalache_120",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 3
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_121",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 3
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  {
+    "name": "apalache_122",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 3
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  {
+    "name": "apalache_123",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  {
+    "name": "apalache_124",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  {
+    "name": "apalache_125",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_126",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_127",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 3
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_128",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_129",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 3
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_130",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_131",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_132",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_133",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 3
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_134",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 3
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_135",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 3
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 4
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_136",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 3
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_137",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_138",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_139",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_140",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_141",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_142",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_143",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_144",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_145",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_146",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_147",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_148",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  {
+    "name": "apalache_149",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_150",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_151",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_152",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_153",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_154",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_155",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_156",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_157",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_158",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_159",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_160",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_161",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_162",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_163",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_164",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_165",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_166",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_167",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_168",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_169",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_170",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_171",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_172",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_173",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_174",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_175",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_176",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_177",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_178",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_179",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_180",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_181",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_182",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_183",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_184",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_185",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_186",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_187",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_188",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_189",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_190",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_191",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_192",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_193",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_194",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_195",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_196",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_197",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_198",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_199",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_200",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_201",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_202",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_203",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_204",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_205",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_206",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_207",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_208",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_209",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_210",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_211",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_212",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_213",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_214",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_215",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_216",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_217",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_218",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_219",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_220",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_221",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_222",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_223",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_224",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_225",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_226",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_227",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_228",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_229",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_230",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_231",
+    "history": [
+      [],
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_232",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_233",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_234",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_235",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_236",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_237",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_238",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_239",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_240",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_241",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_242",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_243",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_244",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_245",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_246",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_247",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_248",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_249",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_250",
+    "history": [
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_251",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_252",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_253",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_254",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_255",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_256",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_257",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_258",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 1,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_259",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_260",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        }
+      ],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            },
+            {
+              "Write": {
+                "variable": 0,
+                "version": 2
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_261",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_262",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_263",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_264",
+    "history": [
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ],
+      []
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_265",
+    "history": [
+      [],
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_266",
+    "history": [
+      [],
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_267",
+    "history": [
+      [],
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_268",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 1,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_269",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 0,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_270",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Read": {
+                "variable": 1,
+                "version": null
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_271",
+    "history": [
+      [],
+      [
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        },
+        {
+          "events": [],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  {
+    "name": "apalache_272",
+    "history": [
+      [],
+      [
+        {
+          "events": [],
+          "committed": true
+        },
+        {
+          "events": [
+            {
+              "Write": {
+                "variable": 0,
+                "version": 1
+              }
+            }
+          ],
+          "committed": true
+        }
+      ]
+    ],
+    "expected": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  }
+]

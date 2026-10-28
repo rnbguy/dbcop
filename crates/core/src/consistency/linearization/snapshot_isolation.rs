@@ -17,11 +17,11 @@
 //! - `(TransactionId, true)` -- the *write phase*.
 //!
 //! In addition to the `active_write` constraint from Prefix Consistency,
-//! the solver tracks `active_variable` -- the set of variables that have
-//! been written by a transaction whose write phase has been placed but
-//! whose readers have not all been placed yet. A read phase is only
-//! allowed if none of its write variables overlap with `active_variable`,
-//! enforcing the no-write-write-conflict property.
+//! the solver tracks `active_variable` -- the set of variables written by
+//! transactions whose read phase has been placed but whose write phase has
+//! not yet been placed. A read phase is only allowed if none of its write
+//! variables overlap with `active_variable`, enforcing the
+//! no-write-write-conflict property.
 //!
 //! # Data flow
 //!
@@ -61,10 +61,9 @@ use crate::history::atomic::AtomicTransactionPO;
 ///
 /// - `active_write` -- same as [`PrefixConsistencySolver`]: maps each
 ///   variable to the set of transactions with unresolved readers.
-/// - `active_variable` -- the set of variables currently "locked" by a
-///   write phase that has been committed but whose readers are still
-///   outstanding. A new read phase is blocked if its write set overlaps
-///   with `active_variable`.
+/// - `active_variable` -- the set of variables currently "locked" between
+///   a transaction's read and write phases. A new read phase is blocked if
+///   its write set overlaps with `active_variable`.
 ///
 /// [`PrefixConsistencySolver`]: super::prefix::PrefixConsistencySolver
 #[derive(Debug)]
@@ -154,13 +153,14 @@ where
     fn frontier_signature(&self, frontier_hash: u128, _linearization: &[Self::Vertex]) -> u128 {
         let mut signature = frontier_hash;
         for (var, readers) in &self.active_write {
+            // Bind readers to their variable so equal read sets cannot cancel across keys.
             let mut readers_mix = 0_u128;
             for reader in readers {
-                readers_mix ^= seeded_hash_u128(0x601, reader);
+                readers_mix ^= seeded_hash_u128(0x601, &(var, reader));
             }
             let var_mix = seeded_hash_u128(0x602, var);
             let reader_count = u64::try_from(readers.len()).expect("reader count fits u64");
-            let count_mix = seeded_hash_u128(0x603, &reader_count);
+            let count_mix = seeded_hash_u128(0x603, &(var, reader_count));
             signature ^= var_mix ^ readers_mix ^ count_mix;
         }
         for var in &self.active_variable {
@@ -182,7 +182,17 @@ where
                 .visibility_relation
                 .adj_map
                 .get(&u.0)
-                .map(|vs| vs.iter().copied().map(|v| (v, false)).collect())
+                .map(|vs| {
+                    vs.iter()
+                        .copied()
+                        .map(|v| {
+                            // Commit arbitration orders writes, not the successor's snapshot.
+                            let causal = self.history.session_order.has_edge(&u.0, &v)
+                                || self.history.wr_union.has_edge(&u.0, &v);
+                            (v, !causal)
+                        })
+                        .collect()
+                })
         } else {
             Some([(u.0, true)].into())
         }
@@ -217,7 +227,6 @@ where
                     .or_default()
                     .remove(&curr_txn.0));
             }
-            self.active_write.retain(|_, ts| !ts.is_empty());
 
             self.active_variable = self
                 .active_variable
@@ -225,6 +234,7 @@ where
                 .cloned()
                 .collect();
         }
+        self.active_write.retain(|_, ts| !ts.is_empty());
     }
 
     fn backtrack_book_keeping(&mut self, linearization: &[Self::Vertex]) {
@@ -280,5 +290,91 @@ where
             .keys()
             .flat_map(|u| [(*u, false), (*u, true)])
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::vec;
+
+    use super::*;
+    use crate::consistency::error::Error;
+    use crate::consistency::saturation::causal::check_causal_read;
+    use crate::consistency::{check, Consistency};
+    use crate::history::raw::types::{Event, Session, Transaction};
+
+    #[test]
+    fn writes_without_readers_leave_no_active_write_and_backtrack_exactly() {
+        let history = vec![vec![Transaction::committed(vec![Event::write(
+            1_u64, 1_u64,
+        )])]];
+        let po = check_causal_read(&history).unwrap();
+        let mut solver = SnapshotIsolationSolver::from(po);
+        let txn = TransactionId {
+            session_id: 1,
+            session_height: 0,
+        };
+        let initial_signature = solver.frontier_signature(0, &[]);
+        let mut linearization = vec![(txn, false)];
+        solver.forward_book_keeping(&linearization);
+        let read_signature = solver.frontier_signature(0, &linearization);
+        linearization.push((txn, true));
+        solver.forward_book_keeping(&linearization);
+        assert!(solver.active_write.is_empty());
+        assert!(solver.active_variable.is_empty());
+        solver.backtrack_book_keeping(&linearization);
+        linearization.pop();
+        assert_eq!(solver.frontier_signature(0, &linearization), read_signature);
+        solver.backtrack_book_keeping(&linearization);
+        linearization.pop();
+        assert_eq!(
+            solver.frontier_signature(0, &linearization),
+            initial_signature
+        );
+    }
+
+    #[test]
+    fn captured_payment_history_rejects_lost_update_but_accepts_fresh_reads() {
+        // Remap captured keys to 1..=54, preserving all 16 transactions and write versions.
+        let mut loader: Session<u64, u64> =
+            (0..6).map(|_| Transaction::committed(vec![])).collect();
+        loader.push(Transaction::committed(
+            (1..=36).map(|key| Event::write(key, key)).collect(),
+        ));
+        let mut observer = vec![Transaction::committed(vec![])];
+        for keys in [1..=8, 9..=17, 18..=36] {
+            observer.push(Transaction::committed(
+                keys.map(|key| Event::read(key, key)).collect(),
+            ));
+        }
+        observer.push(Transaction::committed(vec![]));
+        let payment = |read_offset, write_offset, new_keys: core::ops::RangeInclusive<u64>| {
+            let mut events: Vec<_> = (1..=36)
+                .map(|key| Event::read(key, key + read_offset))
+                .collect();
+            events.extend((1..=36).map(|key| Event::write(key, key + write_offset)));
+            events.extend(
+                new_keys
+                    .zip(write_offset + 37..)
+                    .map(|(key, version)| Event::write(key, version)),
+            );
+            vec![
+                Transaction::committed(vec![]),
+                Transaction::committed(events),
+            ]
+        };
+        let mut history = vec![
+            loader,
+            observer,
+            payment(0, 36, 37..=45),
+            payment(0, 81, 46..=54),
+        ];
+        assert!(check(&history, Consistency::Prefix).is_ok());
+        assert!(matches!(
+            check(&history, Consistency::SnapshotIsolation),
+            Err(Error::Invalid(Consistency::SnapshotIsolation))
+        ));
+        history[3] = payment(36, 81, 46..=54);
+        assert!(check(&history, Consistency::SnapshotIsolation).is_ok());
     }
 }

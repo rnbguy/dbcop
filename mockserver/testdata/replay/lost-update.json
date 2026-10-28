@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "isolation": "read-committed",
+  "seed": 2,
+  "read_policy": "uniform",
+  "deviation_probability": 0.01,
+  "setup": [
+    "CREATE DATABASE replay",
+    "CREATE TABLE replay.accounts (id INT PRIMARY KEY, balance DECIMAL(20,0) NOT NULL)",
+    "CREATE TABLE replay.audit (id INT PRIMARY KEY, marker INT NOT NULL)",
+    "INSERT INTO replay.accounts VALUES (1,100),(2,100)",
+    "INSERT INTO replay.audit VALUES (1,0)"
+  ],
+  "transactions": [
+    {
+      "id": "irrelevant-audit",
+      "session_id": 3,
+      "statements": [
+        {
+          "id": "audit-marker",
+          "sql": "UPDATE replay.audit SET marker=marker+1 WHERE id=1"
+        }
+      ],
+      "finish": "commit"
+    },
+    {
+      "id": "transfer-one",
+      "session_id": 1,
+      "statements": [
+        {
+          "id": "debit-one",
+          "sql": "UPDATE replay.accounts SET balance=balance-10 WHERE id=1"
+        },
+        {
+          "id": "credit-one",
+          "sql": "UPDATE replay.accounts SET balance=balance+10 WHERE id=2"
+        }
+      ],
+      "finish": "commit"
+    },
+    {
+      "id": "transfer-two",
+      "session_id": 2,
+      "statements": [
+        {
+          "id": "debit-two",
+          "sql": "UPDATE replay.accounts SET balance=balance-10 WHERE id=1"
+        },
+        {
+          "id": "credit-two",
+          "sql": "UPDATE replay.accounts SET balance=balance+10 WHERE id=2"
+        }
+      ],
+      "finish": "commit"
+    }
+  ],
+  "assertion": {
+    "id": "conserved-balance",
+    "sql": "SELECT SUM(balance) FROM replay.accounts",
+    "baseline_rows": [[{ "kind": "decimal", "value": "200" }]],
+    "want_rows": [[{ "kind": "decimal", "value": "200" }]]
+  }
+}

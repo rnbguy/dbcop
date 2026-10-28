@@ -8,6 +8,7 @@ members = [
   "crates/wasm",
   "crates/sat",
   "crates/drivers",
+  "crates/ffi",
 ]
 
 [workspace.package]
@@ -23,7 +24,7 @@ categories = [
   "development-tools::debugging",
 ]
 edition = "2021"
-rust-version = "1.93.1"
+rust-version = "1.99.0"
 readme = "README.md"
 
 [workspace.dependencies]
@@ -31,19 +32,22 @@ dbcop_core    = { version = "0.2.0", path = "crates/core" }
 dbcop_parser  = { version = "0.2.0", path = "crates/parser" }
 dbcop_testgen = { version = "0.2.0", path = "crates/testgen" }
 
-clap               = { version = "4.5", features = [ "derive" ] }
+clap               = { version = "4.6", features = [ "derive" ] }
 serde_json         = { version = "1.0", default-features = false }
 petgraph           = { version = "0.8" }
 tracing            = { version = "0.1" }
 tracing-subscriber = { version = "0.3", default-features = false, features = [ "fmt", "env-filter" ] }
 serde              = { version = "1.0" }
 hashbrown          = { version = "0.17" }
+foldhash           = { version = "0.2", default-features = false }
 wasm-bindgen       = { version = "=0.2.106" }
 typed-builder      = { version = "0.23" }
 chrono             = { version = "0.4" }
 rand               = { version = "0.10" }
-rayon              = { version = "1.11" }
+rayon              = { version = "1.12" }
 derive_more        = { version = "2.1", default-features = false, features = [ "from" ] }
+thiserror          = { version = "2.0", default-features = false }
+color-eyre         = { version = "0.6" }
 winnow             = { version = "1.0" }
 logos              = { version = "0.16" }
 schemars           = { version = "1.2", default-features = false, features = [ "derive" ] }

@@ -32,9 +32,9 @@ where
     pub write_read_relation: HashMap<Variable, DiGraph<TransactionId>>,
     /// Union of all per-variable write-read graphs.
     pub wr_union: DiGraph<TransactionId>,
-    /// Visibility relation, initialized to the session order and extended
-    /// by saturation checkers. An edge `(a, b)` means transaction `a` is
-    /// visible to transaction `b`.
+    /// Session/read visibility extended by checker-specific commit constraints.
+    /// After causal checking, inferred write-write edges order commits only;
+    /// causal premises still come from session order and write-read edges.
     pub visibility_relation: DiGraph<TransactionId>,
 }
 
@@ -147,58 +147,70 @@ where
     }
 
     pub fn causal_ww(&mut self) -> HashMap<Variable, DiGraph<TransactionId>> {
-        let mut ww: HashMap<Variable, DiGraph<TransactionId>> = HashMap::default();
+        self.write_read_relation
+            .keys()
+            .map(|x| (x.clone(), self.causal_ww_for(x, &self.visibility_relation)))
+            .collect()
+    }
 
-        for (x, wr_x) in &self.write_read_relation {
-            // wr_x contains both writers and readers as vertices. The ww rule is
-            // defined only between writers of x, so filter candidate vertices.
-            let writers: Vec<TransactionId> = wr_x
-                .adj_map
-                .keys()
-                .copied()
-                .filter(|tid| {
-                    self.history
+    /// Apply the batch write-write rule to one invalidated variable.
+    pub(crate) fn causal_ww_for(
+        &self,
+        x: &Variable,
+        visibility: &DiGraph<TransactionId>,
+    ) -> DiGraph<TransactionId> {
+        let mut ww_x = DiGraph::default();
+        let Some(write_read) = self.write_read_relation.get(x) else {
+            return ww_x;
+        };
+        // wr_x contains both writers and readers as vertices. The ww rule is
+        // defined only between writers of x, so filter candidate vertices.
+        let writers: Vec<TransactionId> = write_read
+            .adj_map
+            .keys()
+            .copied()
+            .filter(|tid| {
+                // The root (0,0) implicitly writes every key it is read
+                // for; it has no history entry, so check identity first.
+                tid == &TransactionId::root()
+                    || self
+                        .history
                         .0
                         .get(tid)
                         .is_some_and(|txn| txn.writes.contains(x))
-                })
-                .collect();
-            let mut ww_x: DiGraph<TransactionId> = DiGraph::default();
-            for t1 in &writers {
-                let Some(t3s) = wr_x.adj_map.get(t1) else {
-                    continue;
-                };
-                // t3s reads x from t1
-                // !t3s.contains(t1) - otherwise, it's a cycle in wr_x
-                for t2 in &writers {
-                    // t1 and t2 both writes on x
-                    if t1 != t2 {
-                        // Pre-fetch visibility neighbors of t2 to avoid repeated HashMap lookups
-                        let vis_neighbors_t2 = self.visibility_relation.adj_map.get(t2);
-                        if vis_neighbors_t2.is_some_and(|neighbors| neighbors.contains(t1))
-                            || t3s.iter().any(|t3| {
-                                t3 != t2
-                                    && vis_neighbors_t2
-                                        .is_some_and(|neighbors| neighbors.contains(t3))
-                            })
-                        {
-                            // it is obvious that vis(t2, t1) implies ww(t2, t1),
-                            // in other case, if vis(t2, t3), then t2 overwrites t1's write, read by t3
-                            // ┌──── t2 ─────┐
-                            // │ww_x      vis│
-                            // V             V
-                            // t1───────────>t3
-                            //      wr_x
-                            // t3 != t2 check is skipped, as acyclic vis(t3, t2) implies t3 != t2
-                            ww_x.add_edge(*t2, *t1);
-                        }
+            })
+            .collect();
+        for t1 in &writers {
+            let Some(t3s) = write_read.adj_map.get(t1) else {
+                continue;
+            };
+            // t3s reads x from t1
+            // !t3s.contains(t1) - otherwise, it's a cycle in wr_x
+            for t2 in &writers {
+                // t1 and t2 both writes on x
+                if t1 != t2 {
+                    // Pre-fetch visibility neighbors of t2 to avoid repeated HashMap lookups
+                    let vis_neighbors_t2 = visibility.adj_map.get(t2);
+                    if vis_neighbors_t2.is_some_and(|neighbors| neighbors.contains(t1))
+                        || t3s.iter().any(|t3| {
+                            t3 != t2
+                                && vis_neighbors_t2.is_some_and(|neighbors| neighbors.contains(t3))
+                        })
+                    {
+                        // it is obvious that vis(t2, t1) implies ww(t2, t1),
+                        // in other case, if vis(t2, t3), then t2 overwrites t1's write, read by t3
+                        // ┌──── t2 ─────┐
+                        // │ww_x      vis│
+                        // V             V
+                        // t1───────────>t3
+                        //      wr_x
+                        // t3 != t2 check is skipped, as acyclic vis(t3, t2) implies t3 != t2
+                        ww_x.add_edge(*t2, *t1);
                     }
                 }
             }
-            ww.insert(x.clone(), ww_x);
         }
-
-        ww
+        ww_x
     }
 
     pub fn causal_rw(&mut self) -> HashMap<Variable, DiGraph<TransactionId>> {
@@ -212,10 +224,12 @@ where
                 .keys()
                 .copied()
                 .filter(|tid| {
-                    self.history
-                        .0
-                        .get(tid)
-                        .is_some_and(|txn| txn.writes.contains(x))
+                    tid == &TransactionId::root()
+                        || self
+                            .history
+                            .0
+                            .get(tid)
+                            .is_some_and(|txn| txn.writes.contains(x))
                 })
                 .collect();
             let mut rw_x: DiGraph<TransactionId> = DiGraph::default();

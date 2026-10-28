@@ -65,6 +65,9 @@ use core::hash::Hash;
 
 use hashbrown::{HashMap, HashSet};
 
+#[cfg(test)]
+use super::tlc_tests as capture;
+
 /// Branch-ordering mode for DFS frontier exploration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BranchOrdering {
@@ -83,7 +86,9 @@ pub enum NogoodLearning {
     Enabled,
 }
 
-/// Dominance-pruning mode for DFS search.
+/// Failed-frontier pruning mode for DFS search.
+///
+/// Reuse requires equal frontiers; a smaller frontier can mean more completed work.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DominancePruning {
     Disabled,
@@ -120,7 +125,7 @@ pub struct DfsSearchOptions {
     pub nogood_learning: NogoodLearning,
     /// Enable killer/history move ordering augmentation.
     pub enable_killer_history: bool,
-    /// Enable/disable frontier dominance pruning.
+    /// Enable/disable failed-frontier caching with exact frontier equality.
     pub dominance_pruning: DominancePruning,
     /// Tie-breaking policy among similarly ranked candidates.
     pub tie_breaking: TieBreaking,
@@ -173,13 +178,11 @@ fn default_zobrist_value<T: Hash>(v: &T) -> u128 {
 
 /// Compute a seeded `u128` hash for an arbitrary value.
 ///
-/// Uses two independent 64-bit hashes and combines them into one `u128`.
+/// Uses a fixed hash builder so repeated state tokens cancel under XOR.
 pub(crate) fn seeded_hash_u128<T: Hash>(seed: u64, value: &T) -> u128 {
     use core::hash::{BuildHasher, Hasher};
 
-    use hashbrown::DefaultHashBuilder;
-
-    let builder = DefaultHashBuilder::default();
+    let builder = foldhash::fast::FixedState::default();
     let mut h1 = builder.build_hasher();
     seed.hash(&mut h1);
     0u64.hash(&mut h1);
@@ -343,11 +346,7 @@ where
     fn is_dominated(&self, state_signature: u128, frontier: &HashSet<Vertex>) -> bool {
         self.failed_frontiers_by_state
             .get(&state_signature)
-            .is_some_and(|failed_frontiers| {
-                failed_frontiers
-                    .iter()
-                    .any(|failed| frontier.is_subset(failed))
-            })
+            .is_some_and(|failed_frontiers| failed_frontiers.contains(frontier))
     }
 
     fn record_failed_frontier(&mut self, state_signature: u128, frontier: HashSet<Vertex>) {
@@ -355,10 +354,9 @@ where
             .failed_frontiers_by_state
             .entry(state_signature)
             .or_default();
-        if entry.iter().any(|existing| existing.is_superset(&frontier)) {
+        if entry.contains(&frontier) {
             return;
         }
-        entry.retain(|existing| !existing.is_subset(&frontier));
         entry.push(frontier);
         if entry.len() > 32 {
             entry.remove(0);
@@ -534,12 +532,28 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
     runtime.maybe_record_best_path(linearization);
     let state_signature = solver.frontier_signature(0, linearization);
     let mut frontier_set_for_dominance: Option<HashSet<S::Vertex>> = None;
+    #[cfg(test)]
+    capture::node(linearization, non_det_choices, active_parent);
     if !runtime.consume_node_budget() {
+        #[cfg(test)]
+        capture::prune(
+            linearization,
+            1,
+            runtime.budget_hit,
+            depth.saturating_sub(1),
+        );
         return DfsStepResult::Fail {
             jump_depth: depth.saturating_sub(1),
         };
     }
     if solver.should_prune(linearization, non_det_choices.len()) {
+        #[cfg(test)]
+        capture::prune(
+            linearization,
+            2,
+            runtime.budget_hit,
+            depth.saturating_sub(1),
+        );
         return DfsStepResult::Fail {
             jump_depth: depth.saturating_sub(1),
         };
@@ -547,6 +561,17 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
     if matches!(options.dominance_pruning, DominancePruning::Enabled) {
         let frontier_set: HashSet<S::Vertex> = non_det_choices.iter().cloned().collect();
         if runtime.is_dominated(state_signature, &frontier_set) {
+            #[cfg(test)]
+            capture::prune(
+                linearization,
+                3,
+                runtime.budget_hit,
+                runtime
+                    .conflict_jump_depth
+                    .get(&state_signature)
+                    .copied()
+                    .unwrap_or_else(|| depth.saturating_sub(1)),
+            );
             return DfsStepResult::Fail {
                 jump_depth: runtime
                     .conflict_jump_depth
@@ -561,6 +586,17 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
     if matches!(options.nogood_learning, NogoodLearning::Enabled)
         && runtime.nogood_signatures.contains(&signature)
     {
+        #[cfg(test)]
+        capture::prune(
+            linearization,
+            4,
+            runtime.budget_hit,
+            runtime
+                .conflict_jump_depth
+                .get(&signature)
+                .copied()
+                .unwrap_or_else(|| depth.saturating_sub(1)),
+        );
         return DfsStepResult::Fail {
             jump_depth: runtime
                 .conflict_jump_depth
@@ -570,6 +606,17 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
         };
     }
     if options.memoize_frontier && !seen.insert(signature) {
+        #[cfg(test)]
+        capture::prune(
+            linearization,
+            5,
+            runtime.budget_hit,
+            runtime
+                .conflict_jump_depth
+                .get(&signature)
+                .copied()
+                .unwrap_or_else(|| depth.saturating_sub(1)),
+        );
         return DfsStepResult::Fail {
             jump_depth: runtime
                 .conflict_jump_depth
@@ -583,7 +630,17 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
     }
     let candidates =
         order_frontier_with_heuristics(solver, non_det_choices, linearization, runtime);
+    #[cfg(test)]
+    capture::candidates(linearization, non_det_choices, active_parent, &candidates);
     for (candidate, allow_next) in candidates {
+        #[cfg(test)]
+        capture::trial(
+            linearization,
+            non_det_choices,
+            active_parent,
+            &candidate,
+            allow_next,
+        );
         let Some(pos) = non_det_choices.iter().position(|v| v == &candidate) else {
             continue;
         };
@@ -607,7 +664,11 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
             }
             linearization.push(u.clone());
             *frontier_hash ^= solver.zobrist_value(&u);
+            #[cfg(test)]
+            capture::phase(4, linearization);
             solver.forward_book_keeping(linearization);
+            #[cfg(test)]
+            capture::phase(5, linearization);
             let recurse = do_dfs_impl(
                 solver,
                 non_det_choices,
@@ -625,7 +686,11 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
                 return DfsStepResult::Found;
             }
             runtime.heuristics.record_failed_move(depth, &u);
+            #[cfg(test)]
+            capture::phase(6, linearization);
             solver.backtrack_book_keeping(linearization);
+            #[cfg(test)]
+            capture::phase(7, linearization);
             linearization.pop();
             *frontier_hash ^= solver.zobrist_value(&u);
             if let Some(vs) = solver.children_of(&u) {
@@ -647,6 +712,8 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
             if let DfsStepResult::Fail { jump_depth } = recurse {
                 if jump_depth < depth {
                     runtime.conflict_jump_depth.insert(signature, jump_depth);
+                    #[cfg(test)]
+                    capture::backjump(linearization, runtime.budget_hit, jump_depth);
                     return DfsStepResult::Fail { jump_depth };
                 }
             }
@@ -663,6 +730,8 @@ fn do_dfs_impl<S: ConstrainedLinearizationSolver + ?Sized>(
     }
     let jump_depth = depth.saturating_sub(1);
     runtime.conflict_jump_depth.insert(signature, jump_depth);
+    #[cfg(test)]
+    capture::learn(linearization, runtime.budget_hit, jump_depth);
     DfsStepResult::Fail { jump_depth }
 }
 
@@ -942,6 +1011,8 @@ pub trait ConstrainedLinearizationSolver {
                 best_depth: 0,
             };
 
+            #[cfg(test)]
+            capture::attempt_start(attempt, is_final_attempt);
             let found = matches!(
                 do_dfs_impl(
                     self,
@@ -954,6 +1025,8 @@ pub trait ConstrainedLinearizationSolver {
                 ),
                 DfsStepResult::Found
             );
+            #[cfg(test)]
+            capture::attempt_end(&linearization, runtime.budget_hit, found);
             let stat = &mut portfolio_stats[portfolio_index(portfolio_mode)];
             stat.attempts = stat.attempts.saturating_add(1);
             stat.total_nodes = stat.total_nodes.saturating_add(
@@ -961,6 +1034,8 @@ pub trait ConstrainedLinearizationSolver {
             );
             if found {
                 stat.successes = stat.successes.saturating_add(1);
+                #[cfg(test)]
+                capture::terminal(true);
                 return Some(linearization);
             }
             if matches!(
@@ -973,6 +1048,8 @@ pub trait ConstrainedLinearizationSolver {
                 break;
             }
         }
+        #[cfg(test)]
+        capture::terminal(false);
         None
     }
 }
@@ -980,6 +1057,75 @@ pub trait ConstrainedLinearizationSolver {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn seeded_hash_is_stable_and_seeded() {
+        let value = (17_u64, false);
+        let expected = seeded_hash_u128(0x601, &value);
+        for _ in 0..16 {
+            assert_eq!(seeded_hash_u128(0x601, &value), expected);
+        }
+        assert_ne!(seeded_hash_u128(0x602, &value), expected);
+        assert_ne!(seeded_hash_u128(0x601, &(17_u64, true)), expected);
+    }
+
+    #[test]
+    fn frontier_hash_round_trips_after_backtracking() {
+        let parent = default_zobrist_value(&1_u64) ^ default_zobrist_value(&2_u64);
+        let mut frontier_hash = parent;
+        frontier_hash ^= default_zobrist_value(&1_u64);
+        frontier_hash ^= default_zobrist_value(&3_u64);
+        frontier_hash ^= default_zobrist_value(&3_u64);
+        frontier_hash ^= default_zobrist_value(&1_u64);
+        assert_eq!(frontier_hash, parent);
+    }
+
+    #[test]
+    fn memoization_merges_permutations_of_the_same_frontier() {
+        struct FailingSolver {
+            moves: usize,
+        }
+
+        impl ConstrainedLinearizationSolver for FailingSolver {
+            type Vertex = u64;
+
+            fn search_options(&self) -> DfsSearchOptions {
+                DfsSearchOptions {
+                    nogood_learning: NogoodLearning::Disabled,
+                    enable_killer_history: false,
+                    dominance_pruning: DominancePruning::Disabled,
+                    ..DfsSearchOptions::default()
+                }
+            }
+
+            fn get_root(&self) -> Self::Vertex {
+                0
+            }
+
+            fn children_of(&self, _source: &Self::Vertex) -> Option<Vec<Self::Vertex>> {
+                None
+            }
+
+            fn allow_next(&self, _linearization: &[Self::Vertex], v: &Self::Vertex) -> bool {
+                *v != 6
+            }
+
+            fn vertices(&self) -> Vec<Self::Vertex> {
+                (1..=6).collect()
+            }
+
+            fn forward_book_keeping(&mut self, _linearization: &[Self::Vertex]) {
+                self.moves += 1;
+            }
+
+            fn backtrack_book_keeping(&mut self, _linearization: &[Self::Vertex]) {}
+        }
+
+        let mut solver = FailingSolver { moves: 0 };
+        assert!(solver.get_linearization().is_none());
+        // Five legal vertices have 2^5 states, not 5! independent orderings.
+        assert_eq!(solver.moves, 5 * (1 << 4));
+    }
 
     #[derive(Debug)]
     struct ToySolver {

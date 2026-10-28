@@ -1,0 +1,16 @@
+{
+  "params": {
+    "id": 1,
+    "n_node": 2,
+    "n_variable": 2,
+    "n_transaction": 1,
+    "n_event": 2
+  },
+  "info": "Write skew; independent axioms admit SI but reject SER.",
+  "start": "2026-01-01T00:00:00+00:00",
+  "end": "2026-01-01T00:00:00+00:00",
+  "data": [
+    [{ "events": [["r", 1, null], ["w", 0, 1]], "committed": true }],
+    [{ "events": [["r", 0, null], ["w", 1, 1]], "committed": true }]
+  ]
+}

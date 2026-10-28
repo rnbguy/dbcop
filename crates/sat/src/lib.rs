@@ -469,7 +469,7 @@ fn check_prefix_from_po<Variable: Eq + Hash + Clone + Ord>(
     }
 
     // Edges: read phase -> write phase of same txn
-    // write phase of t -> read phase of visibility successors
+    // Causal edges order write -> read; commit-only edges order write -> write.
     let mut edges: Vec<((TransactionId, bool), (TransactionId, bool))> = Vec::new();
 
     for &t in &txn_ids {
@@ -478,7 +478,8 @@ fn check_prefix_from_po<Variable: Eq + Hash + Clone + Ord>(
 
     for (src, dsts) in &po.visibility_relation.adj_map {
         for dst in dsts {
-            edges.push(((*src, true), (*dst, false)));
+            let causal = po.session_order.has_edge(src, dst) || po.wr_union.has_edge(src, dst);
+            edges.push(((*src, true), (*dst, !causal)));
         }
     }
 
@@ -644,7 +645,8 @@ fn check_si_from_po<Variable: Eq + Hash + Clone + Ord>(
     }
     for (src, dsts) in &po.visibility_relation.adj_map {
         for dst in dsts {
-            edges.push(((*src, true), (*dst, false)));
+            let causal = po.session_order.has_edge(src, dst) || po.wr_union.has_edge(src, dst);
+            edges.push(((*src, true), (*dst, !causal)));
         }
     }
 

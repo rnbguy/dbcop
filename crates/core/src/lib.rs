@@ -52,6 +52,9 @@
 #![cfg_attr(not(any(test, feature = "schemars")), no_std)]
 extern crate alloc;
 
+#[cfg(test)]
+extern crate self as dbcop_core;
+
 pub mod consistency;
 pub mod graph;
 pub mod history;

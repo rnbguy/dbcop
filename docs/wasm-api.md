@@ -1,7 +1,7 @@
 # WASM API
 
-The `dbcop_wasm` crate (`crates/wasm/src/lib.rs`) exports two functions via
-`wasm_bindgen`:
+The `dbcop_wasm` crate (`crates/wasm/src/lib.rs`) exports consistency-checking
+and visualization functions via `wasm_bindgen`.
 
 ## `check_consistency(history_json: &str, level: &str) -> String`
 
@@ -92,6 +92,19 @@ Same as `check_consistency_trace` but accepts a compact text format:
 
 Each line is a transaction (`[events...]`). Sessions are separated by `---`.
 Events use `x==v` for reads and `x:=v` for writes.
+
+## Causal step visualization
+
+`check_consistency_step_init(history_json, level)` and its `_text` variant
+return a `session_id`. For `causal`, call
+`check_consistency_step_next(session_id)` until `done` is true. Other levels
+return their result immediately without a step session.
+
+The causal stepper derives writer ordering once from fixed causal visibility. A
+response with inferred edges has `phase: "co"`: these are commit-order
+constraints, not new causal observations. The final response has `done: true`
+and embeds the ordinary check result. The stepper never feeds inferred
+commit-order edges back into causal premises.
 
 ## Building WASM
 

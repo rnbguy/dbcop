@@ -3,6 +3,8 @@
 //! Each driver connects to a specific database system, executes a generated
 //! history (a set of concurrent sessions with transactions), and collects
 //! the observed results for consistency verification.
+//! NOTE: all three drivers are currently unimplemented stubs (`todo!()`);
+//! only `dbcop_testgen` + `dbcop_core` run today.
 
 use dbcop_core::history::raw::types::Session;
 use dbcop_testgen::generator::History;

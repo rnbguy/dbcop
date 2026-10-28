@@ -1,0 +1,71 @@
+name: Go Mockserver
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "mockserver/**"
+      - "crates/core/**"
+      - "crates/ffi/**"
+      - "Cargo.toml"
+      - ".github/workflows/go.yaml"
+      - "codecov.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "mockserver/**"
+      - "crates/core/**"
+      - "crates/ffi/**"
+      - "Cargo.toml"
+      - ".github/workflows/go.yaml"
+      - "codecov.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      LD_LIBRARY_PATH: ${{ github.workspace }}/target/debug
+    defaults:
+      run:
+        working-directory: mockserver
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v2
+        with:
+          toolchain: stable
+      - name: Build native oracle
+        working-directory: .
+        run: cargo build -p dbcop_ffi
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: mockserver/go.mod
+          cache-dependency-path: mockserver/go.sum
+      - name: Vet
+        run: go vet ./...
+      - name: Build
+        run: go build ./...
+      - name: Test with coverage
+        run: go test -covermode=atomic -coverpkg=./... -coverprofile=coverage.out ./...
+      - name: Upload Go coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          files: mockserver/coverage.out
+          flags: go
+          name: go-coverage
+          disable_search: true
+          fail_ci_if_error: true
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}

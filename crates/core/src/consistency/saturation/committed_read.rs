@@ -2,8 +2,8 @@
 //!
 //! Read Committed requires that every read observes a value written by a
 //! committed transaction (never an aborted or in-progress write) and that
-//! reads within the same transaction on the same variable observe writes
-//! in a consistent committed order.
+//! an earlier external read's writer precedes the current read's writer whenever
+//! that earlier writer also writes the current variable.
 //!
 //! # Algorithm
 //!
@@ -14,9 +14,9 @@
 //! 2. **Write-read edges** - For each read event, locate the committed write
 //!    it observes and add a `wr_x` edge from the writing transaction to the
 //!    reading transaction.
-//! 3. **Committed-order edges** - When two reads in the same transaction read
-//!    the same variable from different transactions, the earlier write must
-//!    precede the later write in committed order.
+//! 3. **Committed-order edges** - For each external read, every earlier read's
+//!    distinct source that also writes this variable precedes its source.
+//!    The initial source participates, so reads cannot move behind initial state.
 //! 4. **Acyclicity check** - Attempt a topological sort of the committed
 //!    order graph. If one exists, the history satisfies Read Committed.
 //!    If not, find a cycle edge and report it.
@@ -48,7 +48,7 @@
 
 use core::hash::Hash;
 
-use hashbrown::HashMap;
+use hashbrown::HashSet;
 
 use crate::consistency::error::Error;
 use crate::graph::digraph::DiGraph;
@@ -91,6 +91,9 @@ where
     let init_transaction = TransactionId::root();
 
     for (i_node, session) in (1..).zip(histories.iter()) {
+        if session.is_empty() {
+            continue;
+        }
         // Add the edge from the initial transaction to the first transaction of the session
         committed_order.add_edge(
             init_transaction,
@@ -119,7 +122,7 @@ where
 
     for (i_node, session) in (1..).zip(histories.iter()) {
         for (i_transaction, transaction) in (0..).zip(session.iter()) {
-            let mut local_reads: HashMap<Variable, EventId> = HashMap::new();
+            let mut local_reads = HashSet::new();
             for (i_event, event) in (0..).zip(transaction.events.iter()) {
                 if let Event::Read { variable, .. } = event {
                     let current_event_id = EventId {
@@ -136,60 +139,27 @@ where
                                 id: current_event_id,
                             })?;
 
-                    // Reads from root (initial state) are always valid
-                    if write_event_id.session_id == 0 {
+                    // Local reads were validated in execution order by is_valid_history.
+                    let source = write_event_id.transaction_id();
+                    if source == current_event_id.transaction_id() {
                         continue;
                     }
-                    if let Some((committed_version, committed_event_id)) =
-                        committed_writes.get(&(write_event_id.transaction_id(), variable.clone()))
-                    {
-                        if write_event_id != committed_event_id {
-                            return Err(NonAtomicError::OverwrittenRead {
-                                read_event: event.clone(),
-                                read_event_id: current_event_id,
-                                overwritten_write_event_id: *write_event_id,
-                                committed_write_event: Event::write(
-                                    variable.clone(),
-                                    committed_version.clone(),
-                                ),
-                                committed_write_event_id: *committed_event_id,
-                            }
-                            .into());
+
+                    for &previous in &local_reads {
+                        if previous != source
+                            && (previous == init_transaction
+                                || committed_writes.contains_key(&(previous, variable.clone())))
+                        {
+                            committed_order.add_edge(previous, source);
                         }
-                    } else {
-                        return Err(NonAtomicError::UncommittedWrite {
-                            read_event: event.clone(),
-                            read_event_id: current_event_id,
-                            write_event_id: *write_event_id,
-                        }
-                        .into());
                     }
+                    local_reads.insert(source);
 
-                    // if read from another transaction
-                    if write_event_id.transaction_id() != current_event_id.transaction_id() {
-                        // there is a previous read
-                        if let Some(&prevision_event_id) = local_reads.get(variable) {
-                            // t1: prevision_event_id.transaction_id()
-                            // t2: write_event_id.transaction_id()
-                            //  t1─────────>r1
-                            //  │    wr_x    │
-                            //  │vis       po│
-                            //  v    wr_x    v
-                            //  t2 ────────>r2
-                            committed_order.add_edge(
-                                prevision_event_id.transaction_id(),
-                                write_event_id.transaction_id(),
-                            );
-                        }
-
-                        local_reads.insert(variable.clone(), *write_event_id);
-
-                        // add wr_x edge
-                        committed_order.add_edge(
-                            write_event_id.transaction_id(),
-                            current_event_id.transaction_id(),
-                        );
-                    }
+                    // add wr_x edge
+                    committed_order.add_edge(
+                        write_event_id.transaction_id(),
+                        current_event_id.transaction_id(),
+                    );
                 }
             }
         }

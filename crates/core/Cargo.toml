@@ -12,9 +12,11 @@ readme                 = "README.md"
 
 [dependencies]
 hashbrown   = { workspace = true }
+foldhash    = { workspace = true }
 serde       = { workspace = true, optional = true, features = [ "derive" ] }
 tracing     = { workspace = true }
 derive_more = { workspace = true }
+thiserror   = { workspace = true }
 schemars    = { workspace = true, optional = true }
 
 [dev-dependencies]

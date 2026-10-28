@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<parameters>
+  <!-- Connection details -->
+  <type>MYSQL</type>
+  <driver>com.mysql.cj.jdbc.Driver</driver>
+  <url>jdbc:mysql://127.0.0.1:3307/voter?rewriteBatchedStatements=true&amp;allowPublicKeyRetrieval=true&amp;sslMode=DISABLED</url>
+  <username>root</username>
+  <password></password>
+  <reconnectOnConnectionFailure>true</reconnectOnConnectionFailure>
+  <isolation>TRANSACTION_SERIALIZABLE</isolation>
+  <batchsize>128</batchsize>
+  <ddlpath>../../src/main/resources/benchmarks/voter/ddl-generic.sql</ddlpath>
+
+  <scalefactor>1</scalefactor>
+
+  <!-- The workload -->
+  <terminals>2</terminals>
+  <works>
+    <work>
+      <time>10</time>
+      <rate>10</rate>
+      <weights>100</weights>
+    </work>
+  </works>
+
+  <!-- Voter Procedures declaration -->
+  <transactiontypes>
+    <transactiontype>
+      <name>Vote</name>
+    </transactiontype>
+  </transactiontypes>
+  <randomSeed>1</randomSeed>
+  <loaderThreads>1</loaderThreads>
+</parameters>

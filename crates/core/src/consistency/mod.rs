@@ -16,6 +16,7 @@ use crate::history::raw::types::Session;
 
 pub mod decomposition;
 pub mod error;
+pub mod incremental;
 pub mod linearization;
 pub mod saturation;
 pub mod witness;
@@ -607,7 +608,7 @@ mod tests {
         let Witness::CommitOrder(order) = result.unwrap() else {
             panic!("expected CommitOrder");
         };
-        assert!(order.is_empty());
+        assert_eq!(order.len(), 0);
     }
 
     #[test]
@@ -618,6 +619,6 @@ mod tests {
         let Witness::CommitOrder(order) = result.unwrap() else {
             panic!("expected CommitOrder");
         };
-        assert!(order.is_empty());
+        assert_eq!(order.len(), 0);
     }
 }

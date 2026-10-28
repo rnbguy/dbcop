@@ -1,38 +1,26 @@
-//! Causal Consistency checker using iterated saturation.
+//! Causal Consistency checker using the paper's commit-order constraints.
 //!
-//! Causal Consistency strengthens Atomic Read by requiring the visibility
-//! relation to be transitively closed. If transaction T1 is visible to T2,
-//! and T2 is visible to T3, then T1 must also be visible to T3. This
-//! captures the notion that causal dependencies propagate through the
-//! system.
+//! Causal visibility is the fixed transitive closure of session order and
+//! write-read edges. For each read of x from T1, another x-writer T2 visible
+//! to that reader must precede T1 in commit order. These inferred write-write
+//! edges constrain commit order; they do not create causal dependencies.
 //!
 //! # Algorithm
-//!
-//! This checker runs a saturation loop that alternates between computing
-//! new write-write (`ww`) edges and incrementally closing the visibility
-//! relation:
 //!
 //! 1. Build an [`AtomicTransactionPO`] from the raw sessions.
 //! 2. Merge write-read (`wr`) edges into visibility.
 //! 3. Compute the transitive closure of visibility (`vis_is_trans`).
-//! 4. **Saturation loop**:
-//!    a. Compute `ww` edges via [`causal_ww`] using current visibility.
-//!    b. Collect any `ww` edges not yet in the visibility relation.
-//!    c. If no new edges, the fixpoint is reached -- break.
-//!    d. Otherwise, add new edges with [`incremental_closure`] (which
-//!    extends the transitively-closed graph without a full recompute).
-//!    e. Repeat from (a).
-//! 5. Check that the final visibility relation is acyclic.
+//! 4. Compute [`causal_ww`] once from that fixed causal visibility.
+//! 5. Merge the inferred edges into the commit-order graph and check acyclicity.
 //!
-//! The incremental closure in step 4d avoids the O(V*(V+E)) cost of a
-//! full transitive closure on each iteration, using BFS-based
-//! ancestor/descendant cross-product instead.
+//! The returned `visibility_relation` contains commit-order constraints for
+//! downstream linearization; it must not be reused as the causal antecedent.
 //!
 //! # Data flow
 //!
 //! ```text
 //! sessions -> AtomicTransactionPO -> vis_includes(wr) -> vis_is_trans()
-//!     -> loop { causal_ww() -> new edges? -> incremental_closure() }
+//!     -> causal_ww() -> vis_includes(ww)
 //!     -> acyclicity check -> Ok(PO) or Err(Cycle)
 //! ```
 //!
@@ -45,14 +33,11 @@
 //! # Reference
 //!
 //! Corresponds to Algorithm 1 in Biswas and Enea (2019) at the Causal
-//! Consistency level, with incremental closure as a performance
-//! optimization.
+//! Consistency level.
 //!
 //! [`AtomicTransactionPO`]: crate::history::atomic::AtomicTransactionPO
 //! [`causal_ww`]: crate::history::atomic::AtomicTransactionPO::causal_ww
-//! [`incremental_closure`]: crate::graph::digraph::DiGraph::incremental_closure
 
-use alloc::vec::Vec;
 use core::hash::Hash;
 
 use crate::consistency::error::Error;
@@ -63,13 +48,11 @@ use crate::Consistency;
 
 /// Check whether a history satisfies Causal Consistency.
 ///
-/// Runs a saturation loop that alternates between computing write-write
-/// edges and incrementally closing the visibility relation until a
-/// fixpoint is reached. Then checks the result for acyclicity.
+/// Derives commit-order edges from the fixed `(so ∪ wr)+` causal relation
+/// and checks the resulting commit-order graph for acyclicity.
 ///
-/// On success, returns the full [`AtomicTransactionPO`] whose
-/// `visibility_relation` field is the transitively-closed, acyclic
-/// witness graph.
+/// On success, returns the [`AtomicTransactionPO`] whose
+/// `visibility_relation` field contains the commit-order constraints.
 ///
 /// # Errors
 ///
@@ -94,40 +77,10 @@ where
     atomic_history.vis_includes(&atomic_history.get_wr());
     atomic_history.vis_is_trans();
 
-    let mut iteration = 0u32;
-    loop {
-        let ww_rel = atomic_history.causal_ww();
-        let mut new_edges = Vec::new();
-
-        for ww_x in ww_rel.values() {
-            for (src, dsts) in &ww_x.adj_map {
-                for dst in dsts {
-                    if !atomic_history.visibility_relation.has_edge(src, dst) {
-                        new_edges.push((*src, *dst));
-                    }
-                }
-            }
-        }
-
-        if new_edges.is_empty() {
-            tracing::debug!(
-                iterations = iteration,
-                "causal check: saturation fixpoint reached"
-            );
-            break;
-        }
-
-        tracing::trace!(
-            iteration,
-            new_edges = new_edges.len(),
-            "causal check: saturation iteration"
-        );
-
-        atomic_history
-            .visibility_relation
-            .incremental_closure(new_edges);
-
-        iteration += 1;
+    // Commit-order edges must never feed back into the causal premise.
+    let ww_rel = atomic_history.causal_ww();
+    for ww_x in ww_rel.values() {
+        atomic_history.vis_includes(ww_x);
     }
 
     if atomic_history.has_valid_visibility() {

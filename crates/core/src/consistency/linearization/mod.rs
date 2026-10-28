@@ -4,3 +4,6 @@ pub mod constrained_linearization;
 pub mod prefix;
 pub mod serializable;
 pub mod snapshot_isolation;
+
+#[cfg(test)]
+mod tlc_tests;

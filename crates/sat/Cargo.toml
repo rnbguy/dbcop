@@ -18,6 +18,10 @@ rustsat-batsat = "0.7"
 [dev-dependencies]
 criterion     = { version = "0.8", features = [ "html_reports" ] }
 dbcop_testgen = { workspace = true }
+dbcop_core    = { workspace = true, features = [ "serde" ] }
+rand          = { workspace = true }
+serde         = { workspace = true, features = [ "derive" ] }
+serde_json    = { workspace = true }
 
 [lints]
 workspace = true

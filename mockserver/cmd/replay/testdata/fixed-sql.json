@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "isolation": "read-committed",
+  "seed": 1,
+  "read_policy": "uniform",
+  "deviation_probability": 0.01,
+  "deviation_budget": 1,
+  "setup": [
+    "CREATE DATABASE fixed_sql",
+    "CREATE TABLE fixed_sql.items (id BIGINT PRIMARY KEY, v BIGINT)",
+    "CREATE TABLE fixed_sql.sink (id BIGINT PRIMARY KEY, v BIGINT)",
+    "INSERT INTO fixed_sql.items VALUES (1,0)",
+    "INSERT INTO fixed_sql.sink VALUES (1,0)"
+  ],
+  "transactions": [
+    {
+      "id": "writer",
+      "session_id": 1,
+      "finish": "commit",
+      "statements": [
+        {
+          "id": "write-value",
+          "sql": "UPDATE fixed_sql.items SET v=1 WHERE id=1"
+        }
+      ]
+    },
+    {
+      "id": "copy",
+      "session_id": 2,
+      "finish": "commit",
+      "statements": [
+        {
+          "id": "copy-value",
+          "sql": "UPDATE fixed_sql.sink SET v=(SELECT v FROM fixed_sql.items WHERE id=1) WHERE id=1"
+        }
+      ]
+    }
+  ],
+  "assertion": {
+    "id": "copied-new-value",
+    "sql": "SELECT v FROM fixed_sql.sink WHERE id=1",
+    "baseline_rows": [[{ "kind": "int", "value": "0" }]],
+    "want_rows": [[{ "kind": "int", "value": "1" }]]
+  }
+}
