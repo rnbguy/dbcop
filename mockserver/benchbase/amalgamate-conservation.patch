@@ -1,0 +1,34 @@
+diff --git a/src/main/java/com/oltpbenchmark/benchmarks/smallbank/procedures/Amalgamate.java b/src/main/java/com/oltpbenchmark/benchmarks/smallbank/procedures/Amalgamate.java
+index 2d67966..23cc3fc 100644
+--- a/src/main/java/com/oltpbenchmark/benchmarks/smallbank/procedures/Amalgamate.java
++++ b/src/main/java/com/oltpbenchmark/benchmarks/smallbank/procedures/Amalgamate.java
+@@ -110,12 +110,12 @@ public class Amalgamate extends Procedure {
+ 
+     double checkingBalance;
+     try (PreparedStatement balStmt1 =
+-        this.getPreparedStatement(conn, GetCheckingBalance, custId1)) {
++        this.getPreparedStatement(conn, GetCheckingBalance, custId0)) {
+       try (ResultSet balRes1 = balStmt1.executeQuery()) {
+         if (!balRes1.next()) {
+           String msg =
+               String.format(
+-                  "No %s for customer #%d", SmallBankConstants.TABLENAME_CHECKING, custId1);
++                  "No %s for customer #%d", SmallBankConstants.TABLENAME_CHECKING, custId0);
+           throw new UserAbortException(msg);
+         }
+ 
+@@ -133,8 +133,13 @@ public class Amalgamate extends Procedure {
+     }
+ 
+     try (PreparedStatement updateStmt1 =
+-        this.getPreparedStatement(conn, UpdateSavingsBalance, total, custId1)) {
++        this.getPreparedStatement(conn, UpdateSavingsBalance, savingsBalance, custId0)) {
+       updateStmt1.executeUpdate();
+     }
++
++    try (PreparedStatement updateStmt2 =
++        this.getPreparedStatement(conn, UpdateCheckingBalance, total, custId1)) {
++      updateStmt2.executeUpdate();
++    }
+   }
+ }
