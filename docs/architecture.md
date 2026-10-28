@@ -1,5 +1,10 @@
 # Architecture
 
+dbcop combines a Rust transactional-consistency checker with a separate Go
+module for [MonkeyDB-style SQL testing](../mockserver/README.md). Recorded
+histories use the CLI/library/WASM entry points; MySQL clients use the generic
+SQL mockserver with native Rust or Apalache admission.
+
 ## Workspace Overview
 
 dbcop is a Rust workspace (v0.2.0, edition 2021, MSRV 1.99.0) with eight crates:
@@ -19,21 +24,21 @@ dbcop is a Rust workspace (v0.2.0, edition 2021, MSRV 1.99.0) with eight crates:
 
 ```
 Raw History (JSON)
-    │
-    ▼
-Vec<Session<V, Ver>>          ── crates/core/src/history/raw/types.rs
-    │
-    │ TryFrom validation (repeatable-read check, write uniqueness)
-    ▼
-AtomicTransactionHistory       ── crates/core/src/history/atomic/types.rs
-    │
-    │ Build partial order (session order, write-read relations)
-    ▼
-AtomicTransactionPO            ── crates/core/src/history/atomic/mod.rs
-    │
-    │ check() dispatches by consistency level
-    ▼
-Result<Witness, Error>         ── crates/core/src/consistency/mod.rs
+    |
+    v
+Vec<Session<V, Ver>>          -- crates/core/src/history/raw/types.rs
+    |
+    | TryFrom validation (repeatable-read check, write uniqueness)
+    v
+AtomicTransactionHistory       -- crates/core/src/history/atomic/types.rs
+    |
+    | Build partial order (session order, write-read relations)
+    v
+AtomicTransactionPO            -- crates/core/src/history/atomic/mod.rs
+    |
+    | check() dispatches by consistency level
+    v
+Result<Witness, Error>         -- crates/core/src/consistency/mod.rs
 ```
 
 ## Core Library Modules (`dbcop_core`)
@@ -104,7 +109,7 @@ root values and starts weak execution. Preparation transactions are outside the
 measured history; post-seal transactions are retained. This is an initialization
 boundary, not a durable database checkpoint.
 
-Each store lazily creates a native `IncrementalChecker` handle per requested
+The native backend lazily creates an `IncrementalChecker` handle per requested
 consistency level. Go sends committed transaction deltas and scalar read
 candidates. Accepted live reads retain their graph work; rejected trials undo
 only their changes. Commit checks the complete ordered transaction and retains
@@ -115,14 +120,28 @@ Transactions execute serially across sessions, but reads can select historical
 versions admitted by the configured level. Commit publishes cells, versioned
 existence, and the ordered transaction log only after the oracle accepts.
 Rollback and disconnect discard staged state. Storage and native oracle state
-are process-local, not durable. See [mockserver usage](../mockserver/README.md)
-for release builds and commands using the unmodified official TPC-C client.
+are process-local, not durable.
+
+The alternate `cmd/mockserver-apalache` executable reuses the same Go SQL and
+storage interfaces without linking Rust FFI. An operator-managed Apalache
+explorer selects read/write/commit successors using the canonical seven-level
+TLA+ model. Each operation loads a fresh disposable model session; this is not
+the native persistent checker or uniform read sampling.
+
+Stock BenchBase clients exercise TPC-C, SmallBank, Voter, and Wikipedia without
+application-specific backend code. An external A1-A17 assertion runner keeps
+baseline errors, workload SQL errors, and application violations separate.
+Native read-selection policies work online; systematic/guided exploration,
+strict replay, and minimization require controlled SQL workloads with fixed
+transaction ordering. They do not replay arbitrary concurrent JDBC programs. See
+the [mockserver guide](../mockserver/README.md) for build commands, policies,
+workloads, artifacts, and experimental limits.
 
 ## End-to-End Testing Pipeline
 
-For testing real databases, dbcop aims at a generate-execute-verify pipeline.
-The execute step is currently an unimplemented stub (`dbcop_drivers` is
-`todo!()`); only generate + verify run today:
+The planned generate-execute-verify pipeline for real database clusters remains
+incomplete: `dbcop_drivers` contains unimplemented `todo!()` stubs. These are
+separate from the operational Go SQL mockservers described above:
 
 1. **Generate** (`dbcop_testgen`): Create random transaction histories with
    coherence guarantees.
@@ -155,3 +174,5 @@ pub trait DbDriver {
 - [Algorithms](algorithms.md) -- how the checkers work
 - [History Format](history-format.md) -- JSON schema for transaction histories
 - [CLI Reference](cli-reference.md) -- command-line usage
+- [SQL Mockservers](../mockserver/README.md) -- native/Apalache execution,
+  BenchBase, assertions, and exploration

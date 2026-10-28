@@ -1,5 +1,9 @@
 # mockserver - MySQL-wire SQL with MonkeyDB-style reads
 
+This is the SQL application-testing component of [dbcop](../README.md),
+alongside its Rust history checker. The same generic SQL/storage layer supports
+native Rust admission and the pure-Go Apalache comparison backend.
+
 [`go-mysql-server`](https://github.com/dolthub/go-mysql-server) supplies the
 MySQL protocol, SQL parser, planner, joins, and aggregations. The custom backend
 supplies versioned key/value storage and, by default, read admission through
@@ -571,9 +575,19 @@ limits, not relaxed consistency checks.
 
 ## Layout
 
-| Path                       | Contents                                                                                   |
-| -------------------------- | ------------------------------------------------------------------------------------------ |
-| `backend/`                 | Versioned cell store, shared SQL interfaces, native oracle, and Apalache successor adapter |
-| `apalachebackend/`         | Pure-Go JSON-RPC client and embedded independent isolation/step specifications             |
-| `cmd/mockserver/`          | Native standalone MySQL-wire server (`--addr`, `--iso`, `--seed`)                          |
-| `cmd/mockserver-apalache/` | Pure-Go comparison server (`--apalache-rpc`, `--apalache-timeout`)                         |
+| Path                       | Contents                                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------------------------- |
+| `backend/`                 | Versioned cell store, shared SQL interfaces, native oracle, and Apalache successor adapter      |
+| `apalachebackend/`         | Pure-Go JSON-RPC client and embedded independent isolation/step specifications                  |
+| `cmd/mockserver/`          | Native standalone MySQL-wire server (`--addr`, `--iso`, `--seed`)                               |
+| `cmd/mockserver-apalache/` | Pure-Go comparison server (`--apalache-rpc`, `--apalache-timeout`)                              |
+| `cmd/assertions/`          | External A1-A17 application assertion checker                                                   |
+| `cmd/replay/`              | Controlled SQL run/replay/minimize/explore/replay-corpus commands                               |
+| `benchbase/`               | Unchanged-client configurations and experiment runner; optional repair kept as a separate patch |
+| `exploration/`             | Guided mutation and systematic admitted-choice enumeration                                      |
+
+## See also
+
+- [Project overview](../README.md)
+- [Architecture](../docs/architecture.md#mysql-mockserver)
+- [Development and model validation](../docs/development.md)

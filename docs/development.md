@@ -8,6 +8,8 @@
 - **taplo** (TOML formatter)
 - **typos** (spell checker)
 - **Go 1.27** (for the MySQL mockservers)
+- **C toolchain** (for the native Go server's Rust FFI/CGO linkage); the pure-Go
+  Apalache executable instead needs the external explorer
 - **Java 25** (for the optional pinned Apalache service); the TLC campaigns also
   require Java and the pinned `DBCOP_TLC_JAR`
 
@@ -37,6 +39,23 @@ cargo build --workspace
 # Verify no_std compatibility of core crate
 cargo build -p dbcop_core --no-default-features
 ```
+
+### SQL mockservers and workloads
+
+The [mockserver guide](../mockserver/README.md) is the command reference for the
+[native release build](../mockserver/README.md#build-an-optimized-server), the
+[pure-Go Apalache server](../mockserver/README.md#apalache-comparison-backend),
+and
+[unchanged BenchBase clients](../mockserver/README.md#run-unchanged-benchbase-clients).
+Load through ordinary SQL and seal the initial fixture before weak execution;
+the generic SQL implementation is shared across both admission backends.
+BenchBase additionally needs its documented Java/Maven/MySQL client setup.
+
+For deterministic failure investigation, use
+[controlled SQL replay](../mockserver/README.md#controlled-sql-failure-replay)
+and
+[bounded exploration](../mockserver/README.md#fixed-workload-sql-exploration).
+These are separate from the unimplemented real-database driver crates.
 
 ## Test
 
@@ -518,7 +537,8 @@ above. Then collect the whole module, including command packages:
 mkdir -p coverage
 env -u CGO_LDFLAGS -u CGO_CFLAGS -u CGO_CPPFLAGS -u CGO_CXXFLAGS \
   LD_LIBRARY_PATH="$PWD/target/debug" \
-  go -C mockserver test -race ./... -timeout=3h -coverprofile=../coverage/go.cover.out
+  go -C mockserver test -race ./... -timeout=3h -covermode=atomic \
+  -coverpkg=./... -coverprofile=../coverage/go.cover.out
 go -C mockserver tool cover -func=../coverage/go.cover.out
 ```
 
@@ -553,7 +573,8 @@ AGENTS.md covers:
 
 - Git workflow and branch naming (`feat/`, `fix/`, `perf/`, etc.)
 - Conventional commit PR titles
-- All CI checks (Rust build, format, code quality, Deno)
+- PR/push CI checks (Rust, Go, Deno, coverage, code quality) and daily main-only
+  exhaustive validation
 - Code constraints (no emoji, `no_std` compatibility, serde gates)
 - Pre-commit hook details
 - Repository structure reference
@@ -565,3 +586,5 @@ AGENTS.md covers:
 - [Architecture](architecture.md) -- crate structure and data flow
 - [CLI Reference](cli-reference.md) -- using the `dbcop` binary
 - [WASM API](wasm-api.md) -- WASM bindings API reference
+- [SQL Mockservers](../mockserver/README.md) -- builds, BenchBase, read
+  policies, assertions, and replay
