@@ -1,27 +1,28 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@david/jsonc-morph@~0.3.4": "0.3.4",
     "jsr:@david/path@0.2": "0.2.0",
     "jsr:@david/temp@~0.1.1": "0.1.1",
-    "jsr:@deno/wasmbuild@0.21.0": "0.21.0",
+    "jsr:@deno/wasmbuild@0.23.0": "0.23.0",
     "jsr:@std/assert@^1.0.19": "1.0.19",
     "jsr:@std/cli@^1.0.11": "1.0.32",
     "jsr:@std/encoding@^1.0.6": "1.0.11",
     "jsr:@std/fmt@^1.0.4": "1.0.10",
     "jsr:@std/fs@1": "1.0.24",
     "jsr:@std/fs@^1.0.10": "1.0.24",
-    "jsr:@std/internal@^1.0.12": "1.0.12",
+    "jsr:@std/internal@^1.0.12": "1.0.14",
     "jsr:@std/internal@^1.0.14": "1.0.14",
     "jsr:@std/path@1": "1.1.6",
     "jsr:@std/path@^1.1.5": "1.1.6",
     "jsr:@std/streams@^1.0.17": "1.1.2",
     "jsr:@std/tar@~0.1.4": "0.1.10",
-    "npm:@viz-js/viz@3": "3.24.0",
-    "npm:@viz-js/viz@3.24.0": "3.24.0",
-    "npm:cloakbrowser@latest": "0.6.3",
     "npm:husky@*": "9.1.7"
   },
   "jsr": {
+    "@david/jsonc-morph@0.3.4": {
+      "integrity": "a4af7c80b3c233d3856da1e9f2009d251867bee351fea016b22b67d6291c3455"
+    },
     "@david/path@0.2.0": {
       "integrity": "f2d7aa7f02ce5a55e27c09f9f1381794acb09d328f8d3c8a2e3ab3ffc294dccd",
       "dependencies": [
@@ -35,9 +36,10 @@
         "jsr:@david/path"
       ]
     },
-    "@deno/wasmbuild@0.21.0": {
-      "integrity": "c31641c6bd1de27bb23e1cc7969d73331b3798711c5f23ce5841a4cf1c996265",
+    "@deno/wasmbuild@0.23.0": {
+      "integrity": "aafb0e3ca230cd4590d2d942bc14a8e5a5b133bc6f76bef112771d2d1ba7ba8e",
       "dependencies": [
+        "jsr:@david/jsonc-morph",
         "jsr:@david/path",
         "jsr:@david/temp",
         "jsr:@std/cli",
@@ -69,9 +71,6 @@
         "jsr:@std/path@^1.1.5"
       ]
     },
-    "@std/internal@1.0.12": {
-      "integrity": "972a634fd5bc34b242024402972cd5143eac68d8dffaca5eaa4dba30ce17b027"
-    },
     "@std/internal@1.0.14": {
       "integrity": "291516b3d4c35024d6ffbc0a9df5bf4c64116e05b50012cf846710152d2ffdf7"
     },
@@ -92,50 +91,9 @@
     }
   },
   "npm": {
-    "@isaacs/fs-minipass@4.0.1": {
-      "integrity": "sha512-wgm9Ehl2jpeqP3zw/7mo3kRHFp5MEDhqAdwy1fTGkHAwnkGOVsgpvQhL8B5n1qlb01jV3n/bI0ZfZp5lWA1k4w==",
-      "dependencies": [
-        "minipass"
-      ]
-    },
-    "@viz-js/viz@3.24.0": {
-      "integrity": "sha512-sTRz2cFN6PwICVC7GVlF2aYNAZ/LwF7Y1mp3B+8LXQ7otyHrzQYSzNBwJ4lctL/aS3x97ppw59z6zIW+wPs6bQ=="
-    },
-    "chownr@3.0.0": {
-      "integrity": "sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g=="
-    },
-    "cloakbrowser@0.6.3": {
-      "integrity": "sha512-mkogz/HHYPsd01rhRyLfU5raXeGbZVv2m5bmVr+6qAqlN8zK6gA5NOaNcaGhj2wCPeJc/xT/Rxglu9MCF8ZqQw==",
-      "dependencies": [
-        "tar"
-      ],
-      "bin": true
-    },
     "husky@9.1.7": {
       "integrity": "sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==",
       "bin": true
-    },
-    "minipass@7.1.3": {
-      "integrity": "sha512-tEBHqDnIoM/1rXME1zgka9g6Q2lcoCkxHLuc7ODJ5BxbP5d4c2Z5cGgtXAku59200Cx7diuHTOYfSBD8n6mm8A=="
-    },
-    "minizlib@3.1.0": {
-      "integrity": "sha512-KZxYo1BUkWD2TVFLr0MQoM8vUUigWD3LlD83a/75BqC+4qE0Hb1Vo5v1FgcfaNXvfXzr+5EhQ6ing/CaBijTlw==",
-      "dependencies": [
-        "minipass"
-      ]
-    },
-    "tar@7.5.22": {
-      "integrity": "sha512-MFO/QzvtAOmJbkhOaCTvbGcFN9L9b+JunIsDwaKljSOdcLMea3NJ1k9Usz/rjdfSXTq4dfzfeS7W4p4YOAAHeA==",
-      "dependencies": [
-        "@isaacs/fs-minipass",
-        "chownr",
-        "minipass",
-        "minizlib",
-        "yallist"
-      ]
-    },
-    "yallist@5.0.0": {
-      "integrity": "sha512-YgvUTfwqyc7UXVMrB+SImsVYSmTS8X/tSrtdNZMImM+n7+QTriRXyXim0mBrTXNeqzVF0KWGgHPeiyViFFrNDw=="
     }
   },
   "workspace": {
