@@ -31,16 +31,24 @@ jobs:
       - name: Build
         run: cargo build --verbose --all-features
       - name: Clippy
-        run: cargo clippy --workspace --all-features -- -D warnings
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
       - name: Run tests
         run: cargo test --verbose --all-features
+      - name: Check no-std
+        run: cargo build -p dbcop_core --no-default-features
+      - name: Check MSRV
+        # MSRV per root Cargo.toml rust-version; toolchain installed explicitly
+        # so this is a real gate, not a silent skip.
+        run: |
+          rustup toolchain install stable --profile minimal
+          cargo test -p dbcop_core
       - name: Install dbcop
         run: cargo install --path crates/cli
       - name: E2E generate and verify
         run: |
           dbcop generate --n-hist 5 --n-node 3 --n-var 4 --n-txn 3 --n-evt 3 --output-dir /tmp/dbcop-e2e
           ls /tmp/dbcop-e2e/*.json | wc -l | grep -q 5
-          dbcop verify --input-dir /tmp/dbcop-e2e --consistency committed-read || true
+          dbcop verify --input-dir /tmp/dbcop-e2e --consistency committed-read
 
   format:
     runs-on: ubuntu-latest
@@ -50,3 +58,174 @@ jobs:
         with:
           persist-credentials: false
       - uses: actions-rust-lang/rustfmt@v1
+
+  model-validation:
+    runs-on: ubuntu-latest
+    # Full finite campaigns can take hours; individual model/RPC deadlines stay in the harness.
+    timeout-minutes: 360
+    defaults:
+      run:
+        shell: bash
+    env:
+      DBCOP_APALACHE_RPC: http://127.0.0.1:18822/rpc
+      DBCOP_REQUIRE_APALACHE: "1"
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Prepare private validation artifacts
+        run: |
+          directory="$(mktemp -d "$RUNNER_TEMP/dbcop-model-validation.XXXXXX")"
+          mkdir -m 700 "$directory/tools" "$directory/logs" "$directory/tmp" "$directory/smoke"
+          {
+            echo "MODEL_VALIDATION_DIR=$directory"
+            echo "SMOKE_DIR=$directory/smoke"
+            echo "TMPDIR=$directory/tmp"
+            echo "DBCOP_TLC_JAR=$directory/tools/tla2tools.jar"
+            echo "APALACHE_CONTAINER=dbcop-apalache-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-${directory##*.}"
+          } >> "$GITHUB_ENV"
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v2
+        with:
+          toolchain: stable
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: mockserver/go.mod
+          cache-dependency-path: mockserver/go.sum
+      - name: Set up Java for TLC
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Provision verified model checkers outside checkout
+        run: |
+          tools="$MODEL_VALIDATION_DIR/tools"
+          curl --fail --show-error --location \
+            https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar \
+            --output "$DBCOP_TLC_JAR"
+          test "$(od -An -tx1 -N4 "$DBCOP_TLC_JAR" | tr -d ' \n')" = 504b0304
+          printf '%s  %s\n' \
+            936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88 \
+            "$DBCOP_TLC_JAR" | sha256sum --check --strict | tee "$MODEL_VALIDATION_DIR/logs/tlc-sha256.log"
+
+          archive="$tools/apalache-0.62.4.tgz"
+          curl --fail --show-error --location \
+            https://github.com/apalache-mc/apalache/releases/download/v0.62.4/apalache-0.62.4.tgz \
+            --output "$archive"
+          test "$(od -An -tx1 -N2 "$archive" | tr -d ' \n')" = 1f8b
+          printf '%s  %s\n' \
+            b781b53bba32fac14ac2e02b0332e1dc2edc64cb7b850c0608d8142cc7aa2ef4 \
+            "$archive" | sha256sum --check --strict | tee "$MODEL_VALIDATION_DIR/logs/apalache-archive-sha256.log"
+          mkdir "$tools/apalache"
+          tar --extract --gzip --file "$archive" --directory "$tools/apalache" \
+            --no-same-owner --no-same-permissions
+          mapfile -d '' jars < <(find "$tools/apalache" -type f -name apalache.jar -print0)
+          test "${#jars[@]}" -eq 1
+          test "$(od -An -tx1 -N4 "${jars[0]}" | tr -d ' \n')" = 504b0304
+          printf '%s  %s\n' \
+            e5223915507b65cc5f1638bd037ede60f8a4fc1644aff46355779f9b05df9262 \
+            "${jars[0]}" | sha256sum --check --strict | tee "$MODEL_VALIDATION_DIR/logs/apalache-jar-sha256.log"
+          echo "APALACHE_JAR=${jars[0]}" >> "$GITHUB_ENV"
+      - name: Run all finite TLC and incremental campaigns
+        run: |
+          # tlc_go_histories requires Go-supplied input; real-service tests invoke that adapter.
+          cargo test --release -p dbcop_core --test tlc_model -- \
+            --ignored --skip tlc_go_histories --nocapture --test-threads=1 \
+            2>&1 | tee "$MODEL_VALIDATION_DIR/logs/tlc-model.log"
+      - name: Validate real search trace compatibility
+        run: |
+          cargo test --release -p dbcop_core --lib tlc_search_trace_compatibility -- \
+            --ignored --nocapture \
+            2>&1 | tee "$MODEL_VALIDATION_DIR/logs/tlc-search-trace.log"
+      - name: Check instrumentation-free no-std build
+        run: |
+          cargo build -p dbcop_core --no-default-features \
+            2>&1 | tee "$MODEL_VALIDATION_DIR/logs/no-std.log"
+      - name: Build debug native oracle for comparison
+        run: |
+          cargo build -p dbcop_ffi \
+            2>&1 | tee "$MODEL_VALIDATION_DIR/logs/native-build.log"
+      - name: Start owned isolated Apalache service
+        run: |
+          image="eclipse-temurin:25-jre@sha256:dbb43d81099eec91e0800226ed2296d03146ee7857165b95112372ad0d67e87f"
+          docker pull "$image" 2>&1 | tee "$MODEL_VALIDATION_DIR/logs/apalache-image.log"
+          docker run --detach --name "$APALACHE_CONTAINER" --memory 8g \
+            --publish 127.0.0.1:18822:8822 \
+            --mount "type=bind,src=$APALACHE_JAR,dst=/opt/apalache.jar,readonly" \
+            --workdir /tmp "$image" \
+            java -Xmx4g -Djava.io.tmpdir=/tmp -jar /opt/apalache.jar \
+            server --server-type=explorer --port=8822 \
+            | tee "$MODEL_VALIDATION_DIR/logs/apalache-container-id.log"
+      - name: Await actual JSON-RPC health readiness
+        run: |
+          # Only startup health is polled. Semantic operations are never retried here.
+          command -v jq
+          deadline=$((SECONDS + 120))
+          health="$MODEL_VALIDATION_DIR/logs/health.json"
+          until curl --fail --show-error --silent --max-time 5 --max-filesize 1048576 \
+            --header "Content-Type: application/json" --header "Accept: application/json" \
+            --data-binary '{"jsonrpc":"2.0","id":1,"method":"health"}' \
+            --output "$health" "$DBCOP_APALACHE_RPC"; do
+            if ((SECONDS >= deadline)); then
+              echo "Apalache health readiness timed out" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          jq --exit-status '
+            type == "object" and .jsonrpc == "2.0" and .id == 1
+            and (has("error") | not) and (.result | type == "object")
+            and .result.status == "OK"
+          ' "$health"
+          echo "Apalache health OK; tests must still perform the real capability round trip."
+      - name: Run full real-service Go race suite
+        run: |
+          # Explorer construction requires Init/TakeStep/Result/dispose before SQL admission.
+          env -u CGO_LDFLAGS -u CGO_CFLAGS -u CGO_CPPFLAGS -u CGO_CXXFLAGS \
+            CGO_ENABLED=1 LD_LIBRARY_PATH="$GITHUB_WORKSPACE/target/debug" \
+            go -C mockserver test -race -count=1 -timeout=3h -v \
+            ./... \
+            2>&1 | tee "$MODEL_VALIDATION_DIR/logs/go-race.log"
+      - name: Build independent pure-Go server
+        run: |
+          env -u CGO_LDFLAGS -u CGO_CFLAGS -u CGO_CPPFLAGS -u CGO_CXXFLAGS \
+            CGO_ENABLED=0 go -C mockserver build \
+            -o "$SMOKE_DIR/mockserver-apalache" ./cmd/mockserver-apalache \
+            2>&1 | tee "$MODEL_VALIDATION_DIR/logs/pure-go-build.log"
+          readelf --dynamic "$SMOKE_DIR/mockserver-apalache" \
+            > "$MODEL_VALIDATION_DIR/logs/pure-go-dynamic.log"
+          if grep -q dbcop_ffi "$MODEL_VALIDATION_DIR/logs/pure-go-dynamic.log"; then
+            echo "Pure-Go server unexpectedly depends on dbcop_ffi" >&2
+            exit 1
+          fi
+      - name: Run pure-Go RPC and real wire gates
+        run: |
+          env -u CGO_LDFLAGS -u CGO_CFLAGS -u CGO_CPPFLAGS -u CGO_CXXFLAGS \
+            CGO_ENABLED=0 go -C mockserver test -count=1 -timeout=3h -v \
+            ./apalachebackend ./cmd/mockserver-apalache \
+            2>&1 | tee "$MODEL_VALIDATION_DIR/logs/pure-go-tests.log"
+      - name: Capture service logs and remove only the owned container
+        if: ${{ always() }}
+        run: |
+          if [[ -n "${APALACHE_CONTAINER:-}" && -n "${MODEL_VALIDATION_DIR:-}" ]]; then
+            if docker container inspect "$APALACHE_CONTAINER" \
+                > "$MODEL_VALIDATION_DIR/logs/apalache-inspect.json" 2>&1; then
+              status=0
+              docker logs --timestamps "$APALACHE_CONTAINER" \
+                > "$MODEL_VALIDATION_DIR/logs/apalache-service.log" 2>&1 || status=$?
+              docker container rm --force "$APALACHE_CONTAINER" || status=$?
+              exit "$status"
+            fi
+          fi
+      - name: Preserve failed model inputs and complete logs
+        if: ${{ failure() && env.MODEL_VALIDATION_DIR != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-validation-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.MODEL_VALIDATION_DIR }}/logs
+            ${{ env.MODEL_VALIDATION_DIR }}/tmp
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,58 @@
+name: Go Mockserver
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "mockserver/**"
+      - "crates/core/**"
+      - "crates/ffi/**"
+      - "Cargo.toml"
+      - ".github/workflows/go.yaml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "mockserver/**"
+      - "crates/core/**"
+      - "crates/ffi/**"
+      - "Cargo.toml"
+      - ".github/workflows/go.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      LD_LIBRARY_PATH: ${{ github.workspace }}/target/debug
+    defaults:
+      run:
+        working-directory: mockserver
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v2
+        with:
+          toolchain: stable
+      - name: Build native oracle
+        working-directory: .
+        run: cargo build -p dbcop_ffi
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: mockserver/go.mod
+          cache-dependency-path: mockserver/go.sum
+      - name: Vet
+        run: go vet ./...
+      - name: Build
+        run: go build ./...
+      - name: Test
+        run: go test ./...
