@@ -82,8 +82,15 @@ Required checks include:
 5. `coverage` (coverage.yaml) -- cargo-llvm-cov + Deno lcov + split Codecov
    uploads (flags: `rust`, `deno`; requires `CODECOV_TOKEN` secret)
 6. `build` (go.yaml) -- native FFI, Go vet/build/tests
-7. `model-validation` (rust.yaml) -- pinned TLC campaigns, actual DFS traces,
-   real Apalache integration/race checks, and pure-Go server build/wire checks
+
+All PR/push jobs have a 15-minute timeout; target less than five minutes. Rust
+test and coverage commands exclude `complete_bounded_domain` and
+`exhaustive_incremental_admission_matches_exact_tentative_histories`.
+`exhaustive.yaml` runs daily at 03:23 UTC on main only (including manual
+dispatch), with full unfiltered release Rust tests and the pinned TLC, actual
+DFS trace, real Apalache/race, and pure-Go build/wire campaigns. These six-hour
+jobs are not PR-required checks. Keep exhaustive bounds and per-operation
+deadlines in the harness unchanged.
 
 ## Code Constraints
 

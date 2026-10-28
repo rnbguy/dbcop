@@ -229,6 +229,31 @@ Input seed is 42; embedded Kissat uses its default solver seed 0, CaDiCaL uses
 Kissat option wrapper mistakes a previous value of zero for failure, so no
 runtime option override was used for the embedded pilot.
 
+### Fast CI and daily exhaustive validation
+
+Pull-request and push workflows have a 15-minute limit per job, with a target of
+less than five minutes. Rust tests and PR coverage exclude the two
+`complete_bounded_domain` reference tests and
+`exhaustive_incremental_admission_matches_exact_tentative_histories`; directed
+regressions, saved-corpus comparisons, and other ordinary tests remain enabled.
+The coverage report therefore describes this bounded CI suite, not the
+exhaustive campaigns.
+
+[`Exhaustive Validation`](../.github/workflows/exhaustive.yaml) runs daily at
+03:23 UTC on `main` only. Its independent jobs run the full release-mode Rust
+workspace suite without exclusions, and the existing pinned TLC, actual DFS
+trace, real Apalache/race, and pure-Go wire campaigns. Their bounds and
+per-operation deadlines are unchanged; each job has a six-hour outer limit.
+Manual dispatch is also restricted to `main`:
+
+```bash
+gh workflow run exhaustive.yaml --ref main
+```
+
+The schedule becomes active after the workflow is merged into `main`. Exhaustive
+validation is not a PR-required check. See the workflow run for progress;
+timeout or cancellation is not successful exhaustion.
+
 ### Independent TLA+/TLC semantic oracle
 
 The ignored `tlc_model` integration tests require Java, `sha256sum`, and
@@ -333,9 +358,10 @@ independently sampled weak queries are not a metamorphic oracle. See the
 
 Provision the verified v0.62.4 JAR and isolated Java 25 service using the pinned
 downloads, hashes, image and startup command in
-[`model-validation`](../.github/workflows/rust.yaml). Publish only its loopback
-RPC port; health does not attest the tool version. Then run the real-service
-gates, including SQL rollback/failure boundaries and all seven wire levels:
+[`model-validation`](../.github/workflows/exhaustive.yaml). Publish only its
+loopback RPC port; health does not attest the tool version. Then run the
+real-service gates, including SQL rollback/failure boundaries and all seven wire
+levels:
 
 ```bash
 export DBCOP_APALACHE_RPC=http://127.0.0.1:18822/rpc

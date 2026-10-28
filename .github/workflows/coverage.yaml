@@ -16,6 +16,7 @@ permissions:
 jobs:
   coverage:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
@@ -40,7 +41,9 @@ jobs:
       - name: Generate Rust coverage report (LCOV)
         run: |
           cargo llvm-cov clean --workspace
-          cargo llvm-cov --workspace --all-features --lcov --output-path coverage/rust.lcov
+          cargo llvm-cov --workspace --all-features --lcov --output-path coverage/rust.lcov -- \
+            --skip complete_bounded_domain \
+            --skip exhaustive_incremental_admission_matches_exact_tentative_histories
 
       - name: Set up Deno
         uses: denoland/setup-deno@v2
