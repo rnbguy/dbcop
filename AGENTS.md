@@ -56,6 +56,9 @@ Examples:
   files.
 - Deno checks: `deno task deno:ci` runs fmt, lint, and type checks. Requires
   wasmlib built first via `deno task wasmbuild`.
+- Keep Cargo.lock tracked and use `--locked` in CI. Update Rust and Go lockfiles
+  with their manifests. WASM builds pair wasmbuild 0.23.0 with wasm-bindgen
+  exactly 0.2.108; do not upgrade bindgen independently of the builder.
 - Tests: `cargo test -p <crate>` or `cargo test --workspace`
 - no_std check: `cargo build -p dbcop_core --no-default-features` must always
   compile.

@@ -29,7 +29,7 @@ jobs:
           components: llvm-tools-preview
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@v2.87.21
+        uses: taiki-e/install-action@v2.88.0
         with:
           tool: cargo-llvm-cov
 
@@ -41,7 +41,7 @@ jobs:
       - name: Generate Rust coverage report (LCOV)
         run: |
           cargo llvm-cov clean --workspace
-          cargo llvm-cov --workspace --all-features --lcov --output-path coverage/rust.lcov -- \
+          cargo llvm-cov --locked --workspace --all-features --lcov --output-path coverage/rust.lcov -- \
             --skip complete_bounded_domain \
             --skip exhaustive_incremental_admission_matches_exact_tentative_histories
 

@@ -53,7 +53,7 @@ For the history-checking CLI:
 
 ```bash
 # Install the CLI
-cargo install --path crates/cli
+cargo install --locked --path crates/cli
 
 # Generate test histories
 dbcop generate \

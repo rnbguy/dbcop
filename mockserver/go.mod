@@ -6,7 +6,7 @@ require (
 	github.com/dolthub/go-mysql-server v0.20.0
 	github.com/dolthub/vitess v0.0.0-20250512224608-8fb9c6ea092c
 	github.com/go-sql-driver/mysql v1.10.1
-	github.com/shopspring/decimal v1.3.1
+	github.com/shopspring/decimal v1.6.0
 )
 
 require (
