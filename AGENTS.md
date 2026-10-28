@@ -81,7 +81,8 @@ Required checks include:
    integration tests
 5. `coverage` (coverage.yaml) -- cargo-llvm-cov + Deno lcov + split Codecov
    uploads (flags: `rust`, `deno`; requires `CODECOV_TOKEN` secret)
-6. `build` (go.yaml) -- native FFI, Go vet/build/tests
+6. `build` (go.yaml) -- native FFI, Go vet/build/tests with atomic cross-package
+   coverage and a Codecov upload (flag: `go`; requires `CODECOV_TOKEN` secret)
 
 All PR/push jobs have a 15-minute timeout; target less than five minutes. Rust
 test and coverage commands exclude `complete_bounded_domain` and

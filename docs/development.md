@@ -239,6 +239,14 @@ regressions, saved-corpus comparisons, and other ordinary tests remain enabled.
 The coverage report therefore describes this bounded CI suite, not the
 exhaustive campaigns.
 
+Codecov combines the Rust LCOV report (`rust`), Deno LCOV report (`deno`), and
+native Go coverage profile (`go`). The Go job instruments every package in
+`mockserver` with `-coverpkg=./...` and atomic counters, so SQL integration
+tests also credit the libraries they exercise. Generated `wasmlib` and build
+outputs remain excluded. External-service tests skipped by ordinary CI
+contribute no coverage; a green report is not evidence that those paths were
+exercised.
+
 [`Exhaustive Validation`](../.github/workflows/exhaustive.yaml) runs daily at
 03:23 UTC on `main` only. Its independent jobs run the full release-mode Rust
 workspace suite without exclusions, and the existing pinned TLC, actual DFS

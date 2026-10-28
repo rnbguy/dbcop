@@ -20,6 +20,11 @@ coverage:
           - deno
         target: auto
         threshold: 1%
+      go:
+        flags:
+          - go
+        target: auto
+        threshold: 1%
     patch:
       default:
         target: auto
@@ -34,6 +39,11 @@ coverage:
           - deno
         target: auto
         threshold: 1%
+      go:
+        flags:
+          - go
+        target: auto
+        threshold: 1%
 
 flags:
   rust:
@@ -44,6 +54,10 @@ flags:
     carryforward: true
     paths:
       - crates/wasm/
+  go:
+    carryforward: true
+    paths:
+      - mockserver/
 
 ignore:
   - target/**
